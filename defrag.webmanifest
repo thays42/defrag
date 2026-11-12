@@ -1,0 +1,10 @@
+{
+  "name": "Defrag",
+  "short_name": "Defrag",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["fullscreen", "standalone"],
+  "theme_color": "#000000",
+  "background_color": "#000000"
+}

@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="defrag.webmanifest">
+<title>Defrag</title>
+<link rel="stylesheet" href="console.css">
+</head>
+<body>
+<main>
+<div class="console">
+<header><span class="disk-mark" aria-hidden="true"></span><h1>Defrag</h1><button id="sound" aria-label="Sound effects" aria-pressed="false">SFX OFF</button></header>
+<nav aria-label="Puzzles"><label for="levels">Puzzle</label><select id="levels"></select></nav>
+<section class="panel" aria-labelledby="title">
+<p class="chapter" id="chapter"></p><h2 id="title"></h2><p id="goal" class="goal"></p>
+<div class="stats" id="stats">
+<div><span>Moves</span><strong id="moves"></strong></div>
+<div><span>Splits</span><strong id="splits"></strong></div>
+<div><span>Score</span><strong id="score"></strong></div>
+<div><span>Par</span><strong id="par"></strong></div>
+</div>
+<div class="board" id="board" role="group" aria-label="Disk blocks, read left to right across rows"></div>
+<p class="status" id="status" aria-live="polite"></p>
+<button id="next" hidden>Next puzzle →</button>
+</section>
+<div class="actions">
+<button id="undo">Undo</button>
+<button id="reset">Restart</button>
+<button id="help" aria-haspopup="dialog">How to play</button>
+</div>
+</div>
+<dialog id="help-dialog" class="help-dialog" aria-labelledby="help-title">
+  <h2 id="help-title">How to play</h2>
+  <dl>
+    <div><dt>Move a run</dt><dd>Tap a block to select its whole run, then tap a coral destination. Runs can wrap across rows.</dd></div>
+    <div><dt>Split a run</dt><dd>Tap inside a selected run to pick one block. Tap another block in the run to select the range between them, or tap the marked block again to return to the whole run.</dd></div>
+    <div><dt>Clear the board</dt><dd>Join each file into one run. If it has a home, finish the entire run in sectors with the matching corner label. You can use any empty sector as workspace. Striped sectors marked × are reserved.</dd></div>
+    <div><dt>Meet par</dt><dd>Each move costs 1 point, and splitting adds 1 extra point. Lower scores are better.</dd></div>
+  </dl>
+  <form method="dialog"><button autofocus>Back to puzzle</button></form>
+</dialog>
+</main>
+<script src="puzzles.js"></script>
+<script>
+const puzzles = chapters.flatMap(({name,levels}) => levels.map(puzzle => ({...puzzle,chapter:name})));
+const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(node => [node.id,node]));
+const progressKey = 'defrag-campaign-v2';
+const gridSize = 24;
+const reservedSector = '#';
+let progress = {level:0, best:{}};
+try {
+  const saved = JSON.parse(localStorage.getItem(progressKey));
+  if (saved && Number.isInteger(saved.level) && saved.best) {
+    progress = saved;
+  } else {
+    const previous = JSON.parse(localStorage.getItem('defrag-campaign-v1'));
+    if (previous && Number.isInteger(previous.level) && previous.best) {
+      // Two levels were inserted before the original sixth puzzle.
+      const shift = index => index < 5 ? index : index + 2;
+      progress = {
+        ...previous,
+        level: shift(previous.level),
+        best: Object.fromEntries(Object.entries(previous.best).map(([index,score]) => [shift(Number(index)),score])),
+      };
+    }
+  }
+} catch {}
+let level = 0;
+let board, history, splits, selection, anchor, notice;
+let motionEffects = [];
+let audioContext;
+const soundEffects = {
+  move: [330, 494],
+  split: [220, 392],
+  undo: [392, 262],
+  clear: [392, 523, 659, 784],
+};
+
+function start(index) {
+  stopMotion();
+  level = index;
+  const puzzle = puzzles[level];
+  board = [...puzzle.board.padEnd(gridSize, reservedSector)];
+  ui.board.replaceChildren();
+  board.forEach((_, index) => {
+    const button = document.createElement('button');
+    button.className = 'cell';
+    button.onclick = () => tap(index);
+    ui.board.append(button);
+  });
+  history = [];
+  splits = 0;
+  clearSelection();
+  saveProgress();
+  render();
+}
+
+function clearSelection() {
+  selection = null;
+  anchor = null;
+  notice = '';
+}
+
+function runAt(index) {
+  const file = board[index];
+  let first = index;
+  let last = index;
+  while (board[first - 1] === file) first--;
+  while (board[last + 1] === file) last++;
+  return [first,last];
+}
+
+function solved() {
+  const puzzle = puzzles[level];
+  const disk = board.join('');
+  const files = new Set([...puzzle.board].filter(file => file !== '.' && file !== reservedSector));
+  return [...files].every(file => {
+    const count = board.filter(block => block === file).length;
+    const home = puzzle.homes?.[file];
+    const region = home ? disk.slice(home[0] - 1,home[1]) : disk;
+    return region.includes(file.repeat(count));
+  });
+}
+
+function saveProgress() {
+  progress.level = level;
+  try { localStorage.setItem(progressKey, JSON.stringify(progress)); } catch {}
+}
+
+function canMove(index) {
+  if (!selection || solved()) return false;
+  const length = selection[1] - selection[0] + 1;
+  return index + length <= board.length && board.slice(index,index + length).every(file => file === '.');
+}
+
+function tap(index) {
+  if (board[index] === reservedSector || solved()) return;
+  notice = '';
+  let move;
+  if (canMove(index)) {
+    const [first,last] = selection;
+    const file = board[first];
+    const [runFirst,runLast] = runAt(first);
+    history.push({board:[...board],splits});
+    const split = first !== runFirst || last !== runLast;
+    if (split) splits++;
+    board.fill('.',first,last + 1);
+    move = {first, length:last - first + 1, split};
+    board.fill(file,index,index + move.length);
+    clearSelection();
+    if (solved()) {
+      const score = history.length + splits;
+      progress.best[level] = Math.min(score, progress.best[level] ?? Infinity);
+      saveProgress();
+      ui.levels.options[level].textContent = optionLabel(level);
+    }
+  } else if (board[index] !== '.') {
+    const run = runAt(index);
+    const [first,last] = run;
+    const sameRun = selection && selection[0] >= first && selection[0] <= last;
+    if (!sameRun) {
+      selection = run;
+      anchor = null;
+    } else if (first === last) {
+      selection = null;
+    } else if (anchor === null) {
+      anchor = index;
+      selection = [index,index];
+    } else if (anchor === index) {
+      anchor = null;
+      selection = run;
+    } else {
+      selection = [Math.min(anchor,index),Math.max(anchor,index)];
+    }
+  } else if (selection) {
+    notice = 'The selected blocks need more consecutive empty space here.';
+  }
+  render();
+  if (move) {
+    const finished = solved();
+    animateMove(move, index, finished);
+    playSound(finished ? 'clear' : move.split ? 'split' : 'move');
+  }
+}
+
+function stopMotion() {
+  for (const effect of motionEffects) effect.cancel();
+  motionEffects = [];
+}
+
+function animateMove({first,length}, destination, finished) {
+  stopMotion();
+  const cells = [...ui.board.children];
+  if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches || !cells[0]?.animate) return;
+  for (let offset = 0; offset < length; offset++) {
+    const origin = cells[first + offset];
+    const tile = cells[destination + offset];
+    const x = origin.offsetLeft - tile.offsetLeft;
+    const y = origin.offsetTop - tile.offsetTop;
+    motionEffects.push(tile.animate([
+      {transform:`translate(${x}px, ${y}px) scale(.94)`,filter:'brightness(1.22)',zIndex:2},
+      {transform:'translate(0, 0) scale(1.06)',filter:'brightness(1.4)',zIndex:2,offset:.78},
+      {transform:'none',filter:'brightness(1)',zIndex:2},
+    ],{duration:220,easing:'cubic-bezier(.18,.68,.24,1)'}));
+  }
+  if (!finished) return;
+  cells.forEach((tile,index) => {
+    if (board[index] === '.' || board[index] === reservedSector) return;
+    motionEffects.push(tile.animate([
+      {transform:'translateY(0)',filter:'brightness(1)'},
+      {transform:'translateY(-5px)',filter:'brightness(1.4)'},
+      {transform:'translateY(0)',filter:'brightness(1)'},
+    ],{duration:230,delay:240 + index*24,easing:'ease-out'}));
+  });
+}
+
+async function playSound(name) {
+  if (!progress.sound) return;
+  const Audio = globalThis.AudioContext ?? globalThis.webkitAudioContext;
+  if (!Audio) return;
+  try {
+    audioContext ??= new Audio();
+    if (audioContext.state !== 'running') await audioContext.resume();
+    if (!progress.sound) return;
+    const start = audioContext.currentTime;
+    soundEffects[name].forEach((frequency,index) => {
+      const time = start + index * .055;
+      const tone = audioContext.createOscillator();
+      const volume = audioContext.createGain();
+      tone.type = 'triangle';
+      tone.frequency.value = frequency;
+      volume.gain.setValueAtTime(.001,time);
+      volume.gain.exponentialRampToValueAtTime(.045,time + .012);
+      volume.gain.exponentialRampToValueAtTime(.001,time + .09);
+      tone.connect(volume).connect(audioContext.destination);
+      tone.start(time);
+      tone.stop(time + .1);
+      tone.onended = () => { tone.disconnect(); volume.disconnect(); };
+    });
+  } catch {}
+}
+
+function updateSoundButton() {
+  ui.sound.textContent = progress.sound ? 'SFX ON' : 'SFX OFF';
+  ui.sound.setAttribute('aria-pressed', Boolean(progress.sound));
+}
+
+function selectionPrompt(puzzle) {
+  const hasDestination = board.some((_,index) => canMove(index));
+  if (anchor !== null) {
+    return hasDestination
+      ? 'Tap a destination, or tap another block in the run to extend the selection.'
+      : 'No empty stretch fits. Tap another block to adjust the selection, or tap the marked block to select the whole run.';
+  }
+  if (selection[0] === selection[1]) return 'Tap a highlighted destination.';
+  if (puzzle.name === 'Split a run') return 'Tap an outside block in the selected run to split it off.';
+  return hasDestination
+    ? 'Tap a destination to move the run, or tap a selected block to split it off.'
+    : 'No empty stretch fits the whole run. Tap a selected block to split it off.';
+}
+
+function render() {
+  const puzzle = puzzles[level];
+  const score = history.length + splits;
+  const finished = solved();
+  ui.board.dataset.cleared = finished;
+  ui.status.dataset.cleared = finished;
+  ui.chapter.textContent = puzzle.chapter + ' · ' + (level + 1) + ' of ' + puzzles.length;
+  ui.title.textContent = puzzle.name;
+  ui.stats.hidden = puzzle.par == null;
+  ui.next.hidden = !finished || level === puzzles.length - 1;
+  ui.goal.textContent = puzzle.goal;
+  ui.moves.textContent = history.length;
+  ui.splits.textContent = splits;
+  ui.score.textContent = score;
+  ui.par.textContent = puzzle.par;
+  ui.undo.disabled = !history.length;
+  ui.reset.disabled = !history.length && !selection;
+  ui.status.textContent = notice || (
+    finished ? (puzzle.par == null ? 'Defrag complete' : 'Defrag complete · ' + (score < puzzle.par ? (puzzle.par-score) + ' under par' : score === puzzle.par ? 'Par met' : (score-puzzle.par) + ' over par')) :
+    selection ? selectionPrompt(puzzle) :
+    puzzle.prompt ?? 'Tap a file block to select its run.'
+  );
+  ui.levels.value = level;
+  [...ui.board.children].forEach((button,index) => {
+    const file = board[index];
+    button.dataset.file = file;
+    if (file === reservedSector) {
+      button.disabled = true;
+      button.setAttribute('aria-label','Sector ' + (index + 1) + ', reserved');
+      return;
+    }
+    const empty = file === '.';
+    const joinedBefore = !empty && board[index-1] === file;
+    const joinedAfter = !empty && board[index+1] === file;
+    const destination = canMove(index);
+    const selected = !!selection && index >= selection[0] && index <= selection[1];
+    const home = Object.entries(puzzle.homes ?? {}).find(([,range]) => index + 1 >= range[0] && index + 1 <= range[1])?.[0];
+    if (home) button.dataset.home = home;
+    button.textContent = empty ? (destination ? '↓' : '·') : file;
+    button.classList.toggle('destination',destination);
+    button.classList.toggle('anchor',anchor === index);
+    button.classList.toggle('join-left',joinedBefore && index % 6 !== 0);
+    button.classList.toggle('join-right',joinedAfter && index % 6 !== 5);
+    button.classList.toggle('wrap-in',joinedBefore && index % 6 === 0);
+    button.classList.toggle('wrap-out',joinedAfter && index % 6 === 5);
+    button.setAttribute('aria-pressed',selected);
+    button.setAttribute('aria-label','Block ' + (index+1) + ', ' + (empty ? (destination ? 'available destination' : 'empty') : 'file ' + file) + (home ? ', ' + home + ' home sector' : '') + (anchor === index ? ', split start' : ''));
+  });
+}
+
+function optionLabel(index) {
+  const done = progress.best[index] != null;
+  return (index + 1) + '. ' + puzzles[index].name + (done ? ' ✓' : '');
+}
+
+let group;
+puzzles.forEach((puzzle,index) => {
+  if (group?.label !== puzzle.chapter) {
+    group = document.createElement('optgroup');
+    group.label = puzzle.chapter;
+    ui.levels.append(group);
+  }
+  const option = document.createElement('option');
+  option.value = index;
+  option.textContent = optionLabel(index);
+  group.append(option);
+});
+ui.levels.onchange = () => start(Number(ui.levels.value));
+ui.next.onclick = () => start(level + 1);
+ui.undo.onclick = () => {
+  stopMotion();
+  const previous = history.pop();
+  ({board,splits} = previous);
+  clearSelection();
+  render();
+  playSound('undo');
+};
+ui.reset.onclick = () => start(level);
+ui.help.onclick = () => ui['help-dialog'].showModal();
+ui.sound.onclick = () => {
+  progress.sound = !progress.sound;
+  saveProgress();
+  updateSoundButton();
+  if (progress.sound) playSound('move');
+};
+updateSoundButton();
+if (typeof navigator !== 'undefined') {
+  document.addEventListener('gesturestart', event => event.preventDefault(), {passive:false});
+}
+start(Math.max(0, Math.min(progress.level, puzzles.length - 1)));
+</script>
+</body>
+</html>
