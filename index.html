@@ -13,8 +13,22 @@
 <body>
 <main>
 <div class="console">
-<header><span class="disk-mark" aria-hidden="true"></span><h1>Defrag</h1><button id="sound" aria-label="Sound effects" aria-pressed="false">SFX OFF</button></header>
-<nav aria-label="Puzzles"><label for="levels">Puzzle</label><select id="levels"></select></nav>
+<section id="menu" class="menu-screen" aria-labelledby="menu-title">
+<header><span class="disk-mark" aria-hidden="true"></span><h1 id="menu-title">Defrag</h1><button id="sound" aria-label="Sound effects" aria-pressed="false">SFX OFF</button></header>
+<div class="menu-actions">
+<button id="continue" class="primary"></button>
+<p id="resume-detail"></p>
+<button id="puzzles-button">Puzzles</button>
+<button id="playlist-button">Generated playlist</button>
+<button id="help" aria-haspopup="dialog">How to play</button>
+</div>
+</section>
+<section id="catalog" class="catalog-screen" aria-labelledby="catalog-title" hidden>
+<header><button class="back" id="catalog-back">← Menu</button><h2 id="catalog-title">Puzzles</h2></header>
+<div id="levels" class="puzzle-list"></div>
+</section>
+<section id="game" class="game-screen" aria-labelledby="title" hidden>
+<header><button class="back" id="game-back">← Menu</button><button class="back" id="game-puzzles">Puzzles</button></header>
 <section class="panel" aria-labelledby="title">
 <p class="chapter" id="chapter"></p><h2 id="title"></h2><p id="goal" class="goal"></p>
 <div class="stats" id="stats">
@@ -30,23 +44,26 @@
 <div class="actions">
 <button id="undo">Undo</button>
 <button id="reset">Restart</button>
-<button id="help" aria-haspopup="dialog">How to play</button>
+<button id="game-help" aria-haspopup="dialog">How to play</button>
 </div>
+</section>
 </div>
 <dialog id="help-dialog" class="help-dialog" aria-labelledby="help-title">
   <h2 id="help-title">How to play</h2>
   <dl>
     <div><dt>Move a run</dt><dd>Tap a block to select its whole run, then tap a coral destination. Runs can wrap across rows.</dd></div>
     <div><dt>Split a run</dt><dd>Tap inside a selected run to pick one block. Tap another block in the run to select the range between them, or tap the marked block again to return to the whole run.</dd></div>
-    <div><dt>Clear the board</dt><dd>Join each file into one run. If it has a home, finish the entire run in sectors with the matching corner label. You can use any empty sector as workspace. Striped sectors marked × are reserved.</dd></div>
+    <div><dt>Clear the board</dt><dd>Join each file into one run. If it has a home, finish the entire run in sectors with the matching corner label. You can use any empty sector as workspace. Solid gray sectors are reserved.</dd></div>
     <div><dt>Meet par</dt><dd>Each move costs 1 point, and splitting adds 1 extra point. Lower scores are better.</dd></div>
   </dl>
-  <form method="dialog"><button autofocus>Back to puzzle</button></form>
+  <form method="dialog"><button autofocus>Close</button></form>
 </dialog>
 </main>
 <script src="puzzles.js"></script>
+<script src="playlist.js"></script>
 <script>
-const puzzles = chapters.flatMap(({name,levels}) => levels.map(puzzle => ({...puzzle,chapter:name})));
+const campaign = chapters.flatMap(({name,levels}) => levels.map(puzzle => ({...puzzle,chapter:name})));
+const puzzles = [...campaign, ...generatedPlaylist];
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(node => [node.id,node]));
 const progressKey = 'defrag-campaign-v2';
 const gridSize = 24;
@@ -80,11 +97,10 @@ const soundEffects = {
   clear: [392, 523, 659, 784],
 };
 
-function start(index) {
+function start(index, attempt) {
   stopMotion();
   level = index;
-  const puzzle = puzzles[level];
-  board = [...puzzle.board.padEnd(gridSize, reservedSector)];
+  board = attempt ? [...attempt.board] : [...initialBoard(index)];
   ui.board.replaceChildren();
   board.forEach((_, index) => {
     const button = document.createElement('button');
@@ -92,11 +108,21 @@ function start(index) {
     button.onclick = () => tap(index);
     ui.board.append(button);
   });
-  history = [];
-  splits = 0;
+  history = attempt ? attempt.history : [];
+  splits = attempt ? attempt.splits : 0;
   clearSelection();
   saveProgress();
   render();
+}
+
+function initialBoard(index) {
+  return puzzles[index].board.padEnd(gridSize, reservedSector);
+}
+
+function openPuzzle(index) {
+  const attempt = progress.attempts?.[index];
+  start(index, attempt?.initial === initialBoard(index) ? attempt : null);
+  showScreen('game', ui['game-back']);
 }
 
 function clearSelection() {
@@ -127,7 +153,18 @@ function solved() {
 }
 
 function saveProgress() {
-  progress.level = level;
+  if (level < campaign.length) progress.level = level;
+  else progress.playlistLevel = level - campaign.length;
+  progress.attempts ??= {};
+  if (history.length) {
+    progress.attempts[level] = {initial: initialBoard(level), board: board.join(''), history, splits};
+  } else {
+    delete progress.attempts[level];
+  }
+  persistProgress();
+}
+
+function persistProgress() {
   try { localStorage.setItem(progressKey, JSON.stringify(progress)); } catch {}
 }
 
@@ -155,9 +192,8 @@ function tap(index) {
     if (solved()) {
       const score = history.length + splits;
       progress.best[level] = Math.min(score, progress.best[level] ?? Infinity);
-      saveProgress();
-      ui.levels.options[level].textContent = optionLabel(level);
     }
+    saveProgress();
   } else if (board[index] !== '.') {
     const run = runAt(index);
     const [first,last] = run;
@@ -269,10 +305,14 @@ function render() {
   const finished = solved();
   ui.board.dataset.cleared = finished;
   ui.status.dataset.cleared = finished;
-  ui.chapter.textContent = puzzle.chapter + ' · ' + (level + 1) + ' of ' + puzzles.length;
+  const inPlaylist = level >= campaign.length;
+  const position = inPlaylist ? level - campaign.length : level;
+  const count = inPlaylist ? generatedPlaylist.length : campaign.length;
+  ui.chapter.textContent = puzzle.chapter + ' · ' + (position + 1) + ' of ' + count;
   ui.title.textContent = puzzle.name;
   ui.stats.hidden = puzzle.par == null;
-  ui.next.hidden = !finished || level === puzzles.length - 1;
+  ui.next.hidden = !finished || (!inPlaylist && position === count - 1);
+  ui.next.textContent = inPlaylist && position === count - 1 ? 'Finish playlist' : 'Next puzzle →';
   ui.goal.textContent = puzzle.goal;
   ui.moves.textContent = history.length;
   ui.splits.textContent = splits;
@@ -285,7 +325,6 @@ function render() {
     selection ? selectionPrompt(puzzle) :
     puzzle.prompt ?? 'Tap a file block to select its run.'
   );
-  ui.levels.value = level;
   [...ui.board.children].forEach((button,index) => {
     const file = board[index];
     button.dataset.file = file;
@@ -313,38 +352,91 @@ function render() {
   });
 }
 
-function optionLabel(index) {
-  const done = progress.best[index] != null;
-  return (index + 1) + '. ' + puzzles[index].name + (done ? ' ✓' : '');
+function showScreen(screen, focusTarget) {
+  stopMotion();
+  for (const name of ['menu', 'catalog', 'game']) ui[name].hidden = name !== screen;
+  focusTarget?.focus();
 }
 
-let group;
-puzzles.forEach((puzzle,index) => {
-  if (group?.label !== puzzle.chapter) {
-    group = document.createElement('optgroup');
-    group.label = puzzle.chapter;
-    ui.levels.append(group);
+function showMenu(moveFocus = true) {
+  const index = progress.level;
+  const done = campaign.filter((_, i) => progress.best[i] != null).length;
+  const playlistDone = generatedPlaylist.filter((_, i) => progress.best[campaign.length + i] != null).length;
+  ui['playlist-button'].textContent = progress.playlistFinished
+    ? 'Replay generated playlist'
+    : 'Generated playlist · ' + playlistDone + ' of ' + generatedPlaylist.length + ' cleared';
+  ui.continue.textContent = progress.started || done ? 'Continue' : 'Play';
+  ui['resume-detail'].textContent = puzzles[index].name + ' · ' + done + ' of ' + campaign.length + ' cleared';
+  showScreen('menu', moveFocus ? ui.continue : null);
+}
+
+function showCatalog() {
+  ui.levels.replaceChildren();
+  let index = 0;
+  for (const chapter of chapters) {
+    const section = document.createElement('section');
+    const heading = document.createElement('h3');
+    heading.textContent = chapter.name;
+    section.append(heading);
+    for (const puzzle of chapter.levels) {
+      const puzzleIndex = index++;
+      const button = document.createElement('button');
+      const name = document.createElement('span');
+      const result = document.createElement('small');
+      const best = progress.best[puzzleIndex];
+      name.textContent = index + '. ' + puzzle.name;
+      if (best != null) {
+        result.textContent = puzzle.par == null ? 'Cleared' : 'Best ' + best + ' / Par ' + puzzle.par;
+      } else if (progress.attempts?.[puzzleIndex]) {
+        result.textContent = 'In progress';
+      }
+      button.append(name, result);
+      button.onclick = () => launchPuzzle(puzzleIndex);
+      section.append(button);
+    }
+    ui.levels.append(section);
   }
-  const option = document.createElement('option');
-  option.value = index;
-  option.textContent = optionLabel(index);
-  group.append(option);
-});
-ui.levels.onchange = () => start(Number(ui.levels.value));
-ui.next.onclick = () => start(level + 1);
+  ui.levels.scrollTop = 0;
+  showScreen('catalog', ui['catalog-back']);
+}
+
+function launchPuzzle(index) {
+  if (index < campaign.length) progress.started = true;
+  openPuzzle(index);
+}
+
+ui.continue.onclick = () => launchPuzzle(progress.level);
+ui['puzzles-button'].onclick = ui['game-puzzles'].onclick = showCatalog;
+ui['game-back'].onclick = ui['catalog-back'].onclick = () => showMenu();
+ui['playlist-button'].onclick = () => {
+  progress.playlistFinished = false;
+  launchPuzzle(campaign.length + (progress.playlistLevel ?? 0));
+};
+ui.next.onclick = () => {
+  if (level < puzzles.length - 1) {
+    launchPuzzle(level + 1);
+    return;
+  }
+  for (let i = campaign.length; i < puzzles.length; i++) delete progress.attempts[i];
+  progress.playlistLevel = 0;
+  progress.playlistFinished = true;
+  persistProgress();
+  showMenu();
+};
 ui.undo.onclick = () => {
   stopMotion();
   const previous = history.pop();
   ({board,splits} = previous);
   clearSelection();
+  saveProgress();
   render();
   playSound('undo');
 };
 ui.reset.onclick = () => start(level);
-ui.help.onclick = () => ui['help-dialog'].showModal();
+ui.help.onclick = ui['game-help'].onclick = () => ui['help-dialog'].showModal();
 ui.sound.onclick = () => {
   progress.sound = !progress.sound;
-  saveProgress();
+  persistProgress();
   updateSoundButton();
   if (progress.sound) playSound('move');
 };
@@ -352,7 +444,8 @@ updateSoundButton();
 if (typeof navigator !== 'undefined') {
   document.addEventListener('gesturestart', event => event.preventDefault(), {passive:false});
 }
-start(Math.max(0, Math.min(progress.level, puzzles.length - 1)));
+progress.level = Math.max(0, Math.min(progress.level, campaign.length - 1));
+showMenu(false);
 </script>
 </body>
 </html>
