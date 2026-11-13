@@ -27,10 +27,10 @@ const soundEffects = {move: [330, 494], split: [220, 392], undo: [392, 262], cle
 // ---------- Progress ----------
 
 function loadProgress() {
-  const fresh = {version: 3, current: campaign[0].id, best: {}, clean: {}, attempts: {}, sound: false};
+  const fresh = {version: 3, current: campaign[0].id, best: {}, clean: {}, attempts: {}, hinted: {}, sound: false};
   try {
     const saved = JSON.parse(localStorage.getItem(progressKey));
-    if (saved?.version === 3) return {...fresh, ...saved};
+    if (saved?.version === 3) return {...fresh, ...saved, hinted: saved.hinted ?? {}};
     // Older saves keyed scores by array position. The first 30 campaign levels kept their order.
     const legacy = JSON.parse(localStorage.getItem('defrag-campaign-v2')) ?? shiftV1(JSON.parse(localStorage.getItem('defrag-campaign-v1')));
     if (legacy && Number.isInteger(legacy.level) && legacy.best) {
@@ -88,14 +88,21 @@ function findLevel(id) {
 
 const emptyStats = () => ({moves: 0, splits: 0, cost: 0});
 
+// Everything that defines a level's rules. A saved attempt is only resumed if this still matches.
+function signature(target) {
+  const {board, homes, clipboard, cost, consolidate, locked, fragile, links, nudges} = target;
+  return JSON.stringify({board, homes, clipboard, cost, consolidate, locked, fragile, links, nudges});
+}
+
 function start(target, attempt) {
   stopMotion();
   level = target;
-  const usable = attempt && attempt.board === target.board;
+  const usable = attempt && attempt.signature === signature(target);
   state = usable ? attempt.state : E.initialState(level);
   stats = usable ? attempt.stats : emptyStats();
   history = usable ? attempt.history : [];
-  hinted = usable ? Boolean(attempt.hinted) : false;
+  // Hint use is remembered per level until the next clear, so leaving and coming back does not erase it.
+  hinted = Boolean(progress.hinted[level.id]);
   if (!level.daily) progress.current = level.id;
   buildBoard();
   clearSelection();
@@ -106,12 +113,12 @@ function start(target, attempt) {
 
 function openLevel(target) {
   start(target, progress.attempts[target.id]);
-  showScreen('game', ui['game-back']);
+  showScreen('game', ui.board.querySelector('[tabindex="0"]'));
 }
 
 function save() {
   if (history.length && !E.solved(level, state)) {
-    progress.attempts[level.id] = {board: level.board, state, stats, history, hinted};
+    progress.attempts[level.id] = {signature: signature(level), state, stats, history};
   } else {
     delete progress.attempts[level.id];
   }
@@ -185,6 +192,9 @@ function perform(move) {
   if (done) {
     progress.best[level.id] = Math.min(stats.cost, progress.best[level.id] ?? Infinity);
     if (!hinted) progress.clean[level.id] = Math.min(stats.cost, progress.clean[level.id] ?? Infinity);
+    delete progress.hinted[level.id];
+  } else {
+    notice = describeMove(move) + ` Score ${stats.cost}.`;
   }
   checkDeadEnd();
   save();
@@ -193,9 +203,24 @@ function perform(move) {
   playSound(done ? 'clear' : move.split ? 'split' : 'move');
 }
 
+function describeMove(move) {
+  const tokens = move.type === 'paste' ? null : state.cells.slice(move.to, move.to + move.length);
+  const file = E.letterOf(move.type === 'cut' ? state.clip[0] : tokens[0]);
+  const where = `sector${move.length > 1 ? 's' : ''} ${move.to + 1}${move.length > 1 ? '–' + (move.to + move.length) : ''}`;
+  if (move.type === 'cut') return `Lifted ${file} onto the clipboard.`;
+  if (move.type === 'paste') return `Placed ${file} from the clipboard in ${where}.`;
+  return `${move.nudge ? 'Nudged' : 'Moved'} ${file} to ${where}.`;
+}
+
 // Cracked sectors can make a puzzle unwinnable. Say so instead of letting the player flail.
+// A search that hits its size limit proves nothing, so it never counts as a dead end.
 function checkDeadEnd() {
-  deadEnd = Boolean(level.fragile?.length) && !finished() && E.solve(level, state, {limit: 2e5}).cost === null;
+  if (!level.fragile?.length || finished()) {
+    deadEnd = false;
+    return;
+  }
+  const result = E.solve(level, state, {limit: 2e5});
+  deadEnd = result.cost === null && !result.aborted;
 }
 
 // ---------- Input ----------
@@ -213,9 +238,13 @@ function tap(index) {
     } else {
       selectAt(index);
     }
-  } else if (selection) {
-    // Tapping empty space that is not a destination cancels the selection.
+  } else if (token === E.RESERVED) {
     clearSelection();
+    notice = state.wear?.[index] === 0 ? 'This cracked sector has failed. Nothing can land here.' : 'Reserved sector. Nothing can land here.';
+  } else if (selection) {
+    // Choosing empty space that is not a destination cancels the selection.
+    clearSelection();
+    notice = 'Selection cancelled.';
   }
   render();
 }
@@ -246,12 +275,17 @@ function tapClipboard() {
   const cut = cutMove();
   if (cut) return perform(cut);
   if (state.clip) {
+    if (selection?.kind === 'board') {
+      notice = 'The clipboard holds one run. Place it first.';
+      render();
+      return;
+    }
     selection = selection?.kind === 'clip' ? null : {kind: 'clip'};
     anchor = null;
     notice = '';
     hint = null;
   } else {
-    notice = 'Select a run on the disk first, then tap Clipboard.';
+    notice = 'Select a run on the disk first, then choose Clipboard.';
   }
   render();
 }
@@ -261,6 +295,7 @@ function undo() {
   stopMotion();
   ({state, stats} = history.pop());
   clearSelection();
+  notice = `Undone. Score ${stats.cost}.`;
   checkDeadEnd();
   save();
   render();
@@ -279,6 +314,7 @@ function restart() {
   state = E.initialState(level);
   stats = emptyStats();
   clearSelection();
+  notice = 'Restarted. Undo brings your moves back.';
   checkDeadEnd();
   save();
   render();
@@ -289,9 +325,11 @@ async function showHint() {
   const token = ++hintToken;
   notice = 'Thinking…';
   render();
+  const asked = {level, state};
   await new Promise(resolve => setTimeout(resolve, 30));
+  // The player may have moved, finished or switched levels while we waited.
+  if (token !== hintToken || asked.level !== level || asked.state !== state || finished()) return;
   const result = E.solve(level, state);
-  if (token !== hintToken) return;
   clearSelection();
   if (!result.path) {
     notice = 'No solution from here. Undo or restart.';
@@ -299,6 +337,7 @@ async function showHint() {
     return;
   }
   hinted = true;
+  progress.hinted[level.id] = true;
   const move = result.path[0];
   hint = move;
   if (move.type === 'paste') selection = {kind: 'clip'};
@@ -356,6 +395,7 @@ function moveFocus(event, index) {
 }
 
 function render() {
+  const focused = document.activeElement;
   const done = finished();
   const inCampaign = !level.daily;
   const position = campaign.findIndex(item => item.id === level.id);
@@ -363,7 +403,7 @@ function render() {
   ui.title.textContent = level.daily ? 'Daily · ' + level.date : level.name;
   ui.goal.textContent = level.goal;
   renderRules();
-  ui.stats.hidden = Boolean(level.intro);
+  ui.stats.hidden = false;
   ui.score.textContent = stats.cost;
   ui.par.textContent = level.par;
   ui['stat-detail'].textContent = [
@@ -371,36 +411,84 @@ function render() {
     `${stats.splits} split${stats.splits === 1 ? '' : 's'}`,
     level.cost === 'seek' ? `${stats.cost - stats.splits} travel` : null,
   ].filter(Boolean).join(' · ');
-  ui.board.dataset.cleared = done;
-  ui.status.dataset.cleared = done;
-  ui.status.dataset.warning = deadEnd && !notice;
-  ui.status.textContent = notice || (done ? clearMessage() : deadEnd ? 'A cracked sector failed where you needed it. This disk can no longer be solved. Undo or restart.' : selection ? selectionPrompt() : level.prompt ?? 'Tap a file block to select its run.');
   const last = inCampaign && position === campaign.length - 1;
   ui.next.hidden = !done;
   ui.next.textContent = level.daily ? 'Copy result' : last ? 'Finish campaign' : 'Next puzzle →';
+  ui.board.dataset.cleared = done;
+  ui.status.dataset.cleared = done;
+  ui.status.dataset.warning = deadEnd && !notice;
+  ui.status.textContent = notice || (done ? clearMessage() : deadEnd ? 'A cracked sector you still need will fail before you can finish. This disk can no longer be solved. Undo or restart.' : selection ? selectionPrompt() : (stats.moves === 0 && level.prompt) || blocker() || 'Select a file block to pick up its run.');
   ui.undo.disabled = !history.length;
   ui.reset.disabled = !history.length && !selection;
   ui.hint.disabled = done;
   renderClipboard();
   renderNudges();
   renderBoard();
+  // A control that just became disabled drops focus to the page. Put it back on the board.
+  if (focused?.disabled || (focused === document.body && !ui.game.hidden && ui.game.contains(lastFocus))) {
+    ui.board.querySelector('[tabindex="0"]')?.focus();
+  }
+}
+
+let lastFocus = null;
+document.addEventListener('focusin', event => { lastFocus = event.target; });
+
+// Files that meet every rule of their own, including the links they take part in.
+function doneFiles() {
+  const files = new Set(E.info(level).files.filter(file => E.fileSettled(level, state, file)));
+  for (const [before, after] of level.links ?? []) {
+    if (!E.linksMet({links: [[before, after]]}, state)) {
+      files.delete(before);
+      files.delete(after);
+    }
+  }
+  return files;
+}
+
+// When nothing else is being said, name what still stands between the player and a clear.
+function blocker() {
+  if (state.clip) return 'Place the clipboard contents to finish.';
+  for (const file of E.info(level).movable) {
+    const [first, last] = [state.cells.findIndex(t => E.isFile(t) && E.letterOf(t) === file), state.cells.findLastIndex(t => E.isFile(t) && E.letterOf(t) === file)];
+    const run = state.cells.slice(first, last + 1);
+    const joined = run.length === E.info(level).counts[file] && run.every(t => E.isFile(t) && E.letterOf(t) === file);
+    if (joined && run.some((t, i) => t.length > 1 && Number(t.slice(1)) !== i + 1)) return `${file} is joined but out of order. The lowest number goes on the left.`;
+  }
+  const settled = E.info(level).movable.every(file => E.fileSettled(level, state, file));
+  if (!settled) return null;
+  for (const [before, after] of level.links ?? []) {
+    if (!E.linksMet({links: [[before, after]]}, state)) return `Every file is joined, but ${after} must start right after ${before}.`;
+  }
+  if (level.consolidate && !E.freeSpaceJoined(state)) return 'Every file is joined, but the free space is in more than one piece.';
+  return null;
 }
 
 function clearMessage() {
   const score = stats.cost;
   const versus = score < level.par ? `${level.par - score} under par ${glyphs.under}` : score === level.par ? `Par met ${glyphs.par}` : `${score - level.par} over par`;
-  const help = hinted ? ' · hint used' : '';
-  return level.intro ? 'Defrag complete' : `Defrag complete · ${versus}${help}`;
+  const help = hinted ? ' · hint used, no star' : '';
+  const next = ui.next.hidden ? '' : ` Choose “${ui.next.textContent}” to continue.`;
+  return `Defrag complete · ${versus}${help}.${next}`;
 }
 
 function renderRules() {
   const chips = [];
-  for (const [before, after] of level.links ?? []) chips.push(`${before}→${after}`);
-  if (level.consolidate) chips.push('Free space together');
-  if (level.cost === 'seek') chips.push('Seek cost');
-  if (/[1-9]/.test(level.board)) chips.push('In number order');
-  if (level.fragile?.length) chips.push('Cracked sectors');
-  ui.rules.replaceChildren(...chips.map(text => Object.assign(document.createElement('span'), {textContent: text})));
+  for (const [before, after] of level.links ?? []) {
+    chips.push({text: `${before}→${after}`, label: `Link: ${after} must start right after ${before}`, met: E.linksMet({links: [[before, after]]}, state)});
+  }
+  if (level.consolidate) chips.push({text: 'Free space together', label: 'Free space must be in one stretch', met: E.freeSpaceJoined(state)});
+  if (level.cost === 'seek') chips.push({text: 'Seek cost', label: 'Moves cost the distance travelled'});
+  if (/[1-9]/.test(level.board)) chips.push({text: 'In number order', label: 'Fragments must finish in number order'});
+  if (level.fragile?.length) chips.push({text: 'Cracked sectors', label: 'Cracked sectors fail when emptied'});
+  if (level.clipboard) chips.push({text: 'Clipboard', label: 'A clipboard can hold one run'});
+  if (level.nudges) chips.push({text: 'Nudges', label: 'Nudges slide a run one sector'});
+  ui.rules.replaceChildren(...chips.map(({text, label, met}) => {
+    const chip = Object.assign(document.createElement('span'), {textContent: met ? text + ' ✓' : text});
+    if (met !== undefined) chip.dataset.met = met;
+    chip.setAttribute('aria-label', label + (met === undefined ? '' : met ? ', met' : ', not met yet'));
+    chip.setAttribute('role', 'note');
+    return chip;
+  }));
   ui.rules.hidden = !chips.length;
 }
 
@@ -417,13 +505,15 @@ function renderClipboard() {
   ui.clipboard.setAttribute('aria-pressed', selection?.kind === 'clip');
   ui.clipboard.classList.toggle('ready', Boolean(cutMove()));
   ui.clipboard.classList.toggle('hinted', hint?.type === 'cut');
-  ui.clipboard.setAttribute('aria-label', 'Clipboard, ' + (state.clip ? 'holding ' + state.clip.join(' ') : 'empty'));
+  ui.clipboard.setAttribute('aria-label', 'Clipboard, ' + (state.clip ? 'holding ' + state.clip.join(' ') + '. Press to choose where to place it' : cutMove() ? 'empty. Press to lift the selected run' : 'empty'));
 }
 
 function renderNudges() {
   ui.nudges.hidden = !(level.nudges > 0);
   if (ui.nudges.hidden) return;
-  ui['nudge-count'].textContent = `${state.nudges} left`;
+  ui['nudge-count'].textContent = `Nudges: ${state.nudges}`;
+  ui['nudge-left'].setAttribute('aria-label', `Nudge selection left, ${state.nudges} left`);
+  ui['nudge-right'].setAttribute('aria-label', `Nudge selection right, ${state.nudges} left`);
   ui['nudge-left'].disabled = !nudgeMove(-1);
   ui['nudge-right'].disabled = !nudgeMove(1);
   ui['nudge-left'].classList.toggle('hinted', hint?.nudge && hint.to < hint.from);
@@ -443,7 +533,7 @@ function renderBoard() {
   // Rebuilding the board blurs the old focused cell; skip that render.
   if (ui.board.children.length !== cells.length) return;
   const homes = Object.entries(level.homes ?? {});
-  const settled = new Set(E.info(level).files.filter(file => E.fileSettled(level, state, file)));
+  const settled = doneFiles();
   const range = selectedRange();
   const length = selectedLength();
   const ghostFrom = preview ?? (hint && hint.type !== 'cut' ? hint : null);
@@ -481,11 +571,16 @@ function renderBoard() {
     button.classList.toggle('wrap-in', same(cells[index - 1]) && column === 0);
     button.classList.toggle('wrap-out', same(cells[index + 1]) && column === E.COLUMNS - 1);
     button.setAttribute('aria-pressed', selected);
-    const shown = ghost ?? (empty ? (destination ? '↓' : '') : reserved ? (failed ? '✕' : '') : token);
+    const landing = destination ? moveTo(index) : null;
+    // In seek levels a destination shows what the move would cost.
+    const mark = landing ? (level.cost === 'seek' ? String(landing.cost) : '↓') : '';
+    const shown = ghost ?? (empty ? mark : reserved ? (failed ? '✕' : '') : token);
     button.replaceChildren(document.createTextNode(shown[0] ?? ''));
     if (shown.length > 1) button.append(Object.assign(document.createElement('sub'), {textContent: shown.slice(1)}));
     const parts = [`Sector ${index + 1}`];
-    parts.push(reserved ? (failed ? 'failed' : 'reserved') : empty ? (destination ? 'available destination' : 'empty') : `file ${token}`);
+    const fills = landing && (landing.length > 1 ? `fills sectors ${index + 1}–${index + landing.length}` : `fills sector ${index + 1}`);
+    parts.push(reserved ? (failed ? 'failed' : 'reserved') : empty ? (landing ? `destination, ${fills}, costs ${landing.cost}` : 'empty') : `file ${token}`);
+    if (selected) parts.push('selected');
     if (file && locked.has(file)) parts.push('locked');
     if (file && settled.has(file) && !locked.has(file)) parts.push('settled');
     if (home) parts.push(home + ' home');
@@ -497,19 +592,19 @@ function renderBoard() {
 
 function selectionPrompt() {
   const hasDestination = state.cells.some((_, index) => moveTo(index));
-  const tools = [level.clipboard && !state.clip ? 'tap Clipboard' : null, state.nudges > 0 ? 'nudge it' : null].filter(Boolean);
+  const tools = [cutMove() ? 'lift it with Clipboard' : null, nudgeMove(-1) || nudgeMove(1) ? 'nudge it' : null].filter(Boolean);
   const extra = tools.length ? ', or ' + tools.join(' or ') : '';
-  if (selection.kind === 'clip') return hasDestination ? 'Tap a destination to place the clipboard contents.' : 'No empty stretch fits the clipboard contents yet.';
+  if (selection.kind === 'clip') return hasDestination ? 'Choose a destination to place the clipboard contents.' : 'No empty stretch fits the clipboard contents yet.';
   if (anchor !== null) {
     return hasDestination
-      ? 'Tap a destination, or tap another block in the run to extend the selection.'
-      : 'No empty stretch fits. Tap another block to adjust the selection, or tap the marked block to select the whole run.';
+      ? 'Choose a destination, or select another block in the run to extend the selection.'
+      : 'No empty stretch fits. Select another block to adjust the selection, or the marked block to select the whole run.';
   }
-  if (selection.range[0] === selection.range[1]) return hasDestination ? `Tap a highlighted destination${extra}.` : `No empty stretch fits${extra || '. Tap empty space to cancel'}.`;
-  if (level.tutorial === 'split') return 'Tap an outside block in the selected run to split it off.';
+  if (selection.range[0] === selection.range[1]) return hasDestination ? `Choose a highlighted destination${extra}.` : `No empty stretch fits${extra || '. Choose empty space to cancel'}.`;
+  if (level.tutorial === 'split') return 'Select an outside block in the selected run to split it off.';
   return hasDestination
-    ? `Tap a destination to move the run, tap a selected block to split it off${extra}.`
-    : `No empty stretch fits the whole run. Tap a selected block to split it off${extra}.`;
+    ? `Choose a destination to move the run, or select one of its blocks to split it off${extra}.`
+    : `No empty stretch fits the whole run. Select one of its blocks to split it off${extra}.`;
 }
 
 // ---------- Motion and sound ----------
@@ -572,7 +667,7 @@ async function playSound(name) {
 }
 
 function updateSoundButton() {
-  ui.sound.textContent = progress.sound ? 'SFX ON' : 'SFX OFF';
+  ui.sound.textContent = progress.sound ? 'SFX ON' : 'SFX';
   ui.sound.setAttribute('aria-pressed', Boolean(progress.sound));
 }
 
@@ -704,8 +799,10 @@ ui.sound.onclick = () => {
   if (progress.sound) playSound('move');
 };
 
+// Single-key shortcuts work only while focus is on the board, so stray key presses elsewhere do nothing.
 document.addEventListener('keydown', event => {
   if (ui.game.hidden || ui['help-dialog'].open || event.metaKey || event.ctrlKey || event.altKey) return;
+  if (event.key !== 'Escape' && !ui.board.contains(event.target)) return;
   const actions = {
     z: undo, r: restart, h: showHint, c: tapClipboard, '?': showHelp,
     '[': () => ui['nudge-left'].click(), ']': () => ui['nudge-right'].click(),

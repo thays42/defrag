@@ -145,14 +145,14 @@ h2 { font-size: clamp(1.2rem, 5vw, 1.55rem); line-height: 1.18; }
 .cell[data-file=D] { --tile: #ffaac6; }
 .cell[data-file="."] {
   color: #b3a4c9;
-  background: repeating-linear-gradient(135deg,#221a33 0 4px,#181225 4px 8px);
+  background: #1d1729;
   border-color: #7a6898;
   box-shadow: inset 0 2px 3px #0f0c1d;
 }
 /* Reserved sectors recede: they are scenery, not play space. */
 .cell[data-file="#"] {
   opacity: 1;
-  background: #0b0a0f;
+  background: repeating-linear-gradient(135deg, #2a2633 0 3px, #0b0a0f 3px 8px);
   border-color: #4a4458;
   box-shadow: none;
   cursor: default;
@@ -375,10 +375,12 @@ main {
 .cell.locked { --tile: #9a93a8; cursor: not-allowed; }
 .cell.locked::before { content: '🔒'; position: absolute; top: 1px; left: 2px; font-size: .55rem; }
 .cell[data-file=S] { --tile: #9a93a8; }
-.cell.cracked { background-image: linear-gradient(118deg, transparent 46%, #ff654fcc 47% 50%, transparent 51%), linear-gradient(62deg, transparent 58%, #ff654fcc 59% 61%, transparent 62%); }
+.cell.cracked { background-image: linear-gradient(118deg, transparent 45%, #ff8a73 46% 50%, transparent 51%); }
+.cell.cracked[data-file="."]::before { content: '1 write'; position: absolute; top: 2px; left: 3px; font-size: .55rem; color: #ff8a73; }
 .cell.cracked[data-file]:not([data-file="."]) { background: linear-gradient(118deg, transparent 45%, #5a1d18 46% 51%, transparent 52%), linear-gradient(#fff5 0 2px, transparent 2px), var(--tile); }
 .cell.failed { color: #ff654f; background: #1a0b0b; border-color: #5a1d18; font-size: 1rem; }
 .rules { display: flex; flex-wrap: wrap; gap: 5px; margin: -4px 0 9px; }
+.rules span[data-met=true] { border-color: var(--mint); color: var(--mint); }
 .rules span { padding: 2px 7px; border: 1px solid #5e497c; border-radius: 10px; color: var(--arcade); font: 700 .7rem/1.4 ui-monospace, monospace; }
 .tools { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
 .tools:not(:has(> :not([hidden]))) { display: none; }

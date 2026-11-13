@@ -14,7 +14,7 @@
 <main>
 <div class="console">
 <section id="menu" class="menu-screen" aria-labelledby="menu-title">
-<header><span class="disk-mark" aria-hidden="true"></span><h1 id="menu-title">Defrag</h1><button id="sound" aria-label="Sound effects" aria-pressed="false">SFX OFF</button></header>
+<header><span class="disk-mark" aria-hidden="true"></span><h1 id="menu-title">Defrag</h1><button id="sound" aria-label="SFX sound effects" aria-pressed="false">SFX</button></header>
 <div class="menu-actions">
 <button id="continue" class="primary"></button>
 <p id="resume-detail"></p>
@@ -24,7 +24,7 @@
 </div>
 </section>
 <section id="catalog" class="catalog-screen" aria-labelledby="catalog-title" hidden>
-<header><button class="back" id="catalog-back">← Menu</button><h2 id="catalog-title">Levels</h2></header>
+<header><button class="back" id="catalog-back"><span aria-hidden="true">← </span>Menu</button><h2 id="catalog-title">Levels</h2></header>
 <p class="catalog-note">Grouped by mechanic, easiest first. ★ par met · ✦ under par · ✓ cleared</p>
 <div id="levels" class="puzzle-list"></div>
 </section>
@@ -39,8 +39,8 @@
 </div>
 </section>
 <section id="game" class="game-screen" aria-labelledby="title" hidden>
-<header><button class="back" id="game-back">← Menu</button><button class="back" id="game-levels">Levels</button><button class="back icon" id="game-help" aria-haspopup="dialog" aria-label="How to play">?</button></header>
-<section class="panel" aria-labelledby="title">
+<header><button class="back" id="game-back"><span aria-hidden="true">← </span>Menu</button><button class="back" id="game-levels">Levels</button><button class="back icon" id="game-help" aria-haspopup="dialog" aria-label="How to play">?</button></header>
+<div class="panel">
 <p class="chapter" id="chapter"></p><h2 id="title"></h2><p id="goal" class="goal"></p>
 <p id="rules" class="rules" hidden></p>
 <div class="stats" id="stats">
@@ -51,15 +51,15 @@
 <div class="tools">
 <button id="clipboard" class="clipboard" hidden aria-pressed="false"><span>Clipboard</span><span id="clip-contents" class="clip-contents"></span></button>
 <div id="nudges" class="nudges" hidden>
-<button id="nudge-left" aria-label="Nudge selection left">◀ Nudge</button>
 <span id="nudge-count"></span>
+<button id="nudge-left" aria-label="Nudge selection left">◀ Nudge</button>
 <button id="nudge-right" aria-label="Nudge selection right">Nudge ▶</button>
 </div>
 </div>
 <div class="board" id="board" role="group" aria-label="Disk sectors, read left to right across rows. Arrow keys move between sectors."></div>
 <p class="status" id="status" aria-live="polite"></p>
 <button id="next" hidden>Next puzzle →</button>
-</section>
+</div>
 <div class="actions">
 <button id="undo">Undo</button>
 <button id="reset">Restart</button>
@@ -70,16 +70,16 @@
 <dialog id="help-dialog" class="help-dialog" aria-labelledby="help-title">
   <h2 id="help-title">How to play</h2>
   <dl>
-    <div><dt>Move a run</dt><dd>Tap a block to select its whole run. Point at or press a coral destination to preview where it lands, then tap it. Runs can wrap across rows. Tap empty space to cancel.</dd></div>
-    <div><dt>Split a run</dt><dd>Tap inside a selected run to pick one block. Tap another block in the run to select the range between them, or tap the marked block again to return to the whole run.</dd></div>
-    <div><dt>Clear the board</dt><dd>Join each file into one run. If it has a home, finish the entire run in sectors with the matching corner label. A settled file shows a check mark. Dark sectors are reserved.</dd></div>
+    <div><dt>Move a run</dt><dd>Select a block to pick up its whole run. Coral sectors are destinations: hover or focus one to preview where the run lands, then select it. Runs can wrap across rows. Select empty space to cancel.</dd></div>
+    <div><dt>Split a run</dt><dd>Select a block inside the picked-up run to take just that block. Select another block in the run to take the range between them, or the marked block again to take the whole run.</dd></div>
+    <div><dt>Clear the board</dt><dd>Join each file into one run. If it has a home, finish the entire run in sectors with the matching corner label. A file shows ✓ once it meets all its own rules. Hatched sectors are reserved.</dd></div>
     <div><dt>Meet par</dt><dd>Each move costs 1 point, and splitting adds 1 extra point. Lower scores are better. Meet par without hints to earn ★.</dd></div>
   </dl>
   <section id="help-level" hidden>
     <h3>This level</h3>
     <dl id="help-rules"></dl>
   </section>
-  <p class="keys">Keys: arrows move between sectors · Enter selects · Z undo · R restart · H hint · Esc cancel · ? help</p>
+  <p class="keys">Keyboard, with focus on the disk: arrows, Home and End move between sectors · Enter or Space selects (press it on a block of the picked-up run to split) · Z undo · R restart · H hint · C clipboard · [ and ] nudge · ? help · Esc cancels anywhere.</p>
   <form method="dialog"><button autofocus>Close</button></form>
 </dialog>
 </main>

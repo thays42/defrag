@@ -40,6 +40,8 @@ Mechanics are level flags. One level can combine several.
 
 The checker fails if a par is not the optimum, an id repeats, a home does not fit, or a level's mechanic does not change its result. Intro levels (`intro: true`) are exempt from the last check. A level with `beatable: true` may set par above the optimum.
 
+For `homes` and `reserved` levels the mechanic check only warns. Some original campaign levels keep the same optimum when their reserved sectors become free space, so their reserved sectors are decoration, not constraint. The checker lists them.
+
 ### Quality metrics
 
 | Metric | Meaning | Good sign |

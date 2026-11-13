@@ -11,6 +11,8 @@ const without = {
   links: level => ({...level, links: undefined}),
   nudge: level => ({...level, nudges: 0}),
   homes: level => ({...level, homes: undefined}),
+  system: level => ({...level, locked: undefined}),
+  reserved: level => ({...level, board: level.board.replace(/#/g, '.')}),
 };
 
 const uses = {
@@ -22,6 +24,8 @@ const uses = {
   links: level => Boolean(level.links?.length),
   nudge: level => level.nudges > 0,
   homes: level => Boolean(level.homes && Object.keys(level.homes).length),
+  system: level => Boolean(level.locked?.length),
+  reserved: level => level.board.includes('#'),
 };
 
 function cost(level, options) {

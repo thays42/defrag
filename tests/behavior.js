@@ -35,7 +35,17 @@ const check = (name, ok, detail = '') => {
   await page.click('#undo');
   check('undo reverses a restart', await get(() => stats.moves === 1 && state.cells[1] === 'A'));
   await page.keyboard.press('z');
-  check('Z key undoes', await get(() => stats.moves === 0));
+  check('Z ignored when focus is off the board', await get(() => stats.moves === 1));
+  await cell(0).focus();
+  await page.keyboard.press('z');
+  check('Z undoes with focus on the board', await get(() => stats.moves === 0));
+
+  // Focus is rescued when the focused control becomes disabled.
+  await cell(0).click();
+  await cell(1).click();
+  await page.focus('#undo');
+  await page.keyboard.press('Enter');
+  check('focus returns to the board when Undo disables', await get(() => ui.board.contains(document.activeElement)));
 
   // Arrow keys move focus across the board.
   await cell(0).focus();
@@ -48,6 +58,27 @@ const check = (name, ok, detail = '') => {
   await page.waitForFunction(() => hint !== null);
   await page.evaluate(() => perform(hint));
   check('hinted clear records best but no star', await get(() => progress.best['find-home'] === 1 && progress.clean['find-home'] === undefined && medal(levelById.get('find-home')) === 'cleared'));
+
+  // Hint use survives leaving and reopening the level.
+  await open('tight-fit');
+  await page.click('#hint');
+  await page.waitForFunction(() => hint !== null);
+  await page.evaluate(() => showMenu());
+  await open('tight-fit');
+  check('hint flag survives reopening', await get(() => hinted === true));
+
+  // A hint that resolves after the level changed is dropped.
+  await open('find-home');
+  await page.evaluate(() => { showHint(); openLevel(findLevel('two-files')); });
+  await page.waitForTimeout(150);
+  check('stale hint is dropped', await get(() => level.id === 'two-files' && !hinted && hint === null));
+  await open('join-two-blocks');
+  const raced = await page.evaluate(async () => { showHint(); tap(0); tap(1); await new Promise(r => setTimeout(r, 150)); return finished(); });
+  check('hint racing a finish does not crash', raced && !errors.length, errors.join('; '));
+
+  // A check mark only appears when a file meets all its own rules, links included.
+  await open('chained');
+  check('no check mark while a link is unmet', await get(() => !document.querySelector('.cell.settled')));
 
   // A clean clear earns a star that shows in Levels.
   await open('join-two-blocks');

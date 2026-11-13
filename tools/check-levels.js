@@ -10,6 +10,12 @@ const daily = require('../daily.js');
 const showMetrics = process.argv.includes('--metrics');
 const mechanicIds = new Set(mechanics.map(m => m.id));
 const problems = [];
+const warnings = [];
+// Older campaign levels predate this check; report them without failing.
+const soft = {
+  homes: (level, par) => optimum(without.homes(level), {limit: 3e5}) < par,
+  reserved: (level, par) => optimum(without.reserved(level), {limit: 3e5}) < par,
+};
 const ids = new Set();
 const all = [...chapters.flatMap(c => c.levels), ...daily.dailyPool.map(level => ({...level, mechanic: level.mechanic ?? 'homes', daily: true}))];
 
@@ -24,13 +30,19 @@ const needs = {
   links: level => uses.links(level),
   nudge: level => uses.nudge(level),
 };
-const optimum = level => E.solve(level).cost ?? Infinity;
+// Infinity when unsolvable. Throws if the search hit its size limit, so a check never passes by accident.
+function optimum(level, options) {
+  const result = E.solve(level, undefined, options);
+  if (result.aborted) throw new Error('search too large to check');
+  return result.cost ?? Infinity;
+}
 const matters = {
   ordered: (level, par) => optimum(without.ordered(level)) < par,
   clipboard: (level, par) => !(optimum(without.clipboard(level)) <= par),
   seek: (level, par) => optimum(without.seek(level)) < par,
   consolidate: (level, par) => optimum(without.consolidate(level)) < par,
-  system: (level, par) => optimum(without.links(level)) < par,
+  system: (level, par) => optimum(without.system(level)) < par && optimum(without.links(level)) < par,
+  splitting: (level, par) => optimum(level, {whole: true}) > par,
   fragile: (level, par) => optimum(without.fragile(level)) < par,
   links: (level, par) => optimum(without.links(level)) < par,
   nudge: (level, par) => !(optimum(without.nudge(level)) <= par),
@@ -57,7 +69,16 @@ for (const level of all) {
   }
   if (level.beatable ? level.par < best.cost : level.par !== best.cost) fail(`par ${level.par}, optimum ${best.cost}`);
   // Intro levels teach a rule; they need not depend on it.
-  if (!level.intro && matters[level.mechanic] && !matters[level.mechanic](level, best.cost)) fail(`${level.mechanic} does not change the result`);
+  try {
+    if (!level.intro && matters[level.mechanic] && !matters[level.mechanic](level, best.cost)) fail(`${level.mechanic} does not change the result`);
+  } catch (error) {
+    fail(error.message);
+  }
+  try {
+    if (!level.intro && !level.daily && soft[level.mechanic] && !soft[level.mechanic](level, best.cost)) warnings.push(`${where}: ${level.mechanic} does not change the result`);
+  } catch (error) {
+    warnings.push(`${where}: ${error.message}`);
+  }
   if (showMetrics && !level.daily) {
     const m = measure(level, {limit: 3e5});
     const fmt = v => (v === Infinity ? '∞' : v);
@@ -65,6 +86,7 @@ for (const level of all) {
   }
 }
 
+if (warnings.length) console.warn('Warnings:\n  ' + warnings.join('\n  '));
 if (problems.length) {
   console.error(problems.join('\n'));
   console.error(`${problems.length} problem(s) in ${all.length} levels`);

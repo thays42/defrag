@@ -17,9 +17,12 @@ const count = flag('count', 40);
 const tries = flag('tries', 4000);
 let seed = flag('seed', 7);
 
+// mulberry32: 32-bit integer math, so the sequence does not collapse into a short cycle.
 function random() {
-  seed = (seed * 1103515245 + 12345) % 2147483648;
-  return seed / 2147483648;
+  seed = (seed + 0x6d2b79f5) | 0;
+  let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
 const pick = list => list[Math.floor(random() * list.length)];
 const between = (low, high) => low + Math.floor(random() * (high - low + 1));
@@ -74,7 +77,8 @@ const presets = {
   consolidate: () => ({...build({sizes: [between(2, 3), between(2, 3), between(1, 2)], free: 3, homes: between(0, 1)}), consolidate: true, want: m => m.gains.consolidate <= -2}),
   system: () => {
     const level = build({sizes: [between(2, 3), between(2, 3)], free: 2, locked: 2});
-    return level && {...level, links: [['S', 'A']], want: m => m.gains.links <= -2};
+    // Locking must matter: with S movable, the puzzle would be cheaper.
+    return level && {...level, links: [['S', 'A']], want: m => m.gains.links <= -1 && m.gains.system <= -1};
   },
   fragile: () => {
     const level = build({sizes: [between(2, 3), between(2, 3), between(1, 2)], free: between(2, 3), homes: 3});
