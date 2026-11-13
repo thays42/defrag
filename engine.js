@@ -70,7 +70,8 @@
       if (from !== null && t >= from && t < from + length) nudge = true;
       else return null;
     }
-    if (nudge && state.nudges <= 0) return null;
+    // A nudge slides a run exactly one sector into space it partly covers.
+    if (nudge && (state.nudges <= 0 || Math.abs(to - from) !== 1)) return null;
     return {nudge};
   }
 
