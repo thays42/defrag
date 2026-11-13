@@ -2,7 +2,7 @@
 
 A puzzle game about defragmenting a disk. Join each file into one run, send it home, and beat par.
 
-Open `index.html` in a browser. There is no build step.
+Run `make play`, or open `index.html` in a browser. There is no build step.
 
 ## Files
 
@@ -14,6 +14,7 @@ Open `index.html` in a browser. There is no build step.
 | `game.js` | User interface. |
 | `tools/` | Level checker, quality metrics, and generator. |
 | `tests/` | Browser tests (Playwright). |
+| `Makefile` | `make play` opens the game in your default browser. |
 
 ## Mechanics
 
