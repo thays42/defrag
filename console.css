@@ -413,8 +413,8 @@ main {
 .catalog-note { margin: -8px 0 10px; color: var(--muted); font-size: .78rem; }
 .puzzle-list .rule { margin: 0 0 4px; color: var(--muted); font-size: .78rem; line-height: 1.35; }
 .puzzle-list em { color: var(--muted); font-size: .72rem; font-style: normal; }
-.puzzle-list button[data-medal=par] small, .puzzle-list button[data-medal=under] small { color: #ffd28c; }
-.puzzle-list button[data-medal=none] small { color: var(--muted); }
+.puzzle-list button[data-stars="3"] small { color: #ffd28c; }
+.puzzle-list button[data-stars="0"] small { color: var(--muted); }
 .ending-screen { display: flex; flex: 1; flex-direction: column; justify-content: safe center; gap: 14px; text-align: center; }
 .ending-screen h2 { color: var(--arcade); font-family: ui-monospace, monospace; text-transform: uppercase; }
 .ending-screen p { color: var(--muted); line-height: 1.45; }

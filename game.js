@@ -4,7 +4,7 @@ const campaign = chapters.flatMap(({name, levels}) => levels.map(level => ({...l
 const levelById = new Map(campaign.map(level => [level.id, level]));
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(node => [node.id, node]));
 const progressKey = 'defrag-progress-v3';
-const glyphs = {par: '★', under: '✦', cleared: '✓'};
+
 
 let progress = loadProgress();
 let level;
@@ -56,12 +56,15 @@ function persist() {
   try { localStorage.setItem(progressKey, JSON.stringify(progress)); } catch {}
 }
 
-function medal(target) {
+// 1 star: cleared. 2: cleared without hints. 3: cleared without hints at or under par.
+function stars(target) {
   const clean = progress.clean[target.id];
-  if (clean != null && clean < target.par) return 'under';
-  if (clean != null && clean <= target.par) return 'par';
-  return progress.best[target.id] != null ? 'cleared' : null;
+  if (clean != null) return clean <= target.par ? 3 : 2;
+  return progress.best[target.id] != null ? 1 : 0;
 }
+
+const starText = count => '★'.repeat(count) + '☆'.repeat(3 - count);
+const starTotal = () => campaign.reduce((sum, item) => sum + stars(item), 0);
 
 // ---------- Daily puzzle ----------
 
@@ -473,9 +476,9 @@ function blocker() {
 function clearMessage() {
   // Only the result against par. The title, Next button and score already say the rest.
   const score = stats.cost;
-  const glyph = hinted ? '' : score < level.par ? ` ${glyphs.under}` : score === level.par ? ` ${glyphs.par}` : '';
+  const earned = hinted ? 1 : score <= level.par ? 3 : 2;
   const versus = score < level.par ? `${level.par - score} under par` : score === level.par ? 'Par met' : `${score - level.par} over par`;
-  return versus + glyph + (hinted ? ' · hint used' : '');
+  return `${versus} ${starText(earned)}` + (hinted ? ' · hint used' : '');
 }
 
 function renderRules() {
@@ -690,13 +693,12 @@ function nextUncleared() {
 
 function showMenu(moveFocus = true) {
   const cleared = campaign.filter(item => progress.best[item.id] != null).length;
-  const stars = campaign.filter(item => ['par', 'under'].includes(medal(item))).length;
   const resume = nextUncleared() ?? findLevel(progress.current) ?? campaign[0];
   ui.continue.textContent = cleared || Object.keys(progress.attempts).length ? 'Continue' : 'Play';
-  ui['resume-detail'].textContent = `${resume.name} · ${cleared} of ${campaign.length} cleared · ${stars} ${glyphs.par}`;
+  ui['resume-detail'].textContent = `${resume.name} · ${cleared} of ${campaign.length} cleared · ${starTotal()} of ${3 * campaign.length} ★`;
   const daily = dailyLevel();
-  const dailyMedal = medal(daily);
-  ui['daily-button'].textContent = 'Daily puzzle' + (dailyMedal ? ' · ' + glyphs[dailyMedal] + ' ' + progress.best[daily.id] : '');
+  const dailyStars = stars(daily);
+  ui['daily-button'].textContent = 'Daily puzzle' + (dailyStars ? ' · ' + starText(dailyStars) + ' ' + progress.best[daily.id] : '');
   showScreen('menu', moveFocus ? ui.continue : null);
 }
 
@@ -718,11 +720,11 @@ function showCatalog() {
       const button = document.createElement('button');
       const name = Object.assign(document.createElement('span'), {textContent: item.name});
       const result = document.createElement('small');
-      const earned = medal(item);
+      const earned = stars(item);
       const best = progress.best[item.id];
-      result.textContent = earned ? `${glyphs[earned]} ${best} / par ${item.par}` : progress.attempts[item.id] ? `In progress · par ${item.par}` : `Par ${item.par}`;
+      result.textContent = earned ? `${starText(earned)} ${best} / par ${item.par}` : progress.attempts[item.id] ? `In progress · par ${item.par}` : `Par ${item.par}`;
       if (item.intro) name.append(Object.assign(document.createElement('em'), {textContent: ' tutorial'}));
-      button.dataset.medal = earned ?? 'none';
+      button.dataset.stars = earned;
       button.append(name, result);
       button.onclick = () => openLevel(item);
       section.append(button);
@@ -734,9 +736,9 @@ function showCatalog() {
 }
 
 function showEnding() {
-  const stars = campaign.filter(item => ['par', 'under'].includes(medal(item))).length;
-  ui['ending-detail'].textContent = `You cleared all ${campaign.length} levels and met par on ${stars}. ` +
-    (stars < campaign.length ? 'Levels lists every puzzle by mechanic, so you can chase the stars you missed.' : 'Every star collected. The daily puzzle has a new disk every day.');
+  const total = starTotal();
+  ui['ending-detail'].textContent = `You cleared all ${campaign.length} levels and earned ${total} of ${3 * campaign.length} ★. ` +
+    (total < 3 * campaign.length ? 'Levels lists every puzzle by mechanic, so you can chase the stars you missed.' : 'Every star collected. The daily puzzle has a new disk every day.');
   showScreen('ending', ui['ending-levels']);
 }
 
@@ -765,7 +767,7 @@ function showHelp() {
 }
 
 async function shareDaily() {
-  const text = `Defrag daily ${level.date} · score ${stats.cost} (par ${level.par})${stats.cost <= level.par && !hinted ? ' ' + glyphs.par : ''}`;
+  const text = `Defrag daily ${level.date} · score ${stats.cost} (par ${level.par}) ${starText(hinted ? 1 : stats.cost <= level.par ? 3 : 2)}`;
   try {
     await navigator.clipboard.writeText(text);
     notice = 'Result copied: ' + text;

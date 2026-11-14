@@ -57,7 +57,7 @@ const check = (name, ok, detail = '') => {
   await page.keyboard.press('h');
   await page.waitForFunction(() => hint !== null);
   await page.evaluate(() => perform(hint));
-  check('hinted clear records best but no star', await get(() => progress.best['find-home'] === 1 && progress.clean['find-home'] === undefined && medal(levelById.get('find-home')) === 'cleared'));
+  check('hinted clear records best but no star', await get(() => progress.best['find-home'] === 1 && progress.clean['find-home'] === undefined && stars(levelById.get('find-home')) === 1));
 
   // Hint use survives leaving and reopening the level.
   await open('tight-fit');
@@ -84,9 +84,33 @@ const check = (name, ok, detail = '') => {
   await open('join-two-blocks');
   await cell(0).click();
   await cell(1).click();
-  check('clean clear earns star', await get(() => medal(levelById.get('join-two-blocks')) === 'par'));
+  check('clean clear at par earns three stars', await get(() => stars(levelById.get('join-two-blocks')) === 3));
   await page.evaluate(() => showCatalog());
-  check('Levels shows the star', (await page.locator('#levels button', {hasText: 'Join two blocks'}).textContent()).includes('★'));
+  check('Levels shows three stars', (await page.locator('#levels button', {hasText: 'Join two blocks'}).textContent()).includes('★★★'));
+
+  // Stars come from saved scores: 1 cleared, 2 without hints, 3 without hints at par.
+  const starsFor = await page.evaluate(() => {
+    const target = levelById.get('tight-fit');
+    const saved = {best: {...progress.best}, clean: {...progress.clean}};
+    const read = (best, clean) => {
+      progress.best[target.id] = best;
+      if (clean === undefined) delete progress.clean[target.id]; else progress.clean[target.id] = clean;
+      return stars(target);
+    };
+    const result = [read(undefined, undefined), read(20, undefined), read(12, 12), read(9, 9)];
+    delete progress.best[target.id];
+    Object.assign(progress, saved);
+    return result;
+  });
+  check('stars: none, hinted, clean, par', JSON.stringify(starsFor) === '[0,1,2,3]', JSON.stringify(starsFor));
+  check('starText draws filled and empty stars', await get(() => starText(2) === '★★☆' && starText(0) === '☆☆☆'));
+  await page.evaluate(() => showMenu(false));
+  const resume = await get(() => ui['resume-detail'].textContent);
+  check('menu totals stars out of three per level', /\d+ of \d+ ★/.test(resume) && resume.includes(`of ${await get(() => 3 * campaign.length)} ★`), resume);
+
+  // The daily share text carries the star string.
+  const shared = await page.evaluate(async () => { openLevel(dailyLevel()); await shareDaily(); return notice; });
+  check('daily share shows stars', /[★☆]{3}/.test(shared), shared);
 
   // Cracked sectors: a dead end is announced.
   await open('failing-drive');
