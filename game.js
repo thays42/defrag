@@ -765,7 +765,12 @@ function showResult() {
   const sheet = ui.result;
   const at = (node, ms) => { node.style.setProperty('--delay', `${ms}ms`); return node; };
   const {previousBest, previousBadges, previousTotal, previousStars} = result;
-  const conditions = ['Clear', 'No hints', `Par ${level.par}`];
+  // An earned star names its condition. A missed one says what fell short, so "Par 2" never reads as a result.
+  const conditions = [
+    'Clear',
+    hinted ? 'Hint used' : 'No hints',
+    score <= level.par ? `Par ${level.par}` : `${score} vs par ${level.par}`,
+  ];
 
   sheet.classList.toggle('skip', !motion);
   sheet.style.animation = sheet.style.transform = '';

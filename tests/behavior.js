@@ -272,6 +272,10 @@ const check = (name, ok, detail = '') => {
   await page.mouse.up();
   await page.waitForTimeout(400);
   check('swiping down dismisses the sheet', await page.locator('#result').isHidden() && await page.locator('#result-open').isVisible());
+  await open('two-files');
+  await page.evaluate(() => { const extra = E.moves(level, state).at(-1); perform(extra); for (const m of E.solve(level, state).path) perform(m); });
+  const missed = await get(() => ({cost: stats.cost, par: level.par, labels: [...document.querySelectorAll('#result-stars li')].map(li => li.dataset.earned + ':' + li.querySelector('span').textContent)}));
+  check('a missed par star shows the score against par', missed.labels[2] === `false:${missed.cost} vs par ${missed.par}` && missed.cost > missed.par, JSON.stringify(missed));
 
   check('no page errors', !errors.length, errors.join('; '));
 
