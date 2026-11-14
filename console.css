@@ -526,6 +526,7 @@ main {
   100% { opacity: 0; transform: rotate(var(--a)) translateX(50px) scale(.5); }
 }
 
+.result-why { max-width: 32ch; color: var(--coral); font: 600 .74rem/1.4 ui-monospace, monospace; text-wrap: balance; animation: star-fade .3s var(--delay) both; }
 .result-score { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 4px 7px; }
 .result-score span { color: var(--muted); font: 700 .66rem ui-monospace, monospace; text-transform: uppercase; }
 .result-score strong { color: var(--mint); font: 800 1.5rem/1 ui-monospace, monospace; font-variant-numeric: tabular-nums; }

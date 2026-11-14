@@ -765,12 +765,18 @@ function showResult() {
   const sheet = ui.result;
   const at = (node, ms) => { node.style.setProperty('--delay', `${ms}ms`); return node; };
   const {previousBest, previousBadges, previousTotal, previousStars} = result;
-  // An earned star names its condition. A missed one says what fell short, so "Par 2" never reads as a result.
+  // Stars are a ladder: each needs the one before it. A missed star says what fell short, and a line
+  // under the stars states the rule, so a hinted clear at par never looks like it earned the par star.
   const conditions = [
     'Clear',
     hinted ? 'Hint used' : 'No hints',
-    score <= level.par ? `Par ${level.par}` : `${score} vs par ${level.par}`,
+    hinted ? 'Par, no hints' : score <= level.par ? `Par ${level.par}` : `${score} vs par ${level.par}`,
   ];
+  ui['result-why'].textContent = hinted
+    ? 'A hint caps this clear at one star. Retry without hints for ★★★.'
+    : score > level.par ? `Finish in ${level.par} or fewer, without hints, for ★★★.` : '';
+  ui['result-why'].hidden = earned === 3;
+  at(ui['result-why'], beat.tag);
 
   sheet.classList.toggle('skip', !motion);
   sheet.style.animation = sheet.style.transform = '';

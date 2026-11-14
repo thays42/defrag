@@ -276,6 +276,10 @@ const check = (name, ok, detail = '') => {
   await page.evaluate(() => { const extra = E.moves(level, state).at(-1); perform(extra); for (const m of E.solve(level, state).path) perform(m); });
   const missed = await get(() => ({cost: stats.cost, par: level.par, labels: [...document.querySelectorAll('#result-stars li')].map(li => li.dataset.earned + ':' + li.querySelector('span').textContent)}));
   check('a missed par star shows the score against par', missed.labels[2] === `false:${missed.cost} vs par ${missed.par}` && missed.cost > missed.par, JSON.stringify(missed));
+  await page.click('#result-retry');
+  await page.evaluate(() => { hinted = true; for (const m of E.solve(level, state).path) perform(m); });
+  const capped = await get(() => ({cost: stats.cost, par: level.par, why: ui['result-why'].textContent, labels: [...document.querySelectorAll('#result-stars li')].map(li => li.dataset.earned + ':' + li.querySelector('span').textContent)}));
+  check('a hinted clear at par explains the one-star cap', capped.cost === capped.par && capped.labels.join() === 'true:Clear,false:Hint used,false:Par, no hints' && /hint caps/i.test(capped.why), JSON.stringify(capped));
 
   check('no page errors', !errors.length, errors.join('; '));
 
