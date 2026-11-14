@@ -375,9 +375,21 @@ main {
 .cell.locked { --tile: #9a93a8; cursor: not-allowed; }
 .cell.locked::before { content: '🔒'; position: absolute; top: 1px; left: 2px; font-size: .55rem; }
 .cell[data-file=S] { --tile: #9a93a8; }
-/* Cracked sectors show how many writes they have left. */
-.cell .writes { position: absolute; left: 3px; bottom: 1px; color: #ff8a73; font: 700 .62rem/1 ui-monospace, monospace; }
-.cell:not([data-file="."]) .writes { color: #8a2216; }
+/* Cracked sectors show how many writes they have left, styled like the home tab but on top. */
+.cell.cracked { border-top: 4px solid #ff6b5a; }
+.cell .writes {
+  position: absolute;
+  left: 2px;
+  top: 0;
+  padding: 1px 3px;
+  border-radius: 0 0 2px 2px;
+  color: #211930;
+  background: #ff6b5a;
+  font-size: .7rem;
+  line-height: 1.1;
+}
+/* Corner marks that share the top-left corner move clear of the tab. */
+.cell.cracked.settled::before, .cell.cracked.locked::before, .cell.cracked.wrap-in::before { left: 18px; }
 .cell.failed { color: #ff654f; background: #1a0b0b; border-color: #5a1d18; font-size: 1rem; }
 .rules { display: flex; flex-wrap: wrap; gap: 5px; margin: -4px 0 9px; }
 .rules span[data-met=true] { border-color: var(--mint); color: var(--mint); }
