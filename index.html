@@ -65,6 +65,20 @@
 <button id="hint">Hint</button>
 </div>
 </section>
+<section id="result" class="result" role="dialog" aria-labelledby="result-title" hidden>
+<button id="result-close" class="result-close" aria-label="Hide results and view the board">✕</button>
+<p class="result-kicker" id="result-kicker"></p>
+<h2 id="result-title"></h2>
+<ol class="result-stars" id="result-stars"></ol>
+<div class="result-score">
+<span>Score</span><strong id="result-score"></strong><span>/ Par</span><strong id="result-par"></strong>
+<em id="result-versus" class="result-tag"></em><em id="result-best" class="result-tag best" hidden>New best</em>
+</div>
+<ul class="result-badges" id="result-badges" hidden aria-label="Badges"></ul>
+<p class="result-total" id="result-total"></p>
+<button id="result-next" class="result-next"></button>
+<button id="result-retry" class="result-retry"></button>
+</section>
 </div>
 <dialog id="help-dialog" class="help-dialog" aria-labelledby="help-title">
   <h2 id="help-title">How to play</h2>

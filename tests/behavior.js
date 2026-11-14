@@ -240,6 +240,22 @@ const check = (name, ok, detail = '') => {
   await play();
   check('optimal line on a beatable level earns under par', await get(() => (progress.badges['beat-par'] ?? []).includes('under') && stats.cost < level.par));
 
+  // A clear opens the results sheet; any tap skips its timeline; Retry and close dismiss it.
+  await open('free-the-pair');
+  await page.evaluate(() => { for (const m of E.solve(level).path) perform(m); });
+  check('clear opens the results sheet', await page.locator('#result').isVisible());
+  await page.locator('#result-stars').click();
+  const sheet = await get(() => ({skip: ui.result.classList.contains('skip'), score: ui['result-score'].textContent, earned: [...document.querySelectorAll('#result-stars li')].map(li => li.dataset.earned)}));
+  check('tap skips to the final results', sheet.skip && sheet.score === String(await get(() => stats.cost)) && sheet.earned.join() === 'true,true,true', JSON.stringify(sheet));
+  await page.click('#result-retry');
+  check('retry hides the sheet and restarts', await page.locator('#result').isHidden() && await get(() => stats.moves === 0));
+  await page.evaluate(() => { for (const m of E.solve(level).path) perform(m); });
+  await page.keyboard.press('Escape');
+  check('Esc hides the sheet and keeps the clear', await page.locator('#result').isHidden() && await get(() => finished()));
+  await page.evaluate(() => { undo(); perform(E.solve(level).path[0]); });
+  await page.click('#result-close');
+  check('close reveals the board with Next', await page.locator('#result').isHidden() && await page.locator('#next').isVisible());
+
   check('no page errors', !errors.length, errors.join('; '));
 
   // Touch: one tap selects, one tap moves. A touch never sets a preview.

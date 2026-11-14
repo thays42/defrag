@@ -21,7 +21,10 @@ let deadEnd = false;
 let motionEffects = [];
 let audioContext;
 let hintToken = 0;
-const soundEffects = {move: [330, 494], split: [220, 392], undo: [392, 262], clear: [392, 523, 659, 784]};
+let result = null; // What a clear changed, for the results sheet. Null when no sheet is due.
+let resultTimers = [];
+const soundEffects = {move: [330, 494], split: [220, 392], undo: [392, 262], clear: [392, 523, 659, 784],
+  star1: [523, 784], star2: [659, 988], star3: [784, 1175], best: [988, 1319, 1568]};
 
 // ---------- Progress ----------
 
@@ -132,6 +135,7 @@ function signature(target) {
 
 function start(target, attempt) {
   stopMotion();
+  hideResult();
   level = target;
   const usable = attempt && attempt.signature === signature(target);
   state = usable ? attempt.state : E.initialState(level);
@@ -236,7 +240,13 @@ function perform(move) {
   clearSelection();
   const done = finished();
   if (done) {
-    progress.best[level.id] = Math.min(stats.cost, progress.best[level.id] ?? Infinity);
+    result = {
+      previousBest: progress.best[level.id],
+      previousBadges: new Set(progress.badges[level.id] ?? []),
+      previousTotal: level.daily ? null : starTotal(),
+      previousStars: stars(level),
+    };
+    progress.best[level.id] =Math.min(stats.cost, progress.best[level.id] ?? Infinity);
     if (!hinted) {
       progress.clean[level.id] = Math.min(stats.cost, progress.clean[level.id] ?? Infinity);
       const earned = earnedOnClear(level, state, stats);
@@ -251,6 +261,7 @@ function perform(move) {
   render();
   if (move.type !== 'cut') animateMove(from, move.to, move.length, done);
   playSound(done ? 'clear' : move.split ? 'split' : 'move');
+  if (done) showResult();
 }
 
 function describeMove(move) {
@@ -343,6 +354,7 @@ function tapClipboard() {
 function undo() {
   if (!history.length) return;
   stopMotion();
+  hideResult();
   ({state, stats} = history.pop());
   clearSelection();
   notice = `Undone. Score ${stats.cost}.`;
@@ -355,6 +367,7 @@ function undo() {
 function restart() {
   if (!history.length && !selection) return;
   stopMotion();
+  hideResult();
   // Restarting is itself undoable.
   if (history.length || stats.moves) history.push({state, stats});
   if (finished()) {
@@ -687,7 +700,7 @@ function animateMove(first, destination, length, done) {
       {transform: 'translateY(0)', filter: 'brightness(1)'},
       {transform: 'translateY(-5px)', filter: 'brightness(1.4)'},
       {transform: 'translateY(0)', filter: 'brightness(1)'},
-    ], {duration: 230, delay: 240 + index * 24, easing: 'ease-out'}));
+    ], {duration: 230, delay: 240 + index * Math.min(24, 360 / cells.length), easing: 'ease-out'}));
   });
 }
 
@@ -721,10 +734,135 @@ function updateSoundButton() {
   ui.sound.setAttribute('aria-pressed', Boolean(progress.sound));
 }
 
+// ---------- Results sheet ----------
+
+const reducedMotion = () => Boolean(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+
+// Native haptics when wrapped as an iOS app (Capacitor), the Vibration API elsewhere, silence otherwise.
+function haptic(kind) {
+  const native = globalThis.Capacitor?.Plugins?.Haptics;
+  try {
+    if (native) return kind === 'success' ? native.notification({type: 'SUCCESS'}) : native.impact({style: kind === 'heavy' ? 'HEAVY' : 'LIGHT'});
+    navigator.vibrate?.(kind === 'success' ? [12, 60, 18] : 10);
+  } catch {}
+}
+
+const starIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.4l2.95 6.1 6.65.83-4.9 4.6 1.27 6.62L12 17.3l-5.97 3.25 1.27-6.62-4.9-4.6 6.65-.83z"/></svg>';
+
+// Timeline, in ms after the clear. The sheet waits for the board's clear wave.
+const beat = {sheet: 650, star: 950, starGap: 230, tag: 1700, best: 1850, badges: 1950, total: 2150};
+
+function later(ms, action) {
+  resultTimers.push(setTimeout(action, ms));
+}
+
+function showResult() {
+  const score = stats.cost;
+  const earned = hinted ? 1 : score <= level.par ? 3 : 2;
+  const motion = !reducedMotion();
+  const sheet = ui.result;
+  const at = (node, ms) => { node.style.setProperty('--delay', `${ms}ms`); return node; };
+  const {previousBest, previousBadges, previousTotal, previousStars} = result;
+  const conditions = ['Clear', 'No hints', `Par ${level.par}`];
+
+  sheet.classList.toggle('skip', !motion);
+  sheet.dataset.stars = earned;
+  at(sheet, beat.sheet);
+  ui['result-kicker'].textContent = level.daily ? `Daily · ${level.date}` : level.name;
+  ui['result-title'].textContent = earned === 3 ? 'Optimized' : 'Defragmented';
+  ui['result-stars'].replaceChildren(...conditions.map((text, i) => {
+    const item = at(document.createElement('li'), beat.star + i * beat.starGap);
+    item.dataset.earned = i < earned;
+    item.innerHTML = starIcon + (i < earned ? '<i></i>'.repeat(8) : '');
+    item.append(Object.assign(document.createElement('span'), {textContent: text}));
+    item.setAttribute('aria-label', `${text}: ${i < earned ? 'earned' : 'missed'}`);
+    return item;
+  }));
+
+  ui['result-par'].textContent = level.par;
+  const versus = ui['result-versus'];
+  versus.textContent = score < level.par ? `${level.par - score} under par` : score === level.par ? 'Par' : `${score - level.par} over par`;
+  versus.dataset.tone = score < level.par ? 'under' : score === level.par ? 'par' : 'over';
+  at(versus, beat.tag);
+  const newBest = previousBest != null && score < previousBest;
+  ui['result-best'].hidden = !newBest;
+  at(ui['result-best'], beat.best);
+
+  const offered = offeredBadges(level);
+  const owned = new Set(progress.badges[level.id] ?? []);
+  ui['result-badges'].replaceChildren(...offered.map(({id, target: T}, i) => {
+    const rule = badgeRules[id];
+    const chip = at(document.createElement('li'), beat.badges + i * 90);
+    chip.dataset.earned = owned.has(id);
+    chip.dataset.new = owned.has(id) && !previousBadges.has(id);
+    chip.textContent = `${rule.icon} ${rule.name}`;
+    chip.title = `${rule.name}: ${rule.text(T)}`;
+    chip.setAttribute('aria-label', `${rule.name}: ${rule.text(T)}, ${chip.dataset.new === 'true' ? 'new' : owned.has(id) ? 'earned' : 'not earned'}`);
+    return chip;
+  }));
+  ui['result-badges'].hidden = !offered.length;
+
+  const total = ui['result-total'];
+  const after = level.daily ? null : starTotal();
+  const best = previousStars > earned ? `Your best here: ${starText(previousStars)}` : '';
+  const totalText = count => [best, after == null ? '' : `★ ${count} of ${3 * campaign.length}`].filter(Boolean).join(' · ');
+  total.hidden = !totalText(after);
+  at(total, beat.total);
+
+  const last = !level.daily && campaign.findIndex(item => item.id === level.id) === campaign.length - 1;
+  ui['result-next'].textContent = level.daily ? 'Copy result' : last ? 'Finish campaign' : 'Next puzzle →';
+  const missingBadge = offered.some(({id}) => !owned.has(id));
+  ui['result-retry'].textContent = earned < 3 ? 'Retry for ★★★' : missingBadge ? 'Retry for badges' : 'Replay';
+
+  // Final values first, so a skip or reduced motion only has to stop the timeline.
+  const final = () => {
+    ui['result-score'].textContent = score;
+    total.textContent = totalText(after);
+  };
+  result.finish = final;
+  sheet.hidden = false;
+  ui['result-next'].focus({preventScroll: true});
+  if (!motion) {
+    final();
+    haptic('success');
+    return;
+  }
+  ui['result-score'].textContent = 0;
+  total.textContent = totalText(previousTotal);
+  later(beat.sheet, () => haptic('success'));
+  for (let i = 0; i < earned; i++) {
+    later(beat.star + i * beat.starGap + 140, () => { playSound(`star${i + 1}`); haptic('light'); });
+  }
+  const countTime = earned * beat.starGap + 200;
+  for (let k = 1; k <= score; k++) later(beat.star + (k * countTime) / score, () => { ui['result-score'].textContent = k; });
+  if (newBest) later(beat.best, () => { playSound('best'); haptic('heavy'); });
+  for (let count = previousTotal + 1; after != null && count <= after; count++) {
+    later(beat.total + (count - previousTotal) * 120, () => { total.textContent = totalText(count); });
+  }
+  later(beat.total + 600, final);
+}
+
+// Any tap or key on the sheet jumps the timeline to its end.
+function skipResult() {
+  if (ui.result.hidden || ui.result.classList.contains('skip')) return;
+  for (const timer of resultTimers) clearTimeout(timer);
+  resultTimers = [];
+  ui.result.classList.add('skip');
+  result?.finish();
+}
+
+function hideResult() {
+  for (const timer of resultTimers) clearTimeout(timer);
+  resultTimers = [];
+  result = null;
+  ui.result.hidden = true;
+}
+
 // ---------- Screens ----------
 
 function showScreen(screen, focusTarget) {
   stopMotion();
+  hideResult();
   for (const name of ['menu', 'catalog', 'game', 'ending']) ui[name].hidden = name !== screen;
   focusTarget?.focus();
 }
@@ -837,6 +975,23 @@ ui.next.onclick = () => {
   if (position === campaign.length - 1) return showEnding();
   openLevel(campaign[position + 1]);
 };
+ui['result-next'].onclick = async () => {
+  if (level.daily) {
+    await shareDaily();
+    ui['result-next'].textContent = 'Result copied ✓';
+    return;
+  }
+  ui.next.onclick();
+};
+ui['result-retry'].onclick = () => {
+  restart();
+  ui.board.querySelector('[tabindex="0"]')?.focus();
+};
+ui['result-close'].onclick = () => {
+  hideResult();
+  ui.next.focus();
+};
+ui.result.addEventListener('pointerdown', skipResult);
 ui.undo.onclick = undo;
 ui.reset.onclick = restart;
 ui.hint.onclick = showHint;
@@ -853,6 +1008,11 @@ ui.sound.onclick = () => {
 // Single-key shortcuts work only while focus is on the board, so stray key presses elsewhere do nothing.
 document.addEventListener('keydown', event => {
   if (ui.game.hidden || ui['help-dialog'].open || event.metaKey || event.ctrlKey || event.altKey) return;
+  if (!ui.result.hidden) {
+    if (event.key === 'Escape') ui['result-close'].click();
+    else skipResult();
+    return;
+  }
   if (event.key !== 'Escape' && !ui.board.contains(event.target)) return;
   const actions = {
     z: undo, r: restart, h: showHint, c: tapClipboard, '?': showHelp,
