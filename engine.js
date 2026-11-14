@@ -197,9 +197,15 @@
     return solved(level, state) ? 0 : 1;
   }
 
+  // Sectors a move carries its run. Cut and paste have no single distance, so they count 0.
+  function travelOf(move) {
+    return move.type === 'move' ? Math.abs(move.to - move.from) : 0;
+  }
+
   // Best-first search over integer costs with a bucket queue.
   // heuristic: A* (fast, for hints). countPaths: plain Dijkstra that also counts optimal lines.
-  function solve(level, start = initialState(level), {heuristic = true, countPaths = false, whole = false, limit = 4e6, maxCost = 200} = {}) {
+  // price: optional move => integer >= 1 that replaces move.cost (badge tools rank by two costs at once).
+  function solve(level, start = initialState(level), {heuristic = true, countPaths = false, whole = false, limit = 4e6, maxCost = 200, price} = {}) {
     const useH = heuristic && !countPaths;
     const startKey = keyOf(start);
     const nodes = new Map([[startKey, {g: 0, parent: null, move: null, ways: 1}]]);
@@ -233,7 +239,7 @@
         for (const move of moves(level, state, {whole})) {
           const next = apply(level, state, move);
           const nextKey = keyOf(next);
-          const total = g + move.cost;
+          const total = g + (price ? price(move) : move.cost);
           const seen = nodes.get(nextKey);
           if (!seen || total < seen.g) {
             if (seen?.closed) continue;
@@ -255,7 +261,7 @@
 
   root.DefragEngine = {
     EMPTY, RESERVED, COLUMNS, parseBoard, letterOf, isFile, info, initialState, keyOf, runAt, landing,
-    moveCost, moves, apply, fileSettled, linksMet, freeSpaceJoined, solved, estimate, solve,
+    moveCost, travelOf, moves, apply, fileSettled, linksMet, freeSpaceJoined, solved, estimate, solve,
   };
   if (typeof module !== 'undefined') module.exports = root.DefragEngine;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

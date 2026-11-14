@@ -45,4 +45,20 @@ for (const level of require('../levels.js').chapters.flatMap(c => c.levels).filt
   assert.strictEqual(E.solve(mirror(level)).cost, level.par, `mirror changes par of ${level.id}`);
 }
 
+// Travel and custom move prices.
+assert.strictEqual(E.travelOf({type: 'move', from: 5, to: 2}), 3);
+assert.strictEqual(E.travelOf({type: 'paste', to: 2}), 0);
+assert.strictEqual(E.travelOf({type: 'cut', from: 2}), 0);
+{
+  const lvl = {board: 'BC.BACA..', homes: {A: [6, 7]}};
+  const ops = E.solve(lvl).cost;
+  const K = 64;
+  const travelFirst = E.solve(lvl, undefined, {price: m => E.travelOf(m) * K + m.cost, maxCost: 200 * K});
+  const seekBest = E.solve({...lvl, cost: 'seek'}).cost;
+  // Lowest travel equals the seek optimum (no splits needed here), and needs at least as many operations.
+  assert.strictEqual(Math.floor(travelFirst.cost / K), seekBest);
+  assert.ok(travelFirst.cost % K >= ops);
+  assert.strictEqual(travelFirst.path.reduce((t, m) => t + E.travelOf(m), 0), seekBest);
+}
+
 console.log('tools ok');
