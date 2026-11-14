@@ -463,8 +463,9 @@ function render() {
   const done = finished();
   const inCampaign = !level.daily;
   const position = campaign.findIndex(item => item.id === level.id);
-  ui.chapter.textContent = level.daily ? 'Daily puzzle' : `${level.chapter} · ${position + 1} of ${campaign.length}`;
-  ui.title.textContent = level.daily ? 'Daily · ' + level.date : level.name;
+  // The header reads "Chapter / Level". The board shows the goal, so its sentence is for screen readers.
+  const [section, name] = level.daily ? ['Daily puzzle', level.date] : [level.chapter, level.name];
+  ui.title.replaceChildren(Object.assign(document.createElement('span'), {className: 'title-chapter', textContent: `${section} / `}), name);
   ui.goal.textContent = level.goal;
   renderRules();
   ui.stats.hidden = false;

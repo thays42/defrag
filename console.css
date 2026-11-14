@@ -95,6 +95,9 @@ button:disabled { opacity: .55; cursor: default; }
 .chapter { color: var(--arcade); margin-bottom: 4px; }
 h2 { font-size: clamp(1.2rem, 5vw, 1.55rem); line-height: 1.18; }
 .goal { color: var(--muted); font-size: .9rem; line-height: 1.4; margin: 4px 0 11px; }
+.panel h2 { margin-bottom: 10px; text-wrap: balance; }
+.title-chapter { color: var(--muted); font-weight: 500; }
+.sr-only { position: absolute !important; width: 1px; height: 1px; margin: 0 !important; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .stats {
   display: flex;
   align-items: center;
