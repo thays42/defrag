@@ -474,7 +474,8 @@ function render() {
     level.cost === 'seek' ? `${stats.cost - stats.splits} travel` : offeredBadges(level).some(b => b.id === 'light') ? `${stats.travel} travel` : null,
   ].filter(Boolean).join(' · ');
   const last = inCampaign && position === campaign.length - 1;
-  ui.next.hidden = !done;
+  // While the results sheet is up, its own Next button is the one to use.
+  ui.next.hidden = !done || !ui.result.hidden;
   // Once cleared, the results sheet carries the stars and badges. The button below the board reopens it.
   ui.badges.hidden = true;
   ui['result-open'].hidden = !done || !result || !ui.result.hidden;
@@ -823,6 +824,7 @@ function showResult() {
   result.finish = final;
   sheet.hidden = false;
   ui['result-open'].hidden = true;
+  ui.next.hidden = true;
   ui['result-next'].focus({preventScroll: true});
   if (!motion) {
     final();
@@ -998,6 +1000,7 @@ ui['result-close'].onclick = () => {
 ui['result-open'].onclick = () => {
   ui.result.hidden = false;
   ui['result-open'].hidden = true;
+  ui.next.hidden = true;
   ui['result-next'].focus({preventScroll: true});
 };
 ui.result.addEventListener('pointerdown', skipResult);

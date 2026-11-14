@@ -609,8 +609,7 @@ main {
 @keyframes sheet-in-side { from { transform: translateX(-105%); } }
 
 .result-open {
-  flex: none;
-  margin-top: 10px;
+  flex: 1;
   border: 1px solid #5e497c;
   border-radius: 6px;
   background: #0c0912;
@@ -619,3 +618,7 @@ main {
   text-transform: uppercase;
   letter-spacing: .06em;
 }
+/* After the sheet closes: reopen it, or go straight to the next puzzle. */
+.cleared-actions { flex: none; display: flex; gap: 8px; margin-top: 10px; }
+.cleared-actions:not(:has(> :not([hidden]))) { display: none; }
+.cleared-actions #next { flex: 1.6; width: auto; margin-top: 0; }

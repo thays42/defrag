@@ -244,6 +244,7 @@ const check = (name, ok, detail = '') => {
   await open('free-the-pair');
   await page.evaluate(() => { for (const m of E.solve(level).path) perform(m); });
   check('clear opens the results sheet', await page.locator('#result').isVisible());
+  check('board Next hides while the sheet is up', await page.locator('#next').isHidden());
   await page.locator('#result-stars').click();
   const sheet = await get(() => ({skip: ui.result.classList.contains('skip'), score: ui['result-score'].textContent, earned: [...document.querySelectorAll('#result-stars li')].map(li => li.dataset.earned)}));
   check('tap skips to the final results', sheet.skip && sheet.score === String(await get(() => stats.cost)) && sheet.earned.join() === 'true,true,true', JSON.stringify(sheet));
