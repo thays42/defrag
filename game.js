@@ -18,7 +18,6 @@ let notice = '';
 let hint = null;
 let preview = null;
 let deadEnd = false;
-let nudging = false; // true only while the nudge buttons ask for a move
 let motionEffects = [];
 let audioContext;
 let hintToken = 0;
@@ -154,8 +153,7 @@ function moveTo(to) {
   const [first, last] = selection.range;
   const length = last - first + 1;
   const fit = E.landing(state, first, length, to);
-  // Nudges come from the nudge buttons only, so a tapped sector always means a plain move.
-  if (!fit || fit.nudge !== nudging) return null;
+  if (!fit) return null;
   const split = isSplit();
   return {type: 'move', from: first, length, to, split, nudge: fit.nudge, cost: E.moveCost(level, first, to, split)};
 }
@@ -169,10 +167,20 @@ function isSplit() {
 function nudgeMove(direction) {
   const range = selectedRange();
   if (!range || state.nudges <= 0) return null;
-  nudging = true;
   const move = moveTo(range[0] + direction);
-  nudging = false;
   return move?.nudge ? move : null;
+}
+
+// The move a tap on sector `index` makes. A nudge is tapped on the empty sector the run
+// slides into. If a plain move also starts there, the plain move wins: it spends no nudge.
+function moveAt(index) {
+  const plain = moveTo(index);
+  if (plain && !plain.nudge) return plain;
+  const range = selectedRange();
+  if (!range) return null;
+  if (index === range[0] - 1) return nudgeMove(-1);
+  if (index === range[1] + 1) return nudgeMove(1);
+  return null;
 }
 
 function cutMove() {
@@ -228,7 +236,7 @@ function checkDeadEnd() {
 function tap(index) {
   if (finished()) return;
   const token = state.cells[index];
-  const move = moveTo(index);
+  const move = moveAt(index);
   if (move) return perform(move);
   notice = '';
   hint = null;
@@ -375,14 +383,9 @@ function buildBoard() {
 }
 
 function setPreview(index) {
-  const move = index === null ? null : moveTo(index);
+  const move = index === null ? null : moveAt(index);
   const key = move ? move.to : null;
   if ((preview?.to ?? null) === key) return;
-  preview = move;
-  renderBoard();
-}
-
-function previewMove(move) {
   preview = move;
   renderBoard();
 }
@@ -516,12 +519,6 @@ function renderNudges() {
   ui.nudges.hidden = !(level.nudges > 0);
   if (ui.nudges.hidden) return;
   ui['nudge-count'].textContent = `Nudges: ${state.nudges}`;
-  ui['nudge-left'].setAttribute('aria-label', `Nudge selection left, ${state.nudges} left`);
-  ui['nudge-right'].setAttribute('aria-label', `Nudge selection right, ${state.nudges} left`);
-  ui['nudge-left'].disabled = !nudgeMove(-1);
-  ui['nudge-right'].disabled = !nudgeMove(1);
-  ui['nudge-left'].classList.toggle('hinted', hint?.nudge && hint.to < hint.from);
-  ui['nudge-right'].classList.toggle('hinted', hint?.nudge && hint.to > hint.from);
 }
 
 function tile(token) {
@@ -550,7 +547,7 @@ function renderBoard() {
     const empty = token === E.EMPTY;
     const file = !reserved && !empty ? E.letterOf(token) : null;
     const failed = reserved && state.wear?.[index] === 0;
-    const destination = !reserved && Boolean(length) && Boolean(moveTo(index));
+    const destination = !reserved && Boolean(length) && Boolean(moveAt(index));
     const selected = Boolean(range) && index >= range[0] && index <= range[1];
     const ghostIndex = ghostFrom ? index - ghostFrom.to : -1;
     const ghost = ghostFrom && ghostIndex >= 0 && ghostIndex < ghostFrom.length ? ghostTokens[ghostIndex] : null;
@@ -575,15 +572,16 @@ function renderBoard() {
     button.classList.toggle('wrap-in', same(cells[index - 1]) && column === 0);
     button.classList.toggle('wrap-out', same(cells[index + 1]) && column === E.COLUMNS - 1);
     button.setAttribute('aria-pressed', selected);
-    const landing = destination ? moveTo(index) : null;
-    // In seek levels a destination shows what the move would cost.
-    const mark = landing ? (level.cost === 'seek' ? String(landing.cost) : '↓') : '';
+    const landing = destination ? moveAt(index) : null;
+    // A nudge shows its direction. In seek levels a destination shows what the move would cost.
+    const mark = !landing ? '' : landing.nudge ? (landing.to < landing.from ? '←' : '→') : level.cost === 'seek' ? String(landing.cost) : '↓';
     const shown = ghost ?? (empty ? mark : reserved ? (failed ? '✕' : '') : token);
     button.replaceChildren(document.createTextNode(shown[0] ?? ''));
     if (shown.length > 1) button.append(Object.assign(document.createElement('sub'), {textContent: shown.slice(1)}));
     const parts = [`Sector ${index + 1}`];
-    const fills = landing && (landing.length > 1 ? `fills sectors ${index + 1}–${index + landing.length}` : `fills sector ${index + 1}`);
-    parts.push(reserved ? (failed ? 'failed' : 'reserved') : empty ? (landing ? `destination, ${fills}, costs ${landing.cost}` : 'empty') : `file ${token}`);
+    const fills = landing && (landing.length > 1 ? `fills sectors ${landing.to + 1}–${landing.to + landing.length}` : `fills sector ${landing.to + 1}`);
+    const kind = landing?.nudge ? `nudge ${landing.to < landing.from ? 'left' : 'right'}, uses 1 of ${state.nudges} nudges` : 'destination';
+    parts.push(reserved ? (failed ? 'failed' : 'reserved') : empty ? (landing ? `${kind}, ${fills}, costs ${landing.cost}` : 'empty') : `file ${token}`);
     if (selected) parts.push('selected');
     if (file && locked.has(file)) parts.push('locked');
     if (file && settled.has(file) && !locked.has(file)) parts.push('settled');
@@ -595,8 +593,9 @@ function renderBoard() {
 }
 
 function selectionPrompt() {
-  const hasDestination = state.cells.some((_, index) => moveTo(index));
-  const tools = [cutMove() ? 'lift it with Clipboard' : null, nudgeMove(-1) || nudgeMove(1) ? 'nudge it' : null].filter(Boolean);
+  const nudgeable = nudgeMove(-1) || nudgeMove(1);
+  const hasDestination = state.cells.some((_, index) => moveTo(index) && !moveTo(index).nudge);
+  const tools = [cutMove() ? 'lift it with Clipboard' : null, nudgeable ? 'tap an arrow to nudge it' : null].filter(Boolean);
   const extra = tools.length ? ', or ' + tools.join(' or ') : '';
   if (selection.kind === 'clip') return hasDestination ? 'Choose a destination to place the clipboard contents.' : 'No empty stretch fits the clipboard contents yet.';
   if (anchor !== null) {
@@ -790,11 +789,7 @@ ui.undo.onclick = undo;
 ui.reset.onclick = restart;
 ui.hint.onclick = showHint;
 ui.clipboard.onclick = tapClipboard;
-for (const [id, direction] of [['nudge-left', -1], ['nudge-right', 1]]) {
-  ui[id].onclick = () => { const move = nudgeMove(direction); if (move) perform(move); };
-  ui[id].onpointerenter = ui[id].onfocus = () => previewMove(nudgeMove(direction));
-  ui[id].onpointerleave = ui[id].onblur = () => previewMove(null);
-}
+const nudge = direction => { const move = nudgeMove(direction); if (move) perform(move); };
 ui.help.onclick = ui['game-help'].onclick = showHelp;
 ui.sound.onclick = () => {
   progress.sound = !progress.sound;
@@ -809,7 +804,7 @@ document.addEventListener('keydown', event => {
   if (event.key !== 'Escape' && !ui.board.contains(event.target)) return;
   const actions = {
     z: undo, r: restart, h: showHint, c: tapClipboard, '?': showHelp,
-    '[': () => ui['nudge-left'].click(), ']': () => ui['nudge-right'].click(),
+    '[': () => nudge(-1), ']': () => nudge(1),
     Escape: () => { clearSelection(); render(); },
   };
   const action = actions[event.key] ?? actions[event.key.toLowerCase()];

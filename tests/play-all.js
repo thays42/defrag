@@ -27,7 +27,7 @@ const path = require('path');
         }
       }
       if (move.type === 'cut') await page.click('#clipboard');
-      else if (move.nudge) await page.click(move.to > move.from ? '#nudge-right' : '#nudge-left');
+      else if (move.nudge) await cell(move.to > move.from ? move.to + move.length - 1 : move.to);
       else await cell(move.to);
     }
     const result = await page.evaluate(() => ({done: E.solved(level, state), cost: stats.cost, par: level.par, status: ui.status.textContent}));

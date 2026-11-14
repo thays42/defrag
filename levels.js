@@ -14,7 +14,7 @@ const mechanics = [
   {id: 'system', name: 'System files', rule: 'Locked system files (S) never move. A chip like S→A means A must start in the sector right after S.'},
   {id: 'fragile', name: 'Cracked sectors', rule: 'A cracked sector fails as soon as it is emptied. An empty cracked sector can take one write.'},
   {id: 'links', name: 'Linked files', rule: 'Linked files must finish touching, in the order shown: A→B means A’s run ends right where B’s starts.'},
-  {id: 'nudge', name: 'Nudges', rule: 'A normal move needs a gap as long as the run. A nudge shifts a run one sector into a single empty sector beside it, overlapping where it was. Use the ◀ ▶ nudge buttons. Each nudge costs 1, and the supply is limited.'},
+  {id: 'nudge', name: 'Nudges', rule: 'A normal move needs a gap as long as the run. A nudge shifts a run one sector into a single empty sector beside it, overlapping where it was. Select the arrow sector (← →) beside the selected run. Each nudge costs 1, and the supply is limited.'},
 ];
 
 const chapters = [
@@ -143,7 +143,7 @@ const chapters = [
   {
     name: 'Nudges',
     levels: [
-      {id: 'nudge', mechanic: 'nudge', intro: true, nudges: 1, par: 1, name: 'Nudge', board: 'AA.', homes: {A: [2, 3]}, goal: 'Slide A one sector right into its home.', prompt: 'There is no two-sector gap for A. Select A, then choose Nudge ▶.'},
+      {id: 'nudge', mechanic: 'nudge', intro: true, nudges: 1, par: 1, name: 'Nudge', board: 'AA.', homes: {A: [2, 3]}, goal: 'Slide A one sector right into its home.', prompt: 'There is no two-sector gap for A. Select A, then choose the → sector.'},
       {id: 'scoot-over', mechanic: 'nudge', nudges: 2, par: 3, name: 'Scoot over', board: 'BAA.BC', homes: {A: [4, 5], B: [1, 2], C: [6, 6]}, goal: 'Two nudges, one free sector. Get all three files home.'},
       {id: 'shuffle-step', mechanic: 'nudge', nudges: 2, par: 7, name: 'Shuffle step', board: 'C.AACBBB', homes: {A: [1, 2], B: [4, 6], C: [7, 8]}, goal: 'Spend your two nudges where a normal move cannot go.'},
     ],

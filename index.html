@@ -52,8 +52,6 @@
 <button id="clipboard" class="clipboard" hidden aria-pressed="false"><span>Clipboard</span><span id="clip-contents" class="clip-contents"></span></button>
 <div id="nudges" class="nudges" hidden>
 <span id="nudge-count"></span>
-<button id="nudge-left" aria-label="Nudge selection left">◀ Nudge</button>
-<button id="nudge-right" aria-label="Nudge selection right">Nudge ▶</button>
 </div>
 </div>
 <div class="board" id="board" role="group" aria-label="Disk sectors, read left to right across rows. Arrow keys move between sectors."></div>
@@ -70,7 +68,7 @@
 <dialog id="help-dialog" class="help-dialog" aria-labelledby="help-title">
   <h2 id="help-title">How to play</h2>
   <dl>
-    <div><dt>Move a run</dt><dd>Select a block to pick up its whole run. Coral sectors are destinations: select one to move the run there. With a mouse or keyboard, hover or focus one first to preview where it lands. Runs can wrap across rows. Select empty space to cancel.</dd></div>
+    <div><dt>Move a run</dt><dd>Select a block to pick up its whole run. Coral sectors are destinations: select one to move the run there. An arrow (← →) marks a nudge. With a mouse or keyboard, hover or focus one first to preview where it lands. Runs can wrap across rows. Select empty space to cancel.</dd></div>
     <div><dt>Split a run</dt><dd>Select a block inside the picked-up run to take just that block. Select another block in the run to take the range between them, or the marked block again to take the whole run.</dd></div>
     <div><dt>Clear the board</dt><dd>Join each file into one run. If it has a home, finish the entire run in sectors with the matching corner label. A file shows ✓ once it meets all its own rules. Hatched sectors are reserved.</dd></div>
     <div><dt>Meet par</dt><dd>Each move costs 1 point, and splitting adds 1 extra point. Lower scores are better. Meet par without hints to earn ★.</dd></div>
