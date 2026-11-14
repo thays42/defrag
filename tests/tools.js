@@ -20,4 +20,29 @@ assert.strictEqual(similarPairs([lv('A.A.', {intro: true}), {...lv('A.A.'), id: 
 // Dissimilar boards are not reported.
 assert.strictEqual(similarPairs([lv('AA'), lv('#B#.#B.#.CC.C')]).length, 0);
 
+// Board transforms keep the puzzle.
+const E = require('../engine.js');
+const {mirror, insertReserved, relabel} = require('../tools/redress.js');
+const base = {id: 't', board: 'A2.A1B', homes: {B: [4, 4]}, fragile: [2], links: [['A', 'B']], goal: 'Join A before B.'};
+const m = mirror(base);
+assert.strictEqual(m.board, 'BA2.A1'); // tokens reversed, fragments renumbered k -> count+1-k
+assert.deepStrictEqual(m.homes, {B: [1, 1]});
+assert.deepStrictEqual(m.fragile, [3]);
+assert.deepStrictEqual(m.links, [['B', 'A']]);
+const i = insertReserved(base, 2, 2);
+assert.strictEqual(i.board, 'A2##.A1B');
+assert.deepStrictEqual(i.fragile, [4]);
+assert.deepStrictEqual(i.homes, {B: [6, 6]});
+assert.strictEqual(insertReserved(base, 5).board, 'A2.A1B#');
+const r = relabel(base, {A: 'C', B: 'D'});
+assert.strictEqual(r.board, 'C2.C1D');
+assert.deepStrictEqual(r.homes, {D: [4, 4]});
+assert.deepStrictEqual(r.links, [['C', 'D']]);
+assert.strictEqual(r.goal, 'Join C before D.');
+assert.strictEqual(base.board, 'A2.A1B'); // input untouched
+// Mirroring keeps the optimum on every real level.
+for (const level of require('../levels.js').chapters.flatMap(c => c.levels).filter(l => !l.beatable)) {
+  assert.strictEqual(E.solve(mirror(level)).cost, level.par, `mirror changes par of ${level.id}`);
+}
+
 console.log('tools ok');
