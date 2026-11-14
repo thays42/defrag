@@ -106,7 +106,7 @@ for (const level of all) {
 // Campaign levels must look distinct. Intro pairs only warn: tiny boards cannot differ much.
 for (const pair of similarPairs(chapters.flatMap(c => c.levels))) {
   const line = `similar ${pair.score.toFixed(2)}: ${pair.a.id} ${pair.a.board} ~ ${pair.b.id} ${pair.b.board}`;
-  warnings.push(line);
+  (pair.level === 'fail' ? problems : warnings).push(line);
 }
 
 if (warnings.length) console.warn('Warnings:\n  ' + warnings.join('\n  '));

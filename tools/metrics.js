@@ -28,8 +28,10 @@ const uses = {
   reserved: level => level.board.includes('#'),
 };
 
+// NaN when the search is too large to finish, so a metric never claims a value it did not prove.
 function cost(level, options) {
-  return E.solve(level, undefined, options).cost ?? Infinity;
+  const result = E.solve(level, undefined, {limit: 1e6, ...options});
+  return result.aborted ? NaN : result.cost ?? Infinity;
 }
 
 // How many separate pieces each file is in; fewer is "progress" to a player.
