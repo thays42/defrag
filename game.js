@@ -468,11 +468,11 @@ function blocker() {
 }
 
 function clearMessage() {
+  // Only the result against par. The title, Next button and score already say the rest.
   const score = stats.cost;
-  const versus = score < level.par ? `${level.par - score} under par ${glyphs.under}` : score === level.par ? `Par met ${glyphs.par}` : `${score - level.par} over par`;
-  const help = hinted ? ' · hint used, no star' : '';
-  const next = ui.next.hidden ? '' : ` Choose “${ui.next.textContent}” to continue.`;
-  return `Defrag complete · ${versus}${help}.${next}`;
+  const glyph = hinted ? '' : score < level.par ? ` ${glyphs.under}` : score === level.par ? ` ${glyphs.par}` : '';
+  const versus = score < level.par ? `${level.par - score} under par` : score === level.par ? 'Par met' : `${score - level.par} over par`;
+  return versus + glyph + (hinted ? ' · hint used' : '');
 }
 
 function renderRules() {
