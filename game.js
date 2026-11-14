@@ -768,6 +768,7 @@ function showResult() {
   const conditions = ['Clear', 'No hints', `Par ${level.par}`];
 
   sheet.classList.toggle('skip', !motion);
+  sheet.style.animation = sheet.style.transform = '';
   sheet.dataset.stars = earned;
   at(sheet, beat.sheet);
   ui['result-kicker'].textContent = level.daily ? `Daily · ${level.date}` : level.name;
@@ -823,6 +824,8 @@ function showResult() {
   };
   result.finish = final;
   sheet.hidden = false;
+  // A sheet that overflows must scroll, so it gives up vertical swipes there. The landscape side sheet still swipes sideways.
+  sheet.style.touchAction = sheet.scrollHeight > sheet.clientHeight ? 'pan-y' : '';
   ui['result-open'].hidden = true;
   ui.next.hidden = true;
   ui['result-next'].focus({preventScroll: true});
@@ -991,13 +994,56 @@ ui['result-retry'].onclick = () => {
   restart();
   ui.board.querySelector('[tabindex="0"]')?.focus();
 };
-ui['result-close'].onclick = () => {
+function closeResult() {
   skipResult();
   ui.result.hidden = true;
+  ui.result.style.transform = '';
   render();
   ui['result-open'].focus();
+}
+ui['result-close'].onclick = closeResult;
+
+// Swipe the sheet away: down in portrait, left for the landscape side sheet. A short or slow drag snaps back.
+const sideSheet = () => Boolean(globalThis.matchMedia?.('(orientation: landscape) and (max-height: 500px) and (min-width: 480px)').matches);
+let drag = null;
+ui.result.addEventListener('pointerdown', event => {
+  if (event.button !== 0 || ui.result.scrollTop > 0) return;
+  drag = {id: event.pointerId, x: event.clientX, y: event.clientY, t: event.timeStamp, side: sideSheet(), moved: false, offset: 0};
+});
+ui.result.addEventListener('pointermove', event => {
+  if (!drag || event.pointerId !== drag.id) return;
+  const along = drag.side ? drag.x - event.clientX : event.clientY - drag.y;
+  const across = drag.side ? event.clientY - drag.y : event.clientX - drag.x;
+  if (!drag.moved) {
+    if (Math.abs(along) < 8 || Math.abs(across) > Math.abs(along)) return;
+    drag.moved = true;
+    // Capturing the pointer also stops the button under the finger from taking the tap.
+    ui.result.setPointerCapture(event.pointerId);
+    ui.result.style.animation = 'none';
+  }
+  // Pulling the wrong way gives a little, like a rubber band.
+  drag.offset = along > 0 ? along : along / 4;
+  drag.speed = along / Math.max(1, event.timeStamp - drag.t);
+  ui.result.style.transform = drag.side ? `translateX(${-drag.offset}px)` : `translateY(${drag.offset}px)`;
+});
+const endDrag = event => {
+  if (!drag || event.pointerId !== drag.id) return;
+  const {moved, offset, speed, side} = drag;
+  drag = null;
+  if (!moved) return;
+  const size = side ? ui.result.offsetWidth : ui.result.offsetHeight;
+  const away = event.type === 'pointerup' && (offset > size * 0.3 || (offset > 30 && speed > 0.5));
+  const from = ui.result.style.transform;
+  const to = away ? (side ? 'translateX(-105%)' : 'translateY(105%)') : 'none';
+  if (reducedMotion() || !ui.result.animate) return away ? closeResult() : (ui.result.style.transform = '');
+  ui.result.animate([{transform: from}, {transform: to}], {duration: away ? 180 : 220, easing: away ? 'ease-in' : 'cubic-bezier(.2,.9,.25,1.1)'})
+    .finished.then(() => (away ? closeResult() : (ui.result.style.transform = '')), () => {});
+  ui.result.style.transform = to === 'none' ? '' : to;
 };
+ui.result.addEventListener('pointerup', endDrag);
+ui.result.addEventListener('pointercancel', endDrag);
 ui['result-open'].onclick = () => {
+  ui.result.style.animation = ui.result.style.transform = '';
   ui.result.hidden = false;
   ui['result-open'].hidden = true;
   ui.next.hidden = true;

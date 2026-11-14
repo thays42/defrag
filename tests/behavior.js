@@ -259,6 +259,19 @@ const check = (name, ok, detail = '') => {
   check('cleared board hides the par-met pill and inline badges', await page.locator('#badges').isHidden() && (await page.locator('#status').boundingBox()).height <= 1);
   await page.click('#result-open');
   check('Results button reopens the sheet', await page.locator('#result').isVisible() && await page.locator('#result-open').isHidden());
+  const box = await page.locator('#result').boundingBox();
+  await page.mouse.move(box.x + box.width / 2, box.y + 40);
+  await page.mouse.down();
+  for (let dy = 10; dy <= 30; dy += 10) await page.mouse.move(box.x + box.width / 2, box.y + 40 + dy);
+  await page.mouse.up();
+  await page.waitForTimeout(400);
+  check('a short swipe snaps the sheet back', await page.locator('#result').isVisible());
+  await page.mouse.move(box.x + box.width / 2, box.y + 40);
+  await page.mouse.down();
+  for (let dy = 20; dy <= box.height * 0.6; dy += 20) await page.mouse.move(box.x + box.width / 2, box.y + 40 + dy);
+  await page.mouse.up();
+  await page.waitForTimeout(400);
+  check('swiping down dismisses the sheet', await page.locator('#result').isHidden() && await page.locator('#result-open').isVisible());
 
   check('no page errors', !errors.length, errors.join('; '));
 

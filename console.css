@@ -467,6 +467,10 @@ main {
   box-shadow: 0 -14px 44px #000d, inset 0 1px #a879ed66;
   text-align: center;
   animation: sheet-in .46s var(--delay, 0ms) cubic-bezier(.2, .9, .25, 1.06) both;
+  /* The sheet handles its own swipe. game.js switches this to pan-y when the sheet has to scroll. */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .result::before { content: ''; position: absolute; top: 8px; left: 50%; width: 38px; height: 4px; margin-left: -19px; border-radius: 2px; background: #5e497c; }
 @keyframes sheet-in { from { transform: translateY(105%); } }
