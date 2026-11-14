@@ -225,7 +225,20 @@ const check = (name, ok, detail = '') => {
   check('few-moves line earns few', await get(() => (progress.badges['head-travel'] ?? []).includes('few')));
   await open('driver-stack');
   await play({rank: 'travel'});
+  await open('driver-stack');
+  const detail = await get(() => ui['stat-detail']?.textContent ?? document.querySelector('.stats')?.textContent);
+  check('travel shows on a cleared Light touch level', /\d+ travel/.test(detail), detail);
+  await open('driver-stack');
+  await play({rank: 'travel'});
   check('light-touch line earns light', await get(() => (progress.badges['driver-stack'] ?? []).includes('light') && stats.travel === badgePool['driver-stack'].light));
+
+  // Tidy and Under par play-throughs.
+  await open('choose-what-to-park');
+  await page.evaluate(() => { const lv = {...level, consolidate: true}; for (const move of E.solve(lv, state).path) perform(move); });
+  check('tidy line earns tidy', await get(() => (progress.badges['choose-what-to-park'] ?? []).includes('tidy') && stats.cost === badgePool['choose-what-to-park'].tidy));
+  await open('beat-par');
+  await play();
+  check('optimal line on a beatable level earns under par', await get(() => (progress.badges['beat-par'] ?? []).includes('under') && stats.cost < level.par));
 
   check('no page errors', !errors.length, errors.join('; '));
 

@@ -458,7 +458,7 @@ function render() {
   ui['stat-detail'].textContent = [
     `${stats.moves} move${stats.moves === 1 ? '' : 's'}`,
     `${stats.splits} split${stats.splits === 1 ? '' : 's'}`,
-    level.cost === 'seek' ? `${stats.cost - stats.splits} travel` : null,
+    level.cost === 'seek' ? `${stats.cost - stats.splits} travel` : offeredBadges(level).some(b => b.id === 'light') ? `${stats.travel} travel` : null,
   ].filter(Boolean).join(' · ');
   const last = inCampaign && position === campaign.length - 1;
   ui.next.hidden = !done;
