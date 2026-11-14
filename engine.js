@@ -205,13 +205,16 @@
   // Best-first search over integer costs with a bucket queue.
   // heuristic: A* (fast, for hints). countPaths: plain Dijkstra that also counts optimal lines.
   // price: optional move => integer >= 1 that replaces move.cost (badge tools rank by two costs at once).
-  function solve(level, start = initialState(level), {heuristic = true, countPaths = false, whole = false, limit = 4e6, maxCost = 200, price} = {}) {
+  // minPrice: the least any move can cost under `price`, so the heuristic stays admissible but sharper.
+  function solve(level, start = initialState(level), {heuristic = true, countPaths = false, whole = false, limit = 4e6, maxCost = 200, price, minPrice = 1} = {}) {
     const useH = heuristic && !countPaths;
+    // Each unsettled file needs at least one move, and every move costs at least minPrice.
+    const h = state => estimate(level, state) * minPrice;
     const startKey = keyOf(start);
     const nodes = new Map([[startKey, {g: 0, parent: null, move: null, ways: 1}]]);
     const buckets = [];
     const push = (f, key, state) => (buckets[f] ??= []).push([key, state]);
-    push(useH ? estimate(level, start) : 0, startKey, start);
+    push(useH ? h(start) : 0, startKey, start);
     let best = null;
     let goalKey = null;
     let paths = 0;
@@ -223,7 +226,7 @@
         const [key, state] = bucket[n];
         const node = nodes.get(key);
         const g = node.g;
-        if ((useH ? g + estimate(level, state) : g) !== f) continue;
+        if ((useH ? g + h(state) : g) !== f) continue;
         if (node.closed) continue;
         node.closed = true;
         if (solved(level, state)) {
@@ -244,7 +247,7 @@
           if (!seen || total < seen.g) {
             if (seen?.closed) continue;
             nodes.set(nextKey, {g: total, parent: key, move, ways: node.ways});
-            push(useH ? total + estimate(level, next) : total, nextKey, next);
+            push(useH ? total + h(next) : total, nextKey, next);
           } else if (total === seen.g && countPaths && !seen.closed) {
             seen.ways += node.ways;
           }

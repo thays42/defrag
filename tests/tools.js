@@ -59,6 +59,36 @@ assert.strictEqual(E.travelOf({type: 'cut', from: 2}), 0);
   assert.strictEqual(Math.floor(travelFirst.cost / K), seekBest);
   assert.ok(travelFirst.cost % K >= ops);
   assert.strictEqual(travelFirst.path.reduce((t, m) => t + E.travelOf(m), 0), seekBest);
+  // minPrice scales the heuristic: same answer, fewer states.
+  const big = require('../levels.js').chapters.flatMap(c => c.levels).find(l => l.id === 'required-split');
+  const price = m => E.travelOf(m) * K + m.cost;
+  const plain = E.solve(big, undefined, {price, maxCost: 200 * K});
+  const scaled = E.solve(big, undefined, {price, maxCost: 200 * K, minPrice: K + 1});
+  assert.strictEqual(scaled.cost, plain.cost);
+  assert.ok(scaled.states < plain.states, `minPrice should prune: ${scaled.states} vs ${plain.states}`);
+}
+
+// Badge targets.
+{
+  const {computeBadges, opsOf} = require('../tools/badges.js');
+  const L = id => require('../levels.js').chapters.flatMap(c => c.levels).find(l => l.id === id);
+  assert.deepStrictEqual(computeBadges(L('short-hops')), {}, 'intro levels hide the score, so offer no badges');
+  assert.strictEqual(opsOf({split: true}), 2);
+  assert.strictEqual(opsOf({}), 1);
+  const beat = computeBadges(L('beat-par'));
+  assert.ok(beat.under < L('beat-par').par, 'beat-par offers under par');
+  assert.strictEqual(computeBadges(L('sweep-up')).tidy, undefined, 'consolidate level never offers tidy');
+  assert.strictEqual(computeBadges(L('no-room-at-all')).light, undefined, 'clipboard level never offers light');
+  assert.strictEqual(computeBadges(L('one-sector-off')).few, undefined, 'few is for seek levels only');
+  assert.strictEqual(computeBadges({id: 'x', board: 'A.A', par: 1}).tidy, undefined, 'no tidy when par already tidies');
+  // Every offered badge costs more than par under the level's own scoring (else 3 stars would earn it free).
+  const E2 = require('../engine.js');
+  for (const level of require('../levels.js').chapters.flatMap(c => c.levels).filter(l => !l.beatable && l.board.length <= 10)) {
+    const b = computeBadges(level);
+    if (b.tidy !== undefined) assert.ok(b.tidy > level.par && E2.solve({...level, consolidate: true}).cost === b.tidy, `tidy ${level.id}`);
+    if (b.unsplit !== undefined) assert.ok(b.unsplit > level.par, `unsplit ${level.id}`);
+  }
+  for (const [k, v] of Object.entries(computeBadges(L('required-split')))) assert.ok(Number.isInteger(v), k);
 }
 
 console.log('tools ok');

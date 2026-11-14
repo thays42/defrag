@@ -53,7 +53,7 @@ const chapters = [
   {
     name: 'Strategic splitting',
     levels: [
-      {id: 'beat-par', mechanic: 'splitting', beatable: true, par: 5, name: 'Beat par', board: 'AA.AA##CCB#CB.B', goal: 'Par is the best score without splitting. Use a split to beat it.'},
+      {id: 'beat-par', mechanic: 'splitting', beatable: true, par: 5, name: 'Beat par', board: 'AA.AA##CCBC#B.B', goal: 'Par is the best score without splitting. Use a split to beat it.'},
       {id: 'one-sector-off', mechanic: 'splitting', par: 5, name: 'One sector off', board: '##..ABBAABBA', homes: {A: [3, 6], B: [9, 12]}, goal: 'Use a split to fit a run into its exact home.'},
       {id: 'two-splits', mechanic: 'splitting', par: 7, name: 'Two splits', board: '..ABBBBAAA', homes: {A: [1, 4], B: [7, 10]}, goal: 'Make room to get both four-block files home.'},
     ],

@@ -11,6 +11,7 @@ Run `make play`, or open `index.html` in a browser. There is no build step.
 | `engine.js` | Rules and solver. The game and every tool share it, so the rules exist once. |
 | `levels.js` | Mechanics, chapters, and handmade levels. Each level has a stable `id` and one primary `mechanic`. |
 | `daily.js` | Generated pool for the daily puzzle. Do not edit by hand. |
+| `badges.js` | Generated badge targets per level. Do not edit by hand. |
 | `game.js` | User interface. |
 | `tools/` | Level checker, quality metrics, and generator. |
 | `tests/` | Browser tests (Playwright). |
@@ -56,6 +57,15 @@ For `homes` and `reserved` levels the mechanic check only warns. Some original c
 | Gains | Par with each mechanic switched off, minus par. | Nonzero for the level's mechanic. |
 
 Difficulty comes from tight space, not board size. Bigger boards with more free sectors are usually easier.
+
+### Regenerate badges
+
+After changing any campaign level, regenerate badge targets and verify them:
+
+```
+node tools/badges.js --write badges.js
+node tools/check-levels.js --badges
+```
 
 ### Regenerate the daily pool
 

@@ -82,6 +82,8 @@ for (const level of all) {
     continue;
   }
   if (level.beatable ? level.par < best.cost : level.par !== best.cost) fail(`par ${level.par}, optimum ${best.cost}`);
+  // A beatable splitting level promises that par is the best score without splitting.
+  if (level.beatable && level.mechanic === 'splitting' && optimum(level, {whole: true}) !== level.par) fail(`par ${level.par} is not the best unsplit score`);
   // Intro levels teach a rule; they need not depend on it.
   try {
     if (!level.intro && matters[level.mechanic] && !matters[level.mechanic](level, best.cost)) fail(`${level.mechanic} does not change the result`);
@@ -107,6 +109,19 @@ for (const level of all) {
 for (const pair of similarPairs(chapters.flatMap(c => c.levels))) {
   const line = `similar ${pair.score.toFixed(2)}: ${pair.a.id} ${pair.a.board} ~ ${pair.b.id} ${pair.b.board}`;
   (pair.level === 'fail' ? problems : warnings).push(line);
+}
+
+// Stored badge targets must match what the solver proves. Slow, so only with --badges.
+if (process.argv.includes('--badges')) {
+  const {computeBadges} = require('./badges.js');
+  const {badgePool} = require('../badges.js');
+  const ids = new Set(chapters.flatMap(c => c.levels).map(l => l.id));
+  for (const level of chapters.flatMap(c => c.levels)) {
+    const stored = JSON.stringify(badgePool[level.id] ?? {});
+    const computed = JSON.stringify(computeBadges(level));
+    if (stored !== computed) problems.push(`${level.id}: badges stale: stored ${stored}, computed ${computed}. Run node tools/badges.js --write badges.js`);
+  }
+  for (const id of Object.keys(badgePool)) if (!ids.has(id)) problems.push(`${id}: badges listed for an unknown level`);
 }
 
 if (warnings.length) console.warn('Warnings:\n  ' + warnings.join('\n  '));
