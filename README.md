@@ -34,6 +34,26 @@ Mechanics are level flags. One level can combine several.
 | `links: [['A', 'B']]` | A's run must end where B's starts. |
 | `nudges: 2` | Two one-sector slides into space the run already covers. |
 
+## Scoring
+
+| Stars | Condition |
+| --- | --- |
+| ★ | Cleared. |
+| ★★ | Cleared without hints. |
+| ★★★ | Cleared without hints, at or under par. |
+
+Badges reward a different goal that costs more than par, so 3 stars never earns one for free. `tools/badges.js` solves each campaign level under each condition and offers a badge only where the solver proves that trade-off. Intro levels and the daily puzzle offer none. Hints void badges.
+
+| Badge | Condition | Target |
+| --- | --- | --- |
+| Tidy | Free space in one stretch. | Best score with that rule on. |
+| Unsplit | No splits. | Best score without splits. |
+| Light touch | Non-seek, non-clipboard levels. | Lowest total travel. |
+| Few moves | Seek levels. | Fewest moves plus splits. |
+| Under par | `beatable` levels. | The true optimum. |
+
+A search too large to finish leaves the badge out, since its target is unproven.
+
 ## Add or change levels
 
 1. Find candidates: `node tools/generate.js <preset> --count 20`. Presets: `homes`, `split`, `reserved`, `ordered`, `clipboard`, `seek`, `consolidate`, `system`, `fragile`, `links`, `nudge`, `daily`. The output is ranked by quality.

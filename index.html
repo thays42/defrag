@@ -25,7 +25,7 @@
 </section>
 <section id="catalog" class="catalog-screen" aria-labelledby="catalog-title" hidden>
 <header><button class="back" id="catalog-back"><span aria-hidden="true">← </span>Menu</button><h2 id="catalog-title">Levels</h2></header>
-<p class="catalog-note">Grouped by mechanic, easiest first. ★ par met · ✦ under par · ✓ cleared</p>
+<p class="catalog-note">Grouped by mechanic, easiest first. ★ cleared · ★★ no hints · ★★★ par. Badge icons fill in when earned.</p>
 <div id="levels" class="puzzle-list"></div>
 </section>
 <section id="ending" class="ending-screen" aria-labelledby="ending-title" hidden>
@@ -56,6 +56,7 @@
 </div>
 <div class="board" id="board" role="group" aria-label="Disk sectors, read left to right across rows. Arrow keys move between sectors."></div>
 <p class="status" id="status" aria-live="polite"></p>
+<ul class="badge-list" id="badges" hidden aria-label="Badges"></ul>
 <button id="next" hidden>Next puzzle →</button>
 </div>
 <div class="actions">
@@ -71,7 +72,8 @@
     <div><dt>Move a run</dt><dd>Select a block to pick up its whole run. Coral sectors are destinations: select one to move the run there. An arrow (← →) marks a nudge. With a mouse or keyboard, hover or focus one first to preview where it lands. Runs can wrap across rows. Select empty space to cancel.</dd></div>
     <div><dt>Split a run</dt><dd>Select a block inside the picked-up run to take just that block. Select another block in the run to take the range between them, or the marked block again to take the whole run.</dd></div>
     <div><dt>Clear the board</dt><dd>Join each file into one run. If it has a home, finish the entire run in sectors with the matching corner label. A file shows ✓ once it meets all its own rules. Hatched sectors are reserved.</dd></div>
-    <div><dt>Meet par</dt><dd>Each move costs 1 point, and splitting adds 1 extra point. Lower scores are better. Meet par without hints to earn ★.</dd></div>
+    <div><dt>Meet par</dt><dd>Each move costs 1 point, and splitting adds 1 extra point. Lower scores are better. One ★ for a clear, two without hints, three without hints at par.</dd></div>
+    <div><dt>Badges</dt><dd>Some levels offer badges for a different goal that costs more than par. ▭ Tidy: free space in one stretch. ▮ Unsplit: no splits. ↝ Light touch: low total travel. ⁂ Few moves: few moves on a seek level. ✦ Under par: beat par. Each has its own target score. Hints void badges.</dd></div>
   </dl>
   <section id="help-level" hidden>
     <h3>This level</h3>

@@ -150,6 +150,83 @@ const check = (name, ok, detail = '') => {
   await blocked.click('#continue');
   check('works without storage', !blockedErrors.length && await blocked.evaluate(() => level.id === 'join-two-blocks'), blockedErrors.join('; '));
 
+  // ---------- Badges ----------
+  // Play the optimal line from here. `rank` picks a two-cost ordering: 'travel' (light touch) or 'ops' (few moves).
+  const play = (options = {}) => page.evaluate(({rank, ...opts}) => {
+    const prices = {travel: m => E.travelOf(m) * 64 + m.cost, ops: m => (1 + (m.split ? 1 : 0)) * 64 + m.cost};
+    if (rank) Object.assign(opts, {price: prices[rank], maxCost: 12800, minPrice: 65});
+    for (const move of E.solve(level, state, opts).path) perform(move);
+  }, options);
+  const fresh = async () => { await page.evaluate(() => localStorage.clear()); await page.reload(); };
+
+  // An old v3 save: no badges field, and an attempt whose stats lack travel.
+  await fresh();
+  await open('free-the-pair');
+  await page.evaluate(() => {
+    perform(E.solve(level, state).path[0]);
+    const saved = JSON.parse(localStorage.getItem(progressKey));
+    delete saved.badges;
+    delete saved.attempts['free-the-pair'].stats.travel;
+    for (const entry of saved.attempts['free-the-pair'].history) delete entry.stats.travel;
+    localStorage.setItem(progressKey, JSON.stringify(saved));
+  });
+  await page.reload();
+  await open('free-the-pair');
+  await page.evaluate(() => perform(E.solve(level, state).path[0]));
+  const old = await get(() => ({travel: stats.travel, moves: stats.moves, badges: progress.badges}));
+  check('old save resumes with finite travel', Number.isFinite(old.travel) && old.moves === 2 && JSON.stringify(old.badges) === '{}', JSON.stringify(old));
+
+  // An attempt saved for an older board is discarded; scores and stars stay.
+  await page.evaluate(() => {
+    progress.best['tight-fit'] = 9;
+    progress.clean['tight-fit'] = 9;
+    progress.attempts['tight-fit'] = {signature: 'an older board', state: E.initialState({board: 'A.A'}), stats: {moves: 3, splits: 0, cost: 3}, history: []};
+    persist();
+  });
+  await page.reload();
+  await open('tight-fit');
+  check('stale attempt opens fresh and keeps stars', await get(() => stats.moves === 0 && stars(level) === 3));
+
+  // A qualifying hint-free clear earns the badge.
+  await fresh();
+  await open('free-the-pair');
+  check('badges hidden before the first clear', !(await page.locator('#badges .badge').count()));
+  await page.evaluate(() => showCatalog());
+  check('Levels row hides badges before the first clear', !(await page.locator('#levels button', {hasText: 'Free the pair'}).locator('.badge').count()));
+  await open('free-the-pair');
+  await play({whole: true});
+  check('unsplit line earns the unsplit badge', await get(() => (progress.badges['free-the-pair'] ?? []).includes('unsplit')));
+  check('clear shows the offered badge as earned', await page.locator('#badges .badge[data-earned=true]').count() === 1);
+  await page.evaluate(() => showCatalog());
+  check('Levels row shows the earned badge', await page.locator('#levels button', {hasText: 'Free the pair'}).locator('.badge[data-earned=true]').count() === 1);
+
+  // A par clear shows the badge it did not earn as outlined.
+  await open('one-sector-off');
+  await play();
+  const outlined = await get(() => ({earned: progress.badges['one-sector-off'] ?? [], shown: [...document.querySelectorAll('#badges .badge')].map(b => b.dataset.earned)}));
+  check('par clear earns no trade-off badge', !outlined.earned.length && outlined.shown.length === 2 && outlined.shown.every(e => e === 'false'), JSON.stringify(outlined));
+
+  // A hinted clear earns no badge and one star.
+  await fresh();
+  await open('free-the-pair');
+  await page.click('#hint');
+  await page.waitForFunction(() => hint !== null);
+  await play({whole: true});
+  check('hinted clear earns no badge', await get(() => !(progress.badges['free-the-pair'] ?? []).length && stars(level) === 1));
+
+  // A level that offers no badges shows none.
+  await open('warm-up');
+  await play();
+  check('no badges on a level without any', await get(() => finished()) && !(await page.locator('#badges .badge').count()) && await page.locator('#badges').isHidden());
+
+  // Light touch and few moves track travel and operations.
+  await open('head-travel');
+  await play({rank: 'ops'});
+  check('few-moves line earns few', await get(() => (progress.badges['head-travel'] ?? []).includes('few')));
+  await open('driver-stack');
+  await play({rank: 'travel'});
+  check('light-touch line earns light', await get(() => (progress.badges['driver-stack'] ?? []).includes('light') && stats.travel === badgePool['driver-stack'].light));
+
   check('no page errors', !errors.length, errors.join('; '));
 
   // Touch: one tap selects, one tap moves. A touch never sets a preview.

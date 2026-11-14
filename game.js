@@ -26,10 +26,10 @@ const soundEffects = {move: [330, 494], split: [220, 392], undo: [392, 262], cle
 // ---------- Progress ----------
 
 function loadProgress() {
-  const fresh = {version: 3, current: campaign[0].id, best: {}, clean: {}, attempts: {}, hinted: {}, sound: false};
+  const fresh = {version: 3, current: campaign[0].id, best: {}, clean: {}, attempts: {}, hinted: {}, badges: {}, sound: false};
   try {
     const saved = JSON.parse(localStorage.getItem(progressKey));
-    if (saved?.version === 3) return {...fresh, ...saved, hinted: saved.hinted ?? {}};
+    if (saved?.version === 3) return {...fresh, ...saved, hinted: saved.hinted ?? {}, badges: saved.badges ?? {}};
     // Older saves keyed scores by array position. The first 30 campaign levels kept their order.
     const legacy = JSON.parse(localStorage.getItem('defrag-campaign-v2')) ?? shiftV1(JSON.parse(localStorage.getItem('defrag-campaign-v1')));
     if (legacy && Number.isInteger(legacy.level) && legacy.best) {
@@ -63,6 +63,40 @@ function stars(target) {
   return progress.best[target.id] != null ? 1 : 0;
 }
 
+// Optimization badges. Targets come from badges.js, proven by tools/badges.js; the daily puzzle has none.
+const badgeRules = {
+  tidy: {icon: '▭', name: 'Tidy', text: T => `free space in one stretch, score ${T} or less`, met: (s, st, T) => E.freeSpaceJoined(s) && st.cost <= T},
+  unsplit: {icon: '▮', name: 'Unsplit', text: T => `no splits, score ${T} or less`, met: (s, st, T) => st.splits === 0 && st.cost <= T},
+  light: {icon: '↝', name: 'Light touch', text: T => `travel ${T} sectors or less`, met: (s, st, T) => st.travel <= T},
+  few: {icon: '⁂', name: 'Few moves', text: T => `moves plus splits ${T} or less`, met: (s, st, T) => st.moves + st.splits <= T},
+  under: {icon: '✦', name: 'Under par', text: T => `score ${T} or less`, met: (s, st, T) => st.cost <= T},
+};
+
+function offeredBadges(target) {
+  if (target.daily) return [];
+  const pool = (typeof badgePool !== 'undefined' && badgePool[target.id]) || {};
+  return Object.keys(badgeRules).filter(id => pool[id] !== undefined).map(id => ({id, target: pool[id]}));
+}
+
+function earnedOnClear(target, finalState, finalStats) {
+  return offeredBadges(target).filter(({id, target: T}) => badgeRules[id].met(finalState, finalStats, T)).map(({id}) => id);
+}
+
+// Badge chips for a level, filled when earned. Shown only once the level has been cleared.
+function badgeChips(target, {long = false} = {}) {
+  const earned = new Set(progress.badges[target.id] ?? []);
+  return offeredBadges(target).map(({id, target: T}) => {
+    const rule = badgeRules[id];
+    const chip = document.createElement(long ? 'li' : 'span');
+    chip.className = 'badge';
+    chip.dataset.earned = earned.has(id);
+    const label = `${rule.name}: ${rule.text(T)}${earned.has(id) ? ' (earned)' : ''}`;
+    if (long) chip.textContent = `${rule.icon} ${rule.name}: ${rule.text(T)} ${earned.has(id) ? '✓' : ''}`.trim();
+    else Object.assign(chip, {textContent: rule.icon, title: label, ariaLabel: label});
+    return chip;
+  });
+}
+
 const starText = count => '★'.repeat(count) + '☆'.repeat(3 - count);
 const starTotal = () => campaign.reduce((sum, item) => sum + stars(item), 0);
 
@@ -88,7 +122,7 @@ function findLevel(id) {
 
 // ---------- Game state ----------
 
-const emptyStats = () => ({moves: 0, splits: 0, cost: 0});
+const emptyStats = () => ({moves: 0, splits: 0, cost: 0, travel: 0});
 
 // Everything that defines a level's rules. A saved attempt is only resumed if this still matches.
 function signature(target) {
@@ -101,8 +135,9 @@ function start(target, attempt) {
   level = target;
   const usable = attempt && attempt.signature === signature(target);
   state = usable ? attempt.state : E.initialState(level);
-  stats = usable ? attempt.stats : emptyStats();
-  history = usable ? attempt.history : [];
+  // Older saves have no travel count; it starts from 0.
+  stats = usable ? {...emptyStats(), ...attempt.stats} : emptyStats();
+  history = usable ? attempt.history.map(entry => ({...entry, stats: {...emptyStats(), ...entry.stats}})) : [];
   // Hint use is remembered per level until the next clear, so leaving and coming back does not erase it.
   hinted = Boolean(progress.hinted[level.id]);
   if (!level.daily) progress.current = level.id;
@@ -197,12 +232,16 @@ function perform(move) {
   const from = move.type === 'paste' ? null : move.from;
   history.push({state, stats});
   state = E.apply(level, state, move);
-  stats = {moves: stats.moves + 1, splits: stats.splits + (move.split ? 1 : 0), cost: stats.cost + move.cost};
+  stats = {moves: stats.moves + 1, splits: stats.splits + (move.split ? 1 : 0), cost: stats.cost + move.cost, travel: stats.travel + E.travelOf(move)};
   clearSelection();
   const done = finished();
   if (done) {
     progress.best[level.id] = Math.min(stats.cost, progress.best[level.id] ?? Infinity);
-    if (!hinted) progress.clean[level.id] = Math.min(stats.cost, progress.clean[level.id] ?? Infinity);
+    if (!hinted) {
+      progress.clean[level.id] = Math.min(stats.cost, progress.clean[level.id] ?? Infinity);
+      const earned = earnedOnClear(level, state, stats);
+      if (earned.length) progress.badges[level.id] = [...new Set([...(progress.badges[level.id] ?? []), ...earned])];
+    }
     delete progress.hinted[level.id];
   } else {
     notice = describeMove(move) + ` Score ${stats.cost}.`;
@@ -423,6 +462,9 @@ function render() {
   ].filter(Boolean).join(' · ');
   const last = inCampaign && position === campaign.length - 1;
   ui.next.hidden = !done;
+  const chips = done ? badgeChips(level, {long: true}) : [];
+  ui.badges.replaceChildren(...chips);
+  ui.badges.hidden = !chips.length;
   ui.next.textContent = level.daily ? 'Copy result' : last ? 'Finish campaign' : 'Next puzzle →';
   ui.board.dataset.cleared = done;
   ui.status.dataset.cleared = done;
@@ -724,6 +766,12 @@ function showCatalog() {
       const best = progress.best[item.id];
       result.textContent = earned ? `${starText(earned)} ${best} / par ${item.par}` : progress.attempts[item.id] ? `In progress · par ${item.par}` : `Par ${item.par}`;
       if (item.intro) name.append(Object.assign(document.createElement('em'), {textContent: ' tutorial'}));
+      const chips = best != null ? badgeChips(item) : [];
+      if (chips.length) {
+        const row = Object.assign(document.createElement('span'), {className: 'badges'});
+        row.append(...chips);
+        name.append(row);
+      }
       button.dataset.stars = earned;
       button.append(name, result);
       button.onclick = () => openLevel(item);
