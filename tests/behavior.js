@@ -196,14 +196,14 @@ const check = (name, ok, detail = '') => {
   await open('free-the-pair');
   await play({whole: true});
   check('unsplit line earns the unsplit badge', await get(() => (progress.badges['free-the-pair'] ?? []).includes('unsplit')));
-  check('clear shows the offered badge as earned', await page.locator('#badges .badge[data-earned=true]').count() === 1);
+  check('clear shows the offered badge as earned', await page.locator('#result-badges li[data-earned=true]').count() === 1);
   await page.evaluate(() => showCatalog());
   check('Levels row shows the earned badge', await page.locator('#levels button', {hasText: 'Free the pair'}).locator('.badge[data-earned=true]').count() === 1);
 
   // A par clear shows the badge it did not earn as outlined.
   await open('one-sector-off');
   await play();
-  const outlined = await get(() => ({earned: progress.badges['one-sector-off'] ?? [], shown: [...document.querySelectorAll('#badges .badge')].map(b => b.dataset.earned)}));
+  const outlined = await get(() => ({earned: progress.badges['one-sector-off'] ?? [], shown: [...document.querySelectorAll('#result-badges li')].map(b => b.dataset.earned)}));
   check('par clear earns no trade-off badge', !outlined.earned.length && outlined.shown.length === 2 && outlined.shown.every(e => e === 'false'), JSON.stringify(outlined));
 
   // A hinted clear earns no badge and one star.
@@ -217,7 +217,7 @@ const check = (name, ok, detail = '') => {
   // A level that offers no badges shows none.
   await open('warm-up');
   await play();
-  check('no badges on a level without any', await get(() => finished()) && !(await page.locator('#badges .badge').count()) && await page.locator('#badges').isHidden());
+  check('no badges on a level without any', await get(() => finished()) && !(await page.locator('#result-badges li').count()) && await page.locator('#result-badges').isHidden());
 
   // Light touch and few moves track travel and operations.
   await open('head-travel');
@@ -252,9 +252,12 @@ const check = (name, ok, detail = '') => {
   await page.evaluate(() => { for (const m of E.solve(level).path) perform(m); });
   await page.keyboard.press('Escape');
   check('Esc hides the sheet and keeps the clear', await page.locator('#result').isHidden() && await get(() => finished()));
-  await page.evaluate(() => { undo(); perform(E.solve(level).path[0]); });
+  await page.evaluate(() => { undo(); for (const m of E.solve(level, state).path) perform(m); });
   await page.click('#result-close');
   check('close reveals the board with Next', await page.locator('#result').isHidden() && await page.locator('#next').isVisible());
+  check('cleared board hides the par-met pill and inline badges', await page.locator('#badges').isHidden() && (await page.locator('#status').boundingBox()).height <= 1);
+  await page.click('#result-open');
+  check('Results button reopens the sheet', await page.locator('#result').isVisible() && await page.locator('#result-open').isHidden());
 
   check('no page errors', !errors.length, errors.join('; '));
 

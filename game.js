@@ -475,9 +475,10 @@ function render() {
   ].filter(Boolean).join(' · ');
   const last = inCampaign && position === campaign.length - 1;
   ui.next.hidden = !done;
-  const chips = done ? badgeChips(level, {long: true}) : [];
-  ui.badges.replaceChildren(...chips);
-  ui.badges.hidden = !chips.length;
+  // Once cleared, the results sheet carries the stars and badges. The button below the board reopens it.
+  ui.badges.hidden = true;
+  ui['result-open'].hidden = !done || !result || !ui.result.hidden;
+  if (done && result) ui['result-open'].textContent = `${starText(hinted ? 1 : stats.cost <= level.par ? 3 : 2)}  Results`;
   ui.next.textContent = level.daily ? 'Copy result' : last ? 'Finish campaign' : 'Next puzzle →';
   ui.board.dataset.cleared = done;
   ui.status.dataset.cleared = done;
@@ -821,6 +822,7 @@ function showResult() {
   };
   result.finish = final;
   sheet.hidden = false;
+  ui['result-open'].hidden = true;
   ui['result-next'].focus({preventScroll: true});
   if (!motion) {
     final();
@@ -988,8 +990,15 @@ ui['result-retry'].onclick = () => {
   ui.board.querySelector('[tabindex="0"]')?.focus();
 };
 ui['result-close'].onclick = () => {
-  hideResult();
-  ui.next.focus();
+  skipResult();
+  ui.result.hidden = true;
+  render();
+  ui['result-open'].focus();
+};
+ui['result-open'].onclick = () => {
+  ui.result.hidden = false;
+  ui['result-open'].hidden = true;
+  ui['result-next'].focus({preventScroll: true});
 };
 ui.result.addEventListener('pointerdown', skipResult);
 ui.undo.onclick = undo;
