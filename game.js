@@ -15,7 +15,6 @@ let hinted;
 let selection = null; // {kind: 'board', range: [first, last]} or {kind: 'clip'}
 let anchor = null;
 let notice = '';
-let quietNotice = ''; // A notice the board already shows (a hint), kept for screen readers only.
 let hint = null;
 let preview = null;
 let deadEnd = false;
@@ -255,7 +254,7 @@ function perform(move) {
     }
     delete progress.hinted[level.id];
   } else {
-    notice = describeMove(move) + ` Score ${stats.cost}.`;
+    notice = describeMove(move);
   }
   checkDeadEnd();
   save();
@@ -292,6 +291,9 @@ function tap(index) {
   const token = state.cells[index];
   const move = moveAt(index);
   if (move) return perform(move);
+  // A hint pre-selects its run. Tapping that run again would start a split, so keep the hint instead.
+  const range = selectedRange();
+  if (hint && range && index >= range[0] && index <= range[1]) return;
   notice = '';
   hint = null;
   if (E.isFile(token) && token !== E.RESERVED) {
@@ -358,7 +360,7 @@ function undo() {
   hideResult();
   ({state, stats} = history.pop());
   clearSelection();
-  notice = `Undone. Score ${stats.cost}.`;
+  notice = 'Undone.';
   checkDeadEnd();
   save();
   render();
@@ -387,7 +389,7 @@ function restart() {
 async function showHint() {
   if (finished()) return;
   const token = ++hintToken;
-  notice = quietNotice = 'Thinking…';
+  notice = 'Thinking…';
   render();
   const asked = {level, state};
   await new Promise(resolve => setTimeout(resolve, 30));
@@ -412,8 +414,7 @@ async function showHint() {
   notice = 'Hint: ' + (move.type === 'cut' ? `lift ${blocks} onto the clipboard.` :
     move.type === 'paste' ? `place ${file} from the clipboard in ${where(move.to)}.` :
     move.nudge ? `nudge ${blocks} ${move.to > move.from ? 'right' : 'left'}.` :
-    `move ${blocks} to ${where(move.to)}.`) + ` Best finish from here: ${stats.cost + result.cost}.`;
-  quietNotice = notice;
+    `move ${blocks} to ${where(move.to)}.`) + ` Best finish:\u00a0${stats.cost + result.cost}.`;
   if (move.split) anchor = null;
   save();
   render();
@@ -471,10 +472,13 @@ function render() {
   ui.stats.hidden = false;
   ui.score.textContent = stats.cost;
   ui.par.textContent = level.par;
+  // The score already counts moves and splits. Show a count only where it differs from the score or a badge tracks it.
+  const tracked = new Set(offeredBadges(level).map(b => b.id));
+  const seek = level.cost === 'seek';
   ui['stat-detail'].textContent = [
-    `${stats.moves} move${stats.moves === 1 ? '' : 's'}`,
-    `${stats.splits} split${stats.splits === 1 ? '' : 's'}`,
-    level.cost === 'seek' ? `${stats.cost - stats.splits} travel` : offeredBadges(level).some(b => b.id === 'light') ? `${stats.travel} travel` : null,
+    seek || tracked.has('few') ? `${stats.moves} move${stats.moves === 1 ? '' : 's'}` : null,
+    seek || tracked.has('few') || tracked.has('unsplit') ? `${stats.splits} split${stats.splits === 1 ? '' : 's'}` : null,
+    tracked.has('light') ? `${stats.travel} travel` : null,
   ].filter(Boolean).join(' · ');
   const last = inCampaign && position === campaign.length - 1;
   ui.next.hidden = !done;
@@ -488,8 +492,7 @@ function render() {
   ui.board.dataset.cleared = done;
   ui.status.dataset.cleared = done;
   ui.status.dataset.warning = deadEnd && !notice;
-  ui.status.dataset.quiet = Boolean(notice) && notice === quietNotice;
-  ui.status.textContent = notice || (done ? clearMessage() : deadEnd ? 'A cracked sector you still need will fail before you can finish. This disk can no longer be solved. Undo or restart.' : selection ? selectionPrompt() : (stats.moves === 0 && level.prompt) || blocker() || 'Select a file block to pick up its run.');
+  ui.status.textContent = notice || (done ? clearMessage() : deadEnd ? 'A cracked sector you still need will fail. This disk can’t be solved. Undo or restart.' : selection ? selectionPrompt() : (stats.moves === 0 && level.prompt) || blocker() || 'Select a file block to pick up its run.');
   ui.undo.disabled = !history.length;
   ui.reset.disabled = !history.length && !selection;
   ui.hint.disabled = done;
@@ -543,17 +546,18 @@ function clearMessage() {
   return `${versus} ${starText(earned)}` + (hinted ? ' · hint used' : '');
 }
 
+// Chips for rules the title does not already name. Stateful chips (links, free space) always show, since they track progress.
+// The clipboard button and the nudge counter name their own mechanics.
 function renderRules() {
+  const named = name => level.chapter === name;
   const chips = [];
   for (const [before, after] of level.links ?? []) {
     chips.push({text: `${before}→${after}`, label: `Link: ${after} must start right after ${before}`, met: E.linksMet({links: [[before, after]]}, state)});
   }
   if (level.consolidate) chips.push({text: 'Free space together', label: 'Free space must be in one stretch', met: E.freeSpaceJoined(state)});
-  if (level.cost === 'seek') chips.push({text: 'Seek cost', label: 'Moves cost the distance travelled'});
-  if (/[1-9]/.test(level.board)) chips.push({text: 'In number order', label: 'Fragments must finish in number order'});
-  if (level.fragile?.length) chips.push({text: 'Cracked sectors', label: 'Cracked sectors fail when emptied'});
-  if (level.clipboard) chips.push({text: 'Clipboard', label: 'A clipboard can hold one run'});
-  if (level.nudges) chips.push({text: 'Nudges', label: 'Nudges slide a run one sector'});
+  if (level.cost === 'seek' && !named('Seek cost')) chips.push({text: 'Seek cost', label: 'Moves cost the distance travelled'});
+  if (/[1-9]/.test(level.board) && !named('Numbered fragments')) chips.push({text: 'In number order', label: 'Fragments must finish in number order'});
+  if (level.fragile?.length && !named('Cracked sectors')) chips.push({text: 'Cracked sectors', label: 'Cracked sectors fail when emptied'});
   ui.rules.replaceChildren(...chips.map(({text, label, met}) => {
     const chip = Object.assign(document.createElement('span'), {textContent: met ? text + ' ✓' : text});
     if (met !== undefined) chip.dataset.met = met;
@@ -659,22 +663,24 @@ function renderBoard() {
   });
 }
 
+// Kept to three short lines at phone width, so the status line never changes height.
 function selectionPrompt() {
   const nudgeable = nudgeMove(-1) || nudgeMove(1);
   const hasDestination = state.cells.some((_, index) => moveTo(index) && !moveTo(index).nudge);
-  const tools = [cutMove() ? 'lift it with Clipboard' : null, nudgeable ? 'tap an arrow to nudge it' : null].filter(Boolean);
+  const tools = [cutMove() ? 'lift it with Clipboard' : null, nudgeable ? 'tap an arrow to nudge' : null].filter(Boolean);
   const extra = tools.length ? ', or ' + tools.join(' or ') : '';
-  if (selection.kind === 'clip') return hasDestination ? 'Choose a destination to place the clipboard contents.' : 'No empty stretch fits the clipboard contents yet.';
+  const stuck = tools.length ? tools[0][0].toUpperCase() + tools[0].slice(1) + (tools[1] ? ', or ' + tools[1] : '') + '.' : 'Tap empty space to cancel.';
+  if (selection.kind === 'clip') return hasDestination ? 'Choose where to place the clipboard run.' : 'No gap fits the clipboard run yet.';
   if (anchor !== null) {
     return hasDestination
-      ? 'Choose a destination, or select another block in the run to extend the selection.'
-      : 'No empty stretch fits. Select another block to adjust the selection, or the marked block to select the whole run.';
+      ? 'Choose a destination, or tap another block to extend the split.'
+      : 'No gap fits. Tap another block, or the marked one for the whole run.';
   }
-  if (selection.range[0] === selection.range[1]) return hasDestination ? `Choose a highlighted destination${extra}.` : `No empty stretch fits${extra || '. Choose empty space to cancel'}.`;
-  if (level.tutorial === 'split') return 'Select an outside block in the selected run to split it off.';
+  if (selection.range[0] === selection.range[1]) return hasDestination ? `Choose a destination${extra}.` : `No gap fits. ${stuck}`;
+  if (level.tutorial === 'split') return 'Tap an outside block of the run to split it off.';
   return hasDestination
-    ? `Choose a destination to move the run, or select one of its blocks to split it off${extra}.`
-    : `No empty stretch fits the whole run. Select one of its blocks to split it off${extra}.`;
+    ? `Choose a destination, or tap a block to split it off${extra}.`
+    : `No gap fits the whole run. Tap a block to split it off${extra}.`;
 }
 
 // ---------- Motion and sound ----------
@@ -775,7 +781,7 @@ function showResult() {
   const conditions = [
     'Clear',
     hinted ? 'Hint used' : 'No hints',
-    hinted ? 'Par, no hints' : score <= level.par ? `Par ${level.par}` : `${score} vs par ${level.par}`,
+    hinted ? 'Par, no hints' : score <= level.par ? 'Par' : 'Over par',
   ];
   ui['result-why'].textContent = hinted
     ? 'A hint caps this clear at one star. Retry without hints for ★★★.'
@@ -800,7 +806,9 @@ function showResult() {
 
   ui['result-par'].textContent = level.par;
   const versus = ui['result-versus'];
-  versus.textContent = score < level.par ? `${level.par - score} under par` : score === level.par ? 'Par' : `${score - level.par} over par`;
+  // At par the score row already says it all; the tag only shows a difference.
+  versus.textContent = score < level.par ? `${level.par - score} under par` : score === level.par ? '' : `${score - level.par} over par`;
+  versus.hidden = score === level.par;
   versus.dataset.tone = score < level.par ? 'under' : score === level.par ? 'par' : 'over';
   at(versus, beat.tag);
   const newBest = previousBest != null && score < previousBest;
@@ -897,7 +905,8 @@ function showMenu(moveFocus = true) {
   const cleared = campaign.filter(item => progress.best[item.id] != null).length;
   const resume = nextUncleared() ?? findLevel(progress.current) ?? campaign[0];
   ui.continue.textContent = cleared || Object.keys(progress.attempts).length ? 'Continue' : 'Play';
-  ui['resume-detail'].textContent = `${resume.name} · ${cleared} of ${campaign.length} cleared · ${starTotal()} of ${3 * campaign.length} ★`;
+  // Non-breaking spaces keep each figure whole when the line wraps.
+  ui['resume-detail'].textContent = `${resume.name} · ${cleared}/${campaign.length}\u00a0cleared · ${starTotal()}/${3 * campaign.length}\u00a0★`;
   const daily = dailyLevel();
   const dailyStars = stars(daily);
   ui['daily-button'].textContent = 'Daily puzzle' + (dailyStars ? ' · ' + starText(dailyStars) + ' ' + progress.best[daily.id] : '');
@@ -926,14 +935,17 @@ function showCatalog() {
       const best = progress.best[item.id];
       result.textContent = earned ? `${starText(earned)} ${best} / par ${item.par}` : progress.attempts[item.id] ? `In progress · par ${item.par}` : `Par ${item.par}`;
       if (item.intro) name.append(Object.assign(document.createElement('em'), {textContent: ' tutorial'}));
+      // Badges sit under the score on the right, so long names never push them onto a cut-off line.
+      const side = Object.assign(document.createElement('span'), {className: 'side'});
+      side.append(result);
       const chips = best != null ? badgeChips(item) : [];
       if (chips.length) {
         const row = Object.assign(document.createElement('span'), {className: 'badges'});
         row.append(...chips);
-        name.append(row);
+        side.append(row);
       }
       button.dataset.stars = earned;
-      button.append(name, result);
+      button.append(name, side);
       button.onclick = () => openLevel(item);
       section.append(button);
     }

@@ -214,8 +214,10 @@ h2 { font-size: clamp(1.2rem, 5vw, 1.55rem); line-height: 1.18; }
 }
 @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
 
+/* Fixed at three lines, so the buttons below never move when the message changes. Messages are written to fit. */
 .status {
-  min-height: 2.7em;
+  height: calc(3 * 1.45em + 9px);
+  overflow: hidden;
   margin-top: auto;
   padding-top: 9px;
   color: var(--mint);
@@ -311,7 +313,7 @@ main {
   h1 { font-size: clamp(1.6rem, 8vw, 2.4rem); }
   .goal, .stats { margin-bottom: 5px; }
   .actions { margin-top: 5px; }
-  .status { padding-top: 5px; }
+  .status { padding-top: 5px; height: calc(3 * 1.45em + 5px); }
   .cell { max-height: 10dvh; }
 }
 @media (orientation: landscape) and (max-height: 500px) and (min-width: 480px) {
@@ -328,7 +330,7 @@ main {
   .panel > :not(.board) { grid-column: 1; margin-block: 0; }
   .board { grid-column: 2; grid-row: 1 / span 9; }
   .panel { align-content: start; }
-  .status { min-height: 0; padding-top: 0; }
+  .status { height: calc(3 * 1.45em); padding-top: 0; }
   #next { min-height: 38px; }
 }
 
@@ -358,7 +360,8 @@ main {
 .puzzle-list section { display: grid; gap: 5px; margin-bottom: 16px; }
 .puzzle-list h3 { margin: 0 0 3px; color: var(--arcade); font-size: .85rem; }
 .puzzle-list button { display: flex; align-items: center; justify-content: space-between; gap: 8px; text-align: left; }
-.puzzle-list small { flex: none; color: var(--mint); }
+.puzzle-list .side { flex: none; display: grid; justify-items: end; gap: 3px; }
+.puzzle-list small { color: var(--mint); }
 @media (max-height: 620px) {
   .game-screen .panel { flex: none; }
 }
@@ -412,11 +415,8 @@ main {
 .mini[data-file=D] { --tile: #ffaac6; }
 .nudges { display: flex; align-items: center; gap: 6px; color: var(--muted); font: .72rem ui-monospace, monospace; }
 .status[data-warning=true] { color: var(--coral); }
-/* A hint shows on the board. Its sentence keeps its space and stays readable to screen readers. */
-.status[data-quiet=true] { color: transparent; user-select: none; }
 .back.icon { min-width: 44px; color: var(--arcade); font-weight: 800; }
 .game-screen header .back:nth-child(2) { margin-left: auto; }
-.catalog-note { margin: -8px 0 10px; color: var(--muted); font-size: .78rem; }
 .puzzle-list .rule { margin: 0 0 4px; color: var(--muted); font-size: .78rem; line-height: 1.35; }
 .puzzle-list em { color: var(--muted); font-size: .72rem; font-style: normal; }
 .puzzle-list button[data-stars="3"] small { color: #ffd28c; }
@@ -448,7 +448,7 @@ main {
 .badge-list { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 4px; font-size: .85rem; }
 .badge-list .badge { padding: 4px 8px; border: 1px dashed var(--muted); border-radius: 3px; color: var(--muted); }
 .badge-list .badge[data-earned=true] { border-style: solid; border-color: #ffd28c; color: #ffd28c; }
-.puzzle-list .badges { display: inline-flex; gap: 3px; margin-left: 6px; vertical-align: middle; }
+.puzzle-list .badges { display: inline-flex; gap: 3px; }
 .puzzle-list .badge { display: inline-grid; place-items: center; min-width: 18px; height: 18px; padding: 0 2px; border: 1px dashed var(--muted); border-radius: 3px; color: var(--muted); font-size: .75rem; line-height: 1; }
 .puzzle-list .badge[data-earned=true] { border-style: solid; border-color: #ffd28c; color: #ffd28c; }
 

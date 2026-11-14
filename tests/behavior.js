@@ -56,7 +56,10 @@ const check = (name, ok, detail = '') => {
   await open('find-home');
   await page.keyboard.press('h');
   await page.waitForFunction(() => hint !== null);
-  check('hint text is hidden on screen but kept for screen readers', await get(() => ui.status.dataset.quiet === 'true' && ui.status.textContent.startsWith('Hint:') && getComputedStyle(ui.status).color === 'rgba(0, 0, 0, 0)'));
+  check('hint text is visible', await get(() => ui.status.textContent.startsWith('Hint:') && getComputedStyle(ui.status).color !== 'rgba(0, 0, 0, 0)'));
+  const hintRange = await get(() => [...selection.range]);
+  await cell(hintRange[0]).click();
+  check('tapping the hinted run keeps the hint instead of starting a split', await get(() => hint !== null && anchor === null));
   await page.evaluate(() => perform(hint));
   check('hinted clear records best but no star', await get(() => progress.best['find-home'] === 1 && progress.clean['find-home'] === undefined && stars(levelById.get('find-home')) === 1));
 
@@ -107,7 +110,7 @@ const check = (name, ok, detail = '') => {
   check('starText draws filled and empty stars', await get(() => starText(2) === '★★☆' && starText(0) === '☆☆☆'));
   await page.evaluate(() => showMenu(false));
   const resume = await get(() => ui['resume-detail'].textContent);
-  check('menu totals stars out of three per level', /\d+ of \d+ ★/.test(resume) && resume.includes(`of ${await get(() => 3 * campaign.length)} ★`), resume);
+  check('menu totals stars out of three per level', resume.includes(`/${await get(() => 3 * campaign.length)}\u00a0★`), resume);
 
   // The daily share text carries the star string.
   const shared = await page.evaluate(async () => { openLevel(dailyLevel()); await shareDaily(); return notice; });
@@ -276,11 +279,28 @@ const check = (name, ok, detail = '') => {
   await open('two-files');
   await page.evaluate(() => { const extra = E.moves(level, state).at(-1); perform(extra); for (const m of E.solve(level, state).path) perform(m); });
   const missed = await get(() => ({cost: stats.cost, par: level.par, labels: [...document.querySelectorAll('#result-stars li')].map(li => li.dataset.earned + ':' + li.querySelector('span').textContent)}));
-  check('a missed par star shows the score against par', missed.labels[2] === `false:${missed.cost} vs par ${missed.par}` && missed.cost > missed.par, JSON.stringify(missed));
+  check('a missed par star says over par', missed.labels[2] === 'false:Over par' && missed.cost > missed.par, JSON.stringify(missed));
   await page.click('#result-retry');
   await page.evaluate(() => { hinted = true; for (const m of E.solve(level, state).path) perform(m); });
   const capped = await get(() => ({cost: stats.cost, par: level.par, why: ui['result-why'].textContent, labels: [...document.querySelectorAll('#result-stars li')].map(li => li.dataset.earned + ':' + li.querySelector('span').textContent)}));
   check('a hinted clear at par explains the one-star cap', capped.cost === capped.par && capped.labels.join() === 'true:Clear,false:Hint used,false:Par, no hints' && /hint caps/i.test(capped.why), JSON.stringify(capped));
+
+  // The action buttons never move while playing: the status line has a fixed height.
+  const shifts = [];
+  for (const id of ['warm-up', 'park-a-pair', 'scattered-gaps', 'no-room-at-all']) {
+    await open(id);
+    const y = () => get(() => Math.round(ui.hint.getBoundingClientRect().top));
+    const start = await y();
+    await page.click('#hint');
+    await page.waitForFunction(() => hint !== null);
+    shifts.push(await y() - start);
+    await get(() => { clearSelection(); render(); });
+    await cell(await get(() => state.cells.findIndex(t => /[A-R]/.test(t)))).click();
+    shifts.push(await y() - start);
+    await get(() => perform(E.solve(level, state).path[0]));
+    shifts.push(await y() - start);
+  }
+  check('action buttons stay put through hint, select and move', shifts.every(d => d === 0), JSON.stringify(shifts));
 
   check('no page errors', !errors.length, errors.join('; '));
 

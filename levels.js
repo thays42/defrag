@@ -1,7 +1,7 @@
 // Level data. Each level has a stable `id` (progress is saved by id) and one primary `mechanic`.
 // Board notation: '.' empty, '#' reserved, letters are files, a digit after a letter is a fragment number.
 // Sector numbers in homes, fragile and so on are 1-based. Run `node tools/check-levels.js` after editing.
-// `intro` levels teach a rule: they hide the score. `beatable` means par is deliberately above the optimum.
+// `intro` levels teach a rule and show a prompt. `beatable` means par is deliberately above the optimum.
 const mechanics = [
   {id: 'basics', name: 'Basics', rule: 'Join each file into one unbroken run.'},
   {id: 'homes', name: 'Homes', rule: 'A file with a home must finish entirely inside the sectors marked with its letter.'},
@@ -94,7 +94,7 @@ const chapters = [
   {
     name: 'Clipboard',
     levels: [
-      {id: 'no-room-at-all', mechanic: 'clipboard', intro: true, clipboard: true, par: 3, name: 'No room at all', board: 'AB', homes: {A: [2, 2], B: [1, 1]}, goal: 'Swap A and B. There are no empty sectors, so use the clipboard.', prompt: 'Select A, then choose Clipboard to lift it off the disk. Then move B, and place A.'},
+      {id: 'no-room-at-all', mechanic: 'clipboard', intro: true, clipboard: true, par: 3, name: 'No room at all', board: 'AB', homes: {A: [2, 2], B: [1, 1]}, goal: 'Swap A and B. There are no empty sectors, so use the clipboard.', prompt: 'Select A, choose Clipboard to lift it, move B, then place A.'},
       {id: 'hold-that-thought', mechanic: 'clipboard', clipboard: true, par: 4, name: 'Hold that thought', board: '####CBBC.AA', homes: {A: [5, 6], B: [9, 10], C: [7, 8]}, goal: 'Send three files home through one free sector and the clipboard.'},
       {id: 'juggle', mechanic: 'clipboard', clipboard: true, par: 5, name: 'Juggle', board: '#####B.##BAA#CC', homes: {A: [10, 11], B: [14, 15], C: [6, 7]}, goal: 'Every file is in the wrong place. Decide what to hold.'},
     ],
@@ -102,7 +102,7 @@ const chapters = [
   {
     name: 'Seek cost',
     levels: [
-      {id: 'short-hops', mechanic: 'seek', intro: true, cost: 'seek', par: 2, name: 'Short hops', board: 'A.AAB.B', goal: 'Join both files. Each move costs the distance it travels.', prompt: 'Each destination shows its cost. Try a long move and watch the score, then undo and find the cheap way.'},
+      {id: 'short-hops', mechanic: 'seek', intro: true, cost: 'seek', par: 2, name: 'Short hops', board: 'A.AAB.B', goal: 'Join both files. Each move costs the distance it travels.', prompt: 'Each destination shows its cost. Try a long move, then undo and find a cheaper way.'},
       {id: 'long-way-round', mechanic: 'seek', cost: 'seek', par: 6, name: 'The long way round', board: '..ACAB.CB', homes: {A: [3, 4]}, goal: 'An extra short move can beat one long one.'},
       {id: 'head-travel', mechanic: 'seek', cost: 'seek', par: 10, name: 'Head travel', board: '###CA.CBBA.', homes: {A: [8, 9]}, goal: 'Keep the read head’s total travel as low as you can.'},
     ],
@@ -127,7 +127,7 @@ const chapters = [
   {
     name: 'Cracked sectors',
     levels: [
-      {id: 'cracked', mechanic: 'fragile', intro: true, fragile: [1, 2], par: 1, name: 'Cracked', board: 'A.AA', goal: 'Join A. Both of the first two sectors are cracked.', prompt: 'Move the lone A into the empty cracked sector. The corner number shows it has one write left. The sector A leaves is at 0, so it fails once it is empty.'},
+      {id: 'cracked', mechanic: 'fragile', intro: true, fragile: [1, 2], par: 1, name: 'Cracked', board: 'A.AA', goal: 'Join A. Both of the first two sectors are cracked.', prompt: 'Move the lone A onto the cracked sector. The 0 sector it leaves fails once empty.'},
       {id: 'one-write-left', mechanic: 'fragile', fragile: [1, 8, 11], par: 5, name: 'One write left', board: '.AB##CC.ABB', homes: {A: [6, 7], B: [1, 3], C: [8, 9]}, goal: 'Three cracked sectors. Use each one only when you must.'},
       {id: 'failing-drive', mechanic: 'fragile', fragile: [4], par: 6, name: 'Failing drive', board: 'AA.A.BB', homes: {A: [5, 7], B: [1, 2]}, goal: 'Swap A and B before the cracked sector fails at the wrong time.'},
     ],
