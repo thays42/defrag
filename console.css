@@ -492,7 +492,7 @@ main {
 .result-stars li:nth-child(2) svg { width: 72px; height: 72px; }
 .result-stars path { fill: #120b1e; stroke: #5e497c; stroke-width: 1.2; stroke-dasharray: 2 1.6; stroke-linejoin: round; }
 .result-stars [data-earned=true] path { fill: #ffd28c; stroke: #fff3c9; stroke-dasharray: none; filter: drop-shadow(0 0 6px #ffb84d99); }
-.result-stars span { color: #6f6384; font: 700 .64rem/1.2 ui-monospace, monospace; text-transform: uppercase; letter-spacing: .05em; }
+.result-stars span { color: var(--coral); font: 700 .64rem/1.2 ui-monospace, monospace; text-transform: uppercase; letter-spacing: .05em; }
 .result-stars [data-earned=true] span { color: #ffd28c; }
 .result-stars [data-earned=true] svg { animation: star-stamp .5s var(--delay) cubic-bezier(.3, 1.5, .5, 1) both; }
 .result-stars [data-earned=false] svg { animation: star-fade .35s var(--delay) ease-out both; }
