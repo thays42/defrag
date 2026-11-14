@@ -127,6 +127,21 @@ const check = (name, ok, detail = '') => {
   check('works without storage', !blockedErrors.length && await blocked.evaluate(() => level.id === 'join-two-blocks'), blockedErrors.join('; '));
 
   check('no page errors', !errors.length, errors.join('; '));
+
+  // Touch: one tap selects, one tap moves. A touch never sets a preview.
+  const touch = await browser.newPage({viewport: {width: 390, height: 844}, hasTouch: true, isMobile: true});
+  await touch.goto(url);
+  await touch.evaluate(() => openLevel(findLevel('tight-fit')));
+  const touchCell = index => touch.locator('.cell').nth(index);
+  await touchCell(0).tap();
+  await touchCell(1).tap();
+  check('touch moves on a single tap', await touch.evaluate(() => stats.moves === 1 && preview === null));
+
+  // Mouse hover still previews a destination.
+  await open('tight-fit');
+  await cell(0).click();
+  await cell(1).hover();
+  check('mouse hover previews', await get(() => preview?.to === 1));
   await browser.close();
   process.exit(failed ? 1 : 0);
 })();

@@ -363,8 +363,12 @@ function buildBoard() {
     button.className = 'cell';
     button.tabIndex = index === 0 ? 0 : -1;
     button.onclick = () => tap(index);
-    button.onpointerenter = button.onfocus = () => setPreview(index);
-    button.onpointerleave = button.onblur = () => setPreview(null);
+    // Preview only on mouse hover and keyboard focus. On touch, changing the cell on
+    // the first tap makes mobile browsers treat it as a hover and drop the click.
+    button.onpointerenter = event => { if (event.pointerType === 'mouse') setPreview(index); };
+    button.onpointerleave = event => { if (event.pointerType === 'mouse') setPreview(null); };
+    button.onfocus = () => { if (button.matches(':focus-visible')) setPreview(index); };
+    button.onblur = () => setPreview(null);
     button.onkeydown = event => moveFocus(event, index);
     ui.board.append(button);
   });
