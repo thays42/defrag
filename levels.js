@@ -12,7 +12,7 @@ const mechanics = [
   {id: 'seek', name: 'Seek cost', rule: 'A move costs the number of sectors it travels. Splitting still adds 1. The fewest moves is not always the cheapest route.'},
   {id: 'consolidate', name: 'Free space', rule: 'Finish with every empty sector in one unbroken stretch.'},
   {id: 'system', name: 'System files', rule: 'Locked system files (S) never move. A chip like S→A means A must start in the sector right after S.'},
-  {id: 'fragile', name: 'Cracked sectors', rule: 'A cracked sector fails as soon as it is emptied. An empty cracked sector can take one write.'},
+  {id: 'fragile', name: 'Cracked sectors', rule: 'The corner number on a cracked sector is how many writes it has left. A sector at 0 fails as soon as it is emptied.'},
   {id: 'links', name: 'Linked files', rule: 'Linked files must finish touching, in the order shown: A→B means A’s run ends right where B’s starts.'},
   {id: 'nudge', name: 'Nudges', rule: 'A normal move needs a gap as long as the run. A nudge shifts a run one sector into a single empty sector beside it, overlapping where it was. Select the arrow sector (← →) beside the selected run. Each nudge costs 1, and the supply is limited.'},
 ];
@@ -127,7 +127,7 @@ const chapters = [
   {
     name: 'Cracked sectors',
     levels: [
-      {id: 'cracked', mechanic: 'fragile', intro: true, fragile: [1, 2], par: 1, name: 'Cracked', board: 'A.AA', goal: 'Join A. Both of the first two sectors are cracked.', prompt: 'Move the lone A into the empty cracked sector. It can take one write. The sector A leaves fails once it is empty.'},
+      {id: 'cracked', mechanic: 'fragile', intro: true, fragile: [1, 2], par: 1, name: 'Cracked', board: 'A.AA', goal: 'Join A. Both of the first two sectors are cracked.', prompt: 'Move the lone A into the empty cracked sector. The corner number shows it has one write left. The sector A leaves is at 0, so it fails once it is empty.'},
       {id: 'one-write-left', mechanic: 'fragile', fragile: [1, 6, 9], par: 5, name: 'One write left', board: '.ABCC.ABB', homes: {A: [4, 5], B: [1, 3], C: [6, 7]}, goal: 'Three cracked sectors. Use each one only when you must.'},
       {id: 'failing-drive', mechanic: 'fragile', fragile: [4], par: 6, name: 'Failing drive', board: 'AA.A.BB', homes: {A: [5, 7], B: [1, 2]}, goal: 'Swap A and B before the cracked sector fails at the wrong time.'},
     ],

@@ -578,6 +578,8 @@ function renderBoard() {
     const shown = ghost ?? (empty ? mark : reserved ? (failed ? '✕' : '') : token);
     button.replaceChildren(document.createTextNode(shown[0] ?? ''));
     if (shown.length > 1) button.append(Object.assign(document.createElement('sub'), {textContent: shown.slice(1)}));
+    const writes = fragile.has(index + 1) && !reserved ? state.wear[index] : null;
+    if (writes !== null) button.append(Object.assign(document.createElement('span'), {className: 'writes', textContent: writes}));
     const parts = [`Sector ${index + 1}`];
     const fills = landing && (landing.length > 1 ? `fills sectors ${landing.to + 1}–${landing.to + landing.length}` : `fills sector ${landing.to + 1}`);
     const kind = landing?.nudge ? `nudge ${landing.to < landing.from ? 'left' : 'right'}, uses 1 of ${state.nudges} nudges` : 'destination';
@@ -586,7 +588,7 @@ function renderBoard() {
     if (file && locked.has(file)) parts.push('locked');
     if (file && settled.has(file) && !locked.has(file)) parts.push('settled');
     if (home) parts.push(home + ' home');
-    if (fragile.has(index + 1) && !reserved) parts.push('cracked');
+    if (writes !== null) parts.push(`cracked, ${writes} write${writes === 1 ? '' : 's'} left`);
     if (anchor === index) parts.push('split start');
     button.setAttribute('aria-label', parts.join(', '));
   });
