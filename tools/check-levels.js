@@ -3,12 +3,25 @@
 // and the level's mechanic actually changes the result. Exits 1 on any failure.
 //   node tools/check-levels.js [--metrics]
 const E = require('../engine.js');
-const {measure, without, uses} = require('./metrics.js');
+const {measure, addDetail, without, uses} = require('./metrics.js');
 const {similarPairs} = require('./similarity.js');
 const {mechanics, chapters} = require('../levels.js');
 const daily = require('../daily.js');
 
 const showMetrics = process.argv.includes('--metrics');
+// Trap rate and line count recorded before a re-dress, so --metrics can report drift.
+const baselinePath = require('path').join(__dirname, 'metrics-baseline.json');
+if (process.argv.includes('--save-baseline')) {
+  const baseline = {};
+  for (const level of chapters.flatMap(c => c.levels)) {
+    const m = addDetail(level, {par: E.solve(level).cost}, 3e5);
+    baseline[level.id] = {board: level.board, trapRate: m.trapRate, paths: m.paths};
+  }
+  require('fs').writeFileSync(baselinePath, JSON.stringify(baseline, null, 1) + '\n');
+  console.log(`Saved metrics baseline for ${Object.keys(baseline).length} levels.`);
+  process.exit(0);
+}
+const baseline = require('fs').existsSync(baselinePath) ? require(baselinePath) : {};
 const mechanicIds = new Set(mechanics.map(m => m.id));
 const problems = [];
 const warnings = [];
@@ -83,7 +96,10 @@ for (const level of all) {
   if (showMetrics && !level.daily) {
     const m = measure(level, {limit: 3e5});
     const fmt = v => (v === Infinity ? '∞' : v);
-    console.log(`${level.mechanic.padEnd(12)} ${level.id.padEnd(26)} par ${String(level.par).padStart(2)}  trap ${m.trapRate.toFixed(2)}  lines ${String(fmt(m.paths)).padStart(4)}  split-gap ${fmt(m.splitGap)}`);
+    const was = baseline[level.id];
+    const drift = was && was.board !== level.board ? `  (was trap ${was.trapRate.toFixed(2)}, lines ${fmt(was.paths ?? Infinity)})` : '';
+    console.log(`${level.mechanic.padEnd(12)} ${level.id.padEnd(26)} par ${String(level.par).padStart(2)}  trap ${m.trapRate.toFixed(2)}  lines ${String(fmt(m.paths)).padStart(4)}  split-gap ${fmt(m.splitGap)}${drift}`);
+    if (drift && (m.trapRate < was.trapRate - 0.1 || m.paths > 2 * (was.paths ?? Infinity))) warnings.push(`${where}: re-dress changed difficulty${drift.replace('  (was', ' (was')}, now trap ${m.trapRate.toFixed(2)}, lines ${fmt(m.paths)}`);
   }
 }
 

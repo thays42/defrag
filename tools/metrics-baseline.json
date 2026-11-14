@@ -1,0 +1,277 @@
+{
+ "join-two-blocks": {
+  "board": "A.A",
+  "trapRate": 0,
+  "paths": 2
+ },
+ "move-a-run": {
+  "board": "AA..AA",
+  "trapRate": 0,
+  "paths": 2
+ },
+ "split-a-run": {
+  "board": "AA.AA",
+  "trapRate": 0,
+  "paths": 2
+ },
+ "find-home": {
+  "board": "AA..",
+  "trapRate": 0,
+  "paths": 1
+ },
+ "two-files": {
+  "board": "AB.AB.",
+  "trapRate": 0.67,
+  "paths": 1
+ },
+ "reserved-intro": {
+  "board": "A#A.",
+  "trapRate": 0,
+  "paths": 1
+ },
+ "scattered-gaps": {
+  "board": "###...#B.AB##.##A",
+  "trapRate": 0.5,
+  "paths": 7
+ },
+ "warm-up": {
+  "board": ".BBBAA.CAC.C",
+  "trapRate": 0.67,
+  "paths": 4
+ },
+ "required-split": {
+  "board": ".BCCCAA.BBAA",
+  "trapRate": 0,
+  "paths": 2
+ },
+ "borrow-a-home": {
+  "board": "BA.C",
+  "trapRate": 0,
+  "paths": 2
+ },
+ "park-a-pair": {
+  "board": "BBAA..CC",
+  "trapRate": 0,
+  "paths": 2
+ },
+ "choose-what-to-park": {
+  "board": "BAAB..CC.",
+  "trapRate": 1,
+  "paths": 1
+ },
+ "make-a-parking-spot": {
+  "board": "BBAA.CC.",
+  "trapRate": 0,
+  "paths": 4
+ },
+ "save-the-gap": {
+  "board": "..ABB",
+  "trapRate": 0,
+  "paths": 1
+ },
+ "a-can-wait": {
+  "board": "C.BBA.C",
+  "trapRate": 0.67,
+  "paths": 1
+ },
+ "b-can-wait": {
+  "board": "BB.ACC..A",
+  "trapRate": 0.67,
+  "paths": 1
+ },
+ "required-split-revisited": {
+  "board": ".BCCCAA.BBAA",
+  "trapRate": 1,
+  "paths": 3
+ },
+ "beat-par": {
+  "board": "AA.AACCBCB.B",
+  "trapRate": 0.4,
+  "paths": 10
+ },
+ "one-sector-off": {
+  "board": "..ABBAABBA",
+  "trapRate": 0.5,
+  "paths": 2
+ },
+ "two-splits": {
+  "board": "..ABBBBAAA",
+  "trapRate": 0,
+  "paths": 13
+ },
+ "four-files": {
+  "board": ".BBCAACC.DAD",
+  "trapRate": 1,
+  "paths": 2
+ },
+ "free-the-pair": {
+  "board": "AA.BBDCACD.C",
+  "trapRate": 0.75,
+  "paths": 6
+ },
+ "trade-places": {
+  "board": "CCCA.BBAAB.DDD",
+  "trapRate": 0,
+  "paths": null
+ },
+ "tight-fit": {
+  "board": "A.AAACCC.BBBDD",
+  "trapRate": 0.5,
+  "paths": null
+ },
+ "blocked-lanes": {
+  "board": "BA.#..#CBA##C",
+  "trapRate": 1,
+  "paths": 12
+ },
+ "broken-workspace": {
+  "board": "##AAA#C.DB.C#.CB##D",
+  "trapRate": 0.25,
+  "paths": null
+ },
+ "across-the-disk": {
+  "board": "###C.A#.DAB###BC#D.B",
+  "trapRate": 0.83,
+  "paths": null
+ },
+ "pocket-change": {
+  "board": "#.BBA###.AB.A##..",
+  "trapRate": 0.6,
+  "paths": 11
+ },
+ "split-workspace": {
+  "board": "##.ABAA#A####BB...#B.",
+  "trapRate": 0.5,
+  "paths": 531
+ },
+ "cut-across": {
+  "board": "###########..ABBB#BAAA",
+  "trapRate": 0,
+  "paths": 4
+ },
+ "in-order": {
+  "board": "A2.A1.",
+  "trapRate": 0.67,
+  "paths": 1
+ },
+ "shuffled": {
+  "board": "A1A3B3.B1B2A2",
+  "trapRate": 1,
+  "paths": 1
+ },
+ "two-decks": {
+  "board": "B1A2B3B2A3A1.",
+  "trapRate": 1,
+  "paths": 1
+ },
+ "no-room-at-all": {
+  "board": "AB",
+  "trapRate": 0,
+  "paths": 2
+ },
+ "hold-that-thought": {
+  "board": "CBBC.AA",
+  "trapRate": 1,
+  "paths": 2
+ },
+ "juggle": {
+  "board": "CCAAB.B",
+  "trapRate": 1,
+  "paths": 1
+ },
+ "short-hops": {
+  "board": "A.AAB.B",
+  "trapRate": 0.25,
+  "paths": 4
+ },
+ "long-way-round": {
+  "board": "BC.BACA..",
+  "trapRate": 1,
+  "paths": 1
+ },
+ "head-travel": {
+  "board": ".ABBC.AC",
+  "trapRate": 1,
+  "paths": 1
+ },
+ "one-gap": {
+  "board": "A.A.",
+  "trapRate": 0.33,
+  "paths": 2
+ },
+ "sweep-up": {
+  "board": "B..CCBAA.",
+  "trapRate": 1,
+  "paths": 3
+ },
+ "tidy-disk": {
+  "board": "BA.C.AABB.C",
+  "trapRate": 0.4,
+  "paths": 15
+ },
+ "boot-sector": {
+  "board": "A.SS.A",
+  "trapRate": 0.5,
+  "paths": 1
+ },
+ "load-order": {
+  "board": "AA.SS.ABB",
+  "trapRate": 1,
+  "paths": 1
+ },
+ "kernel-space": {
+  "board": "B.AAASS.BB",
+  "trapRate": 1,
+  "paths": 1
+ },
+ "driver-stack": {
+  "board": "BSSBB.AA.A",
+  "trapRate": 0.75,
+  "paths": 1
+ },
+ "cracked": {
+  "board": "A.AA",
+  "trapRate": 0.5,
+  "paths": 1
+ },
+ "one-write-left": {
+  "board": ".ABCC.ABB",
+  "trapRate": 1,
+  "paths": 1
+ },
+ "failing-drive": {
+  "board": "AA.A.BB",
+  "trapRate": 1,
+  "paths": 3
+ },
+ "chained": {
+  "board": ".BA",
+  "trapRate": 0,
+  "paths": 1
+ },
+ "chain-of-three": {
+  "board": "BAA.CB.",
+  "trapRate": 1,
+  "paths": 1
+ },
+ "daisy-chain": {
+  "board": "ABB.BC.AA",
+  "trapRate": 1,
+  "paths": 1
+ },
+ "nudge": {
+  "board": "AA.",
+  "trapRate": 0.5,
+  "paths": 1
+ },
+ "scoot-over": {
+  "board": "BAA.BC",
+  "trapRate": 1,
+  "paths": 1
+ },
+ "shuffle-step": {
+  "board": "C.AACBBB",
+  "trapRate": 1,
+  "paths": 1
+ }
+}
