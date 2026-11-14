@@ -409,6 +409,8 @@ main {
 .mini[data-file=D] { --tile: #ffaac6; }
 .nudges { display: flex; align-items: center; gap: 6px; color: var(--muted); font: .72rem ui-monospace, monospace; }
 .status[data-warning=true] { color: var(--coral); }
+/* A hint shows on the board. Its sentence keeps its space and stays readable to screen readers. */
+.status[data-quiet=true] { color: transparent; user-select: none; }
 .back.icon { min-width: 44px; color: var(--arcade); font-weight: 800; }
 .game-screen header .back:nth-child(2) { margin-left: auto; }
 .catalog-note { margin: -8px 0 10px; color: var(--muted); font-size: .78rem; }

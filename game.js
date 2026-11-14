@@ -15,6 +15,7 @@ let hinted;
 let selection = null; // {kind: 'board', range: [first, last]} or {kind: 'clip'}
 let anchor = null;
 let notice = '';
+let quietNotice = ''; // A notice the board already shows (a hint), kept for screen readers only.
 let hint = null;
 let preview = null;
 let deadEnd = false;
@@ -386,7 +387,7 @@ function restart() {
 async function showHint() {
   if (finished()) return;
   const token = ++hintToken;
-  notice = 'Thinking…';
+  notice = quietNotice = 'Thinking…';
   render();
   const asked = {level, state};
   await new Promise(resolve => setTimeout(resolve, 30));
@@ -412,6 +413,7 @@ async function showHint() {
     move.type === 'paste' ? `place ${file} from the clipboard in ${where(move.to)}.` :
     move.nudge ? `nudge ${blocks} ${move.to > move.from ? 'right' : 'left'}.` :
     `move ${blocks} to ${where(move.to)}.`) + ` Best finish from here: ${stats.cost + result.cost}.`;
+  quietNotice = notice;
   if (move.split) anchor = null;
   save();
   render();
@@ -485,6 +487,7 @@ function render() {
   ui.board.dataset.cleared = done;
   ui.status.dataset.cleared = done;
   ui.status.dataset.warning = deadEnd && !notice;
+  ui.status.dataset.quiet = Boolean(notice) && notice === quietNotice;
   ui.status.textContent = notice || (done ? clearMessage() : deadEnd ? 'A cracked sector you still need will fail before you can finish. This disk can no longer be solved. Undo or restart.' : selection ? selectionPrompt() : (stats.moves === 0 && level.prompt) || blocker() || 'Select a file block to pick up its run.');
   ui.undo.disabled = !history.length;
   ui.reset.disabled = !history.length && !selection;

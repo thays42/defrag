@@ -56,6 +56,7 @@ const check = (name, ok, detail = '') => {
   await open('find-home');
   await page.keyboard.press('h');
   await page.waitForFunction(() => hint !== null);
+  check('hint text is hidden on screen but kept for screen readers', await get(() => ui.status.dataset.quiet === 'true' && ui.status.textContent.startsWith('Hint:') && getComputedStyle(ui.status).color === 'rgba(0, 0, 0, 0)'));
   await page.evaluate(() => perform(hint));
   check('hinted clear records best but no star', await get(() => progress.best['find-home'] === 1 && progress.clean['find-home'] === undefined && stars(levelById.get('find-home')) === 1));
 
