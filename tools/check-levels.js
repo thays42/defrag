@@ -4,6 +4,7 @@
 //   node tools/check-levels.js [--metrics]
 const E = require('../engine.js');
 const {measure, without, uses} = require('./metrics.js');
+const {similarPairs} = require('./similarity.js');
 const {mechanics, chapters} = require('../levels.js');
 const daily = require('../daily.js');
 
@@ -84,6 +85,12 @@ for (const level of all) {
     const fmt = v => (v === Infinity ? '∞' : v);
     console.log(`${level.mechanic.padEnd(12)} ${level.id.padEnd(26)} par ${String(level.par).padStart(2)}  trap ${m.trapRate.toFixed(2)}  lines ${String(fmt(m.paths)).padStart(4)}  split-gap ${fmt(m.splitGap)}`);
   }
+}
+
+// Campaign levels must look distinct. Intro pairs only warn: tiny boards cannot differ much.
+for (const pair of similarPairs(chapters.flatMap(c => c.levels))) {
+  const line = `similar ${pair.score.toFixed(2)}: ${pair.a.id} ${pair.a.board} ~ ${pair.b.id} ${pair.b.board}`;
+  warnings.push(line);
 }
 
 if (warnings.length) console.warn('Warnings:\n  ' + warnings.join('\n  '));
