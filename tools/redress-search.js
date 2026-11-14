@@ -1,6 +1,6 @@
-// Greedy re-dress search used to make campaign levels look distinct. Prints proposals; writes redress-result.json beside itself.
+// Greedy re-dress search used to make campaign levels look distinct. Prints proposals; writes redress-result.json to the OS temp folder.
 // Usage: node tools/redress-search.js [maxLen]. Proposals keep par, the mechanic check and trap rate; review them by eye before use.
-const R = '/home/user/defrag/';
+const R = require('path').join(__dirname, '..') + '/';
 const E = require(R + 'engine.js');
 const {without, addDetail} = require(R + 'tools/metrics.js');
 const {similarity} = require(R + 'tools/similarity.js');
@@ -78,4 +78,4 @@ for (const l of order) {
   if (pick) { current.set(l.id, pick.c); results.push({id: l.id, mirrored: pick.c.board !== l.board && !l.board.includes(pick.c.board.replace(/#/g,'')), level: pick.c, from: l.board, to: pick.c.board, before: before.toFixed(2), after: pick.s.toFixed(2), homes: pick.c.homes, fragile: pick.c.fragile, links: pick.c.links}); }
   console.error(l.id, before.toFixed(2), '->', pick ? pick.s.toFixed(2) + ' ' + pick.c.board : 'kept');
 }
-require('fs').writeFileSync(__dirname + '/redress-result.json', JSON.stringify(results, null, 1));
+require('fs').writeFileSync(require('path').join(require('os').tmpdir(), 'redress-result.json'), JSON.stringify(results, null, 1));

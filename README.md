@@ -41,7 +41,7 @@ Mechanics are level flags. One level can combine several.
 
 The checker fails if a par is not the optimum, an id repeats, a home does not fit, or a level's mechanic does not change its result. Intro levels (`intro: true`) are exempt from the last check. A level with `beatable: true` may set par above the optimum.
 
-Campaign levels must also look distinct. The checker compares every pair of boards, with files renamed in order of appearance, and scores 1 minus the normalized edit distance. It takes the higher of two views: the layout alone, and the layout with home and cracked sectors marked. Non-intro pairs at 0.75 or above fail. Pairs from 0.60 warn. Intro boards are tiny, so their pairs only warn. `node tools/redress.js <id>` mirrors, pads or relabels a level without changing its puzzle.
+Campaign levels must also look distinct. The checker compares every pair of boards, with files renamed in order of appearance, and scores 1 minus the normalized edit distance. It takes the higher of two views: the layout alone, and the layout with home and cracked sectors marked. Non-intro pairs at 0.75 or above fail. Pairs from 0.60 warn. Intro boards are tiny, so their pairs only warn. `tools/redress.js` mirrors, pads or relabels a level without changing its puzzle. `node tools/redress-search.js` proposes re-dresses that keep par, the mechanic check and trap rate.
 
 For `homes` and `reserved` levels the mechanic check only warns. Some original campaign levels keep the same optimum when their reserved sectors become free space, so their reserved sectors are decoration, not constraint. The checker lists them.
 
