@@ -244,7 +244,7 @@ const check = (name, ok, detail = '') => {
   await open('free-the-pair');
   await page.evaluate(() => { for (const m of E.solve(level).path) perform(m); });
   check('clear opens the results sheet', await page.locator('#result').isVisible());
-  check('board Next hides while the sheet is up', await page.locator('#next').isHidden());
+  check('board buttons wait inert under the sheet', await get(() => !ui.next.hidden && !ui['result-open'].hidden && ui['cleared-actions'].inert));
   await page.locator('#result-stars').click();
   const sheet = await get(() => ({skip: ui.result.classList.contains('skip'), score: ui['result-score'].textContent, earned: [...document.querySelectorAll('#result-stars li')].map(li => li.dataset.earned)}));
   check('tap skips to the final results', sheet.skip && sheet.score === String(await get(() => stats.cost)) && sheet.earned.join() === 'true,true,true', JSON.stringify(sheet));
@@ -258,7 +258,7 @@ const check = (name, ok, detail = '') => {
   check('close reveals the board with Next', await page.locator('#result').isHidden() && await page.locator('#next').isVisible());
   check('cleared board hides the par-met pill and inline badges', await page.locator('#badges').isHidden() && (await page.locator('#status').boundingBox()).height <= 1);
   await page.click('#result-open');
-  check('Results button reopens the sheet', await page.locator('#result').isVisible() && await page.locator('#result-open').isHidden());
+  check('Results button reopens the sheet', await page.locator('#result').isVisible() && await get(() => ui['cleared-actions'].inert));
   const box = await page.locator('#result').boundingBox();
   await page.mouse.move(box.x + box.width / 2, box.y + 40);
   await page.mouse.down();
@@ -271,7 +271,7 @@ const check = (name, ok, detail = '') => {
   for (let dy = 20; dy <= box.height * 0.6; dy += 20) await page.mouse.move(box.x + box.width / 2, box.y + 40 + dy);
   await page.mouse.up();
   await page.waitForTimeout(400);
-  check('swiping down dismisses the sheet', await page.locator('#result').isHidden() && await page.locator('#result-open').isVisible());
+  check('swiping down dismisses the sheet', await page.locator('#result').isHidden() && await page.locator('#result-open').isVisible() && await get(() => !ui['cleared-actions'].inert));
   await open('two-files');
   await page.evaluate(() => { const extra = E.moves(level, state).at(-1); perform(extra); for (const m of E.solve(level, state).path) perform(m); });
   const missed = await get(() => ({cost: stats.cost, par: level.par, labels: [...document.querySelectorAll('#result-stars li')].map(li => li.dataset.earned + ':' + li.querySelector('span').textContent)}));

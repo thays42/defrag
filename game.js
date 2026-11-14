@@ -474,11 +474,12 @@ function render() {
     level.cost === 'seek' ? `${stats.cost - stats.splits} travel` : offeredBadges(level).some(b => b.id === 'light') ? `${stats.travel} travel` : null,
   ].filter(Boolean).join(' · ');
   const last = inCampaign && position === campaign.length - 1;
-  // While the results sheet is up, its own Next button is the one to use.
-  ui.next.hidden = !done || !ui.result.hidden;
+  ui.next.hidden = !done;
   // Once cleared, the results sheet carries the stars and badges. The button below the board reopens it.
   ui.badges.hidden = true;
-  ui['result-open'].hidden = !done || !result || !ui.result.hidden;
+  ui['result-open'].hidden = !done || !result;
+  // The sheet is drawn over these buttons, so a swipe reveals them. Inert keeps them out of reach until then.
+  ui['cleared-actions'].inert = !ui.result.hidden;
   if (done && result) ui['result-open'].textContent = `${starText(hinted ? 1 : stats.cost <= level.par ? 3 : 2)}  Results`;
   ui.next.textContent = level.daily ? 'Copy result' : last ? 'Finish campaign' : 'Next puzzle →';
   ui.board.dataset.cleared = done;
@@ -837,8 +838,7 @@ function showResult() {
   sheet.hidden = false;
   // A sheet that overflows must scroll, so it gives up vertical swipes there. The landscape side sheet still swipes sideways.
   sheet.style.touchAction = sheet.scrollHeight > sheet.clientHeight ? 'pan-y' : '';
-  ui['result-open'].hidden = true;
-  ui.next.hidden = true;
+  ui['cleared-actions'].inert = true;
   ui['result-next'].focus({preventScroll: true});
   if (!motion) {
     final();
@@ -1056,8 +1056,7 @@ ui.result.addEventListener('pointercancel', endDrag);
 ui['result-open'].onclick = () => {
   ui.result.style.animation = ui.result.style.transform = '';
   ui.result.hidden = false;
-  ui['result-open'].hidden = true;
-  ui.next.hidden = true;
+  ui['cleared-actions'].inert = true;
   ui['result-next'].focus({preventScroll: true});
 };
 ui.result.addEventListener('pointerdown', skipResult);
