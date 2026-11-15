@@ -104,6 +104,8 @@ assert.deepStrictEqual(at('A.AAAAAA'), {offset: 6, length: 8}); // two rows: row
 assert.deepStrictEqual(at('A.AAACCC.BBBDD'), {offset: 0, length: 14}); // three rows start in row 1
 assert.deepStrictEqual(at('.#B#...BB######A#AABA.##'), {offset: 0, length: 24});
 assert.deepStrictEqual(at('A.AA..', {offset: 9}), {offset: 9, length: 6});
+// A board longer than the frame starts at the top, so the checker sees it overflow.
+assert.deepStrictEqual(at('A.'.repeat(15)), {offset: 0, length: 30});
 // Boards are no longer padded.
 assert.strictEqual(E.initialState({board: 'A.A'}).cells.length, 3);
 assert.strictEqual(E.initialState({board: 'A.AAACCC.BBBDD'}).cells.length, 14);

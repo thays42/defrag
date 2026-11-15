@@ -71,7 +71,7 @@ for (const level of all) {
   if (!mechanicIds.has(level.mechanic)) fail(`unknown mechanic "${level.mechanic}"`);
   if (level.offset !== undefined && !(Number.isInteger(level.offset) && level.offset >= 0)) fail(`offset ${level.offset} is not a whole number of sectors`);
   const {offset, length} = E.placement(level);
-  if (offset + length > E.FRAME) fail(`board does not fit the ${E.FRAME}-sector frame at offset ${offset}`);
+  if (offset < 0 || offset + length > E.FRAME) fail(`board does not fit the ${E.FRAME}-sector frame at offset ${offset}`);
   const cells = E.initialState(level).cells;
   for (const [file, [first, last]] of Object.entries(level.homes ?? {})) {
     const span = last - first + 1;

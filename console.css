@@ -119,6 +119,7 @@ h2 { font-size: clamp(1.2rem, 5vw, 1.55rem); line-height: 1.18; }
 
 .board {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
   display: grid;
   grid-template-columns: repeat(6,minmax(0,1fr));
@@ -223,6 +224,7 @@ h2 { font-size: clamp(1.2rem, 5vw, 1.55rem); line-height: 1.18; }
   content: '';
   pointer-events: none;
   position: absolute;
+  z-index: 2; /* above the cells, which sit at 1 over the track */
   inset: 0;
   background: linear-gradient(105deg, transparent 36%, #ccffdf8a 50%, transparent 64%);
   animation: sweep .58s ease-out both;

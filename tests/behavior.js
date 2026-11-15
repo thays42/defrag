@@ -372,6 +372,12 @@ const check = (name, ok, detail = '') => {
   check('track redraws on resize', redrawn);
   await page.setViewportSize({width: 420, height: 900});
 
+  // The clear sweep paints over the cells, not behind them.
+  await open('join-two-blocks');
+  await get(() => { for (const move of E.solve(level).path) perform(move); });
+  const sweep = await get(() => Number(getComputedStyle(ui.board, '::after').zIndex) > Number(getComputedStyle(ui.cells[0]).zIndex));
+  check('clear sweep sits above the cells', sweep);
+
   check('no page errors', !errors.length, errors.join('; '));
 
   // Touch: one tap selects, one tap moves. A touch never sets a preview.

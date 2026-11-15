@@ -52,7 +52,7 @@
     const length = parseBoard(level.board).length;
     if (level.offset !== undefined) return {offset: level.offset, length};
     const rows = Math.ceil(length / COLUMNS);
-    const startRow = Math.floor((FRAME_ROWS - rows) / 2);
+    const startRow = Math.max(0, Math.floor((FRAME_ROWS - rows) / 2));
     return {offset: startRow * COLUMNS + (rows === 1 ? Math.floor((COLUMNS - length) / 2) : 0), length};
   }
 
