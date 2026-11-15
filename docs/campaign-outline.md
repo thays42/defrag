@@ -36,7 +36,7 @@ Rules for placing a partition:
 
 Because a partition is contiguous, unallocated sectors only sit at its two ends. They never sit between two partition sectors. This keeps seek cost, wrap, and free-space rules unchanged. The engine needs one new cell type (unallocated) that is never a destination and never counts as free space.
 
-The frame also gives a permanent place to draw the **read path**. A track in the board's gutter runs from the end of each row to the start of the next. This shows wrap as part of the disk, not as a per-run icon.
+The frame also gives a permanent place to draw the **read path**. A track in the board's gutter runs from the end of each row to the start of the next. This shows wrap as part of the disk, not as a per-run icon. The track also separates the rows visually. Decided: keep it.
 
 **Strongest objection.** A 3-sector intro inside a 24-sector frame can look lost. A new player may also try to tap the unallocated sectors. Mitigations: keep unallocated sectors very faint, make them inert with no hover state, and animate the partition growing only at chapter starts, as a reveal.
 
@@ -134,7 +134,7 @@ Three rules that change what "done" means. Each gets a Teach, a Twist, and a Com
 | Free space | `one-gap` | `sweep-up`, `tidy-disk` | `tidy-disk` already uses homes. |
 | Linked files | `chained` | `chain-of-three`, `daisy-chain` | Needs one with splits. |
 
-This chapter is large. It could be three short chapters.
+This chapter is large, but it stays one chapter for now.
 
 ### Chapter 7: Install
 
@@ -204,9 +204,13 @@ Finale. Five new levels on the full disk. Each combines three or more earlier ru
 - Tools: generator presets for mechanic pairs, and a checker rule that each Combine level's mechanics all change par.
 - Rework or cut the three levels where reserved sectors are decoration.
 
+## Decisions
+
+- The story is nice to have, not a priority.
+- Chapter 6 stays one chapter for now.
+- Levels cut from chapter 5 go to an Extra set (tentative).
+- Keep the read-path track.
+
 ## Open questions
 
 - Should the partition reveal be diegetic (the disk comes online) or plain layout?
-- Should chapter 6 be three chapters?
-- Do the current hard levels cut from chapter 5 go to an "Extra" set or to the daily pool?
-- Is the story worth any text beyond chapter titles?
