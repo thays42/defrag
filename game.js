@@ -4,6 +4,8 @@ const campaign = chapters.flatMap(({name, levels}) => levels.map(level => ({...l
 const levelById = new Map(campaign.map(level => [level.id, level]));
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(node => [node.id, node]));
 ui.cells = [];
+// Cell positions change with the board's size, so the track is redrawn on resize.
+new ResizeObserver(() => drawTrack()).observe(ui.board);
 const progressKey = 'defrag-progress-v3';
 
 
@@ -451,6 +453,51 @@ function buildBoard() {
     ui.board.append(button);
     ui.cells.push(button);
   }
+  drawTrack();
+}
+
+// The read path: a line through each row, and a link from each row's end to the next row's start.
+// It sits behind the cells, so it shows in the gaps and gutters. Links inside the level are live.
+function drawTrack() {
+  const slots = [...ui.board.querySelectorAll(':scope > .cell, :scope > .void')];
+  const box = ui.board.getBoundingClientRect();
+  if (slots.length !== E.FRAME || !box.width) return;
+  const left = box.left + ui.board.clientLeft;
+  const top = box.top + ui.board.clientTop;
+  const rects = slots.map(slot => slot.getBoundingClientRect());
+  const width = ui.board.clientWidth;
+  const leftGutter = (rects[0].left - left) / 2;
+  const rightGutter = (rects[E.COLUMNS - 1].right - left + width) / 2;
+  const middle = r => rects[r * E.COLUMNS].top - top + rects[r * E.COLUMNS].height / 2;
+  const inside = slot => slot >= frameOffset && slot < frameOffset + state.cells.length;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'track');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('viewBox', `0 0 ${width} ${ui.board.clientHeight}`);
+  const path = (kind, d, live) => {
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    line.setAttribute('class', kind + (live ? ' live' : ''));
+    line.setAttribute('d', d);
+    svg.append(line);
+  };
+  const center = slot => rects[slot].left - left + rects[slot].width / 2;
+  for (let r = 0; r < E.FRAME_ROWS; r++) {
+    path('track-row', `M${leftGutter} ${middle(r)}H${rightGutter}`, false);
+    // The live part spans only the level's own sectors, out to a gutter where the run continues.
+    const own = Array.from({length: E.COLUMNS}, (_, c) => r * E.COLUMNS + c).filter(inside);
+    if (!own.length) continue;
+    const first = own[0], last = own[own.length - 1];
+    const from = first % E.COLUMNS === 0 && inside(first - 1) ? leftGutter : center(first);
+    const to = last % E.COLUMNS === E.COLUMNS - 1 && inside(last + 1) ? rightGutter : center(last);
+    path('track-run', `M${from} ${middle(r)}H${to}`, true);
+  }
+  for (let r = 0; r < E.FRAME_ROWS - 1; r++) {
+    const end = (r + 1) * E.COLUMNS - 1;
+    const gap = (rects[end].bottom + rects[end + 1].top) / 2 - top;
+    path('track-wrap', `M${rightGutter} ${middle(r)}V${gap}H${leftGutter}V${middle(r + 1)}`, inside(end) && inside(end + 1));
+  }
+  ui.board.querySelector(':scope > .track')?.remove();
+  ui.board.prepend(svg);
 }
 
 function setPreview(index) {

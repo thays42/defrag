@@ -357,6 +357,21 @@ const check = (name, ok, detail = '') => {
   const cracked = await slots();
   check('failed cracked sector keeps the frame', cracked.all === 24 && cracked.cells === 4, JSON.stringify(cracked));
 
+  // The track draws every row and every row break. Breaks inside the board are live.
+  const track = () => get(() => ({rows: ui.board.querySelectorAll('.track-row').length, wraps: ui.board.querySelectorAll('.track-wrap').length, live: ui.board.querySelectorAll('.track-wrap.live').length}));
+  await open('warm-up'); // 17 sectors at offset 0: the breaks after sectors 6 and 12 are inside
+  const warm = await track();
+  check('track on warm-up', JSON.stringify(warm) === JSON.stringify({rows: 4, wraps: 3, live: 2}), JSON.stringify(warm));
+  await open('join-two-blocks');
+  check('track on a one-row board has no live break', (await track()).live === 0);
+  // The track follows the board when the viewport changes.
+  await open('warm-up');
+  const before = await get(() => ui.board.querySelector('.track-wrap').getAttribute('d'));
+  await page.setViewportSize({width: 360, height: 800});
+  const redrawn = await page.waitForFunction(old => ui.board.querySelector('.track-wrap').getAttribute('d') !== old, before, {timeout: 3000}).then(() => true, () => false);
+  check('track redraws on resize', redrawn);
+  await page.setViewportSize({width: 420, height: 900});
+
   check('no page errors', !errors.length, errors.join('; '));
 
   // Touch: one tap selects, one tap moves. A touch never sets a preview.
