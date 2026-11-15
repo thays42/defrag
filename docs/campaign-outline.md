@@ -97,7 +97,7 @@ Files have homes.
 | Teach | `find-home`, `two-files` |
 | Practice | `borrow-a-home`, `park-a-pair` |
 | Twist | `choose-what-to-park`, `save-the-gap` |
-| Combine | `scattered-gaps` (reworked in phase 2 as `scattered-gaps-ii`, par 4) |
+| Combine | `scattered-gaps` (reworked in phase 2 as `scattered-gaps-ii`, par 4; board reworked again in phase 3 so its homes change par) |
 
 ### Chapter 3: Move order
 

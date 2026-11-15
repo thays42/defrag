@@ -160,8 +160,11 @@ assert.strictEqual(E.initialState({board: 'A.AAACCC.BBBDD'}).cells.length, 14);
 {
   const {matters} = require('../tools/metrics.js');
   const byId = id => require('../levels.js').levels.find(l => l.id === id);
-  assert.strictEqual(matters(byId('scattered-gaps-ii'), 'homes', 4), false);
-  assert.strictEqual(matters(byId('scattered-gaps-ii'), 'reserved', 4), true);
+  // The phase 2 scattered-gaps board, whose homes did not change par.
+  const decorativeHomes = {board: '#..BB#A#A#######.#A.#.##', homes: {A: [3, 5], B: [19, 20]}};
+  assert.strictEqual(matters(decorativeHomes, 'homes', 4), false);
+  assert.strictEqual(matters(decorativeHomes, 'reserved', 4), true);
+  assert.strictEqual(matters(byId('scattered-gaps-ii'), 'homes', 4), true);
   assert.strictEqual(matters(byId('blocked-lanes'), 'homes', 4), true);
   assert.strictEqual(matters(byId('two-splits'), 'splitting', 7), true);
   assert.strictEqual(matters(byId('tidy-disk'), 'consolidate', 6), true);
@@ -178,7 +181,8 @@ assert.strictEqual(E.initialState({board: 'A.AAACCC.BBBDD'}).cells.length, 14);
   const byId = id => L.levels.find(l => l.id === id);
   const tag = (id, combines, extra = {}) => ({...byId(id), combines, ...extra});
   assert.deepStrictEqual(combineProblems([{name: 'X', levels: [tag('blocked-lanes', ['reserved', 'homes'])]}]), []);
-  assert.deepStrictEqual(combineProblems([{name: 'X', levels: [tag('scattered-gaps-ii', ['reserved', 'homes'])]}]), ['scattered-gaps-ii: homes does not change par']);
+  const oldGaps = {id: 'old-gaps', mechanic: 'reserved', par: 4, board: '#..BB#A#A#######.#A.#.##', homes: {A: [3, 5], B: [19, 20]}, combines: ['reserved', 'homes']};
+  assert.deepStrictEqual(combineProblems([{name: 'X', levels: [oldGaps]}]), ['old-gaps: homes does not change par']);
   assert.deepStrictEqual(combineProblems([{name: 'X', levels: [tag('blocked-lanes', ['reserved'])]}]), ['blocked-lanes: combines needs at least 2 rules']);
   assert.deepStrictEqual(combineProblems([{name: 'X', levels: [tag('blocked-lanes', ['homes', 'splitting'])]}]),
     ['blocked-lanes: combines does not include mechanic reserved', 'blocked-lanes: splitting does not change par']);
@@ -205,6 +209,14 @@ assert.strictEqual(E.initialState({board: 'A.AAACCC.BBBDD'}).cells.length, 14);
   assert.deepStrictEqual(sys.links[0], ['S', 'A']);
   assert.deepStrictEqual(sys.locked, ['S']);
   assert.strictEqual(E.parseBoard(sys.board).length, 24);
+}
+
+// Every campaign Combine level passes the Combine rules; scattered gaps is the Allocation Combine.
+{
+  const L = require('../levels.js');
+  const {combineProblems} = require('../tools/combine-rules.js');
+  assert.deepStrictEqual(L.levels.find(l => l.id === 'scattered-gaps-ii').combines, ['reserved', 'homes']);
+  assert.deepStrictEqual(combineProblems(L.chapters), []);
 }
 
 console.log('tools ok');

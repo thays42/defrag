@@ -42,7 +42,7 @@ const chapters = [
       {id: 'park-a-pair', mechanic: 'homes', par: 3, name: 'Park a pair', board: '#CC..#AABB', homes: {A: [9, 10], B: [7, 8], C: [2, 5]}, goal: 'Find a temporary space large enough for a whole pair.'},
       {id: 'choose-what-to-park', mechanic: 'homes', par: 3, name: 'Choose what to park', board: '###.CC..BAAB', homes: {A: [11, 12], B: [9, 10], C: [4, 8]}, goal: 'Choose which file to park in C’s home.'},
       {id: 'save-the-gap', mechanic: 'homes', intro: true, par: 3, name: 'Save the gap', board: '..ABB', homes: {B: [3, 4], A: [5, 5]}, goal: 'Keep the only two-sector gap free for the B pair.', prompt: 'Move the B pair first, then send A home.'},
-      {id: 'scattered-gaps-ii', mechanic: 'reserved', par: 4, name: 'Scattered gaps', board: '#..BB#A#A#######.#A.#.##', homes: {A: [3, 5], B: [19, 20]}, goal: 'Bring two files home using the gaps between reserved sectors.'},
+      {id: 'scattered-gaps-ii', mechanic: 'reserved', combines: ['reserved', 'homes'], par: 4, name: 'Scattered gaps', board: '########BB..AA.##A######', homes: {A: [9, 11], B: [13, 14]}, goal: 'Bring two files home using the gaps between reserved sectors.'},
     ],
   },
   {
