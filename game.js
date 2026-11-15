@@ -137,7 +137,8 @@ function start(target, attempt) {
   stopMotion();
   hideResult();
   level = target;
-  const usable = attempt && attempt.signature === signature(target);
+  // Saves from before the fixed frame padded the board with reserved sectors. They start fresh.
+  const usable = attempt && attempt.signature === signature(target) && attempt.state.cells.length === E.parseBoard(target.board).length;
   state = usable ? attempt.state : E.initialState(level);
   // Older saves have no travel count; it starts from 0.
   stats = usable ? {...emptyStats(), ...attempt.stats} : emptyStats();

@@ -302,6 +302,15 @@ const check = (name, ok, detail = '') => {
   }
   check('action buttons stay put through hint, select and move', shifts.every(d => d === 0), JSON.stringify(shifts));
 
+  // An attempt saved with the old reserved padding starts fresh.
+  await get(() => {
+    const target = findLevel('tight-fit');
+    const padded = [...E.parseBoard(target.board), '#', '#', '#', '#'];
+    progress.attempts['tight-fit'] = {signature: signature(target), state: {cells: padded, clip: null, wear: null, nudges: 0}, stats: {moves: 3, splits: 0, cost: 3, travel: 0}, history: []};
+  });
+  await open('tight-fit');
+  check('padded saved attempt starts fresh', await get(() => state.cells.length === 14 && stats.moves === 0));
+
   check('no page errors', !errors.length, errors.join('; '));
 
   // Touch: one tap selects, one tap moves. A touch never sets a preview.
