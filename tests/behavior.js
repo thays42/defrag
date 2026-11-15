@@ -141,6 +141,8 @@ const check = (name, ok, detail = '') => {
   check('next on the last Extra opens the catalog', (await solveAndNext('pocket-change')).catalog);
   const extraTotal = await page.evaluate(() => { const saved = {...progress.best}; showMenu(false); const before = ui['resume-detail'].textContent; for (const l of extraLevels) progress.best[l.id] = l.par; showMenu(false); const after = ui['resume-detail'].textContent; progress.best = saved; return {before, after}; });
   check('menu total ignores Extra stars', extraTotal.before === extraTotal.after, JSON.stringify(extraTotal));
+  const ending = await page.evaluate(() => { const saved = progress.best; progress.best = {[campaign.at(-1).id]: campaign.at(-1).par}; showEnding(); const text = ui['ending-detail'].textContent; progress.best = saved; return text; });
+  check('ending never claims a full clear that is not true', !/cleared all/.test(ending) && ending.includes(`1 of ${await get(() => campaign.length)} levels`), ending);
   check('last Extra says where Next goes', await page.evaluate(() => { openLevel(levelById.get('pocket-change')); for (const m of E.solve(level, state).path) perform(m); return ui.next.textContent === 'Back to levels'; }));
 
   // Old index-based saves migrate to ids.

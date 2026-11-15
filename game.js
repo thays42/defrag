@@ -1051,7 +1051,10 @@ function showCatalog() {
 
 function showEnding() {
   const total = starTotal();
-  ui['ending-detail'].textContent = `You cleared all ${campaign.length} levels and earned ${total} of ${3 * campaign.length} ★. ` +
+  // Finish campaign is reachable with levels still open, for example after new levels are added to a finished campaign.
+  const cleared = campaign.filter(item => progress.best[item.id] != null).length;
+  const clearedText = cleared === campaign.length ? `all ${campaign.length} levels` : `${cleared} of ${campaign.length} levels`;
+  ui['ending-detail'].textContent = `You cleared ${clearedText} and earned ${total} of ${3 * campaign.length} ★. ` +
     (total < 3 * campaign.length ? 'Levels lists every puzzle by chapter, plus an Extra set, so you can chase the stars you missed.' : 'Every star collected. The daily puzzle has a new disk every day.');
   showScreen('ending', ui['ending-levels']);
 }

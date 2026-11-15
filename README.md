@@ -71,7 +71,7 @@ The checker also enforces teach order (`tools/teach-order.js`). A campaign level
 
 Campaign levels must also look distinct. The checker compares every pair of boards, with files renamed in order of appearance, and scores 1 minus the normalized edit distance. It takes the higher of two views: the layout alone, and the layout with home and cracked sectors marked. Non-intro pairs at 0.75 or above fail. Pairs from 0.60 warn. Intro boards are tiny, so their pairs only warn. `tools/redress.js` mirrors, pads or relabels a level without changing its puzzle. `node tools/redress-search.js` proposes re-dresses that keep par, the mechanic check and trap rate.
 
-For `reserved` campaign levels the mechanic check fails when freeing the reserved sectors leaves par unchanged: reserved sectors must be a constraint, not decoration. Boards too large to check in time only warn. For `homes` levels the check only warns, since some original levels keep the same optimum without their homes. A rework that changes a level's par takes a new id, so old best scores do not carry over.
+For `reserved` campaign levels the mechanic check fails when freeing the reserved sectors leaves par unchanged: reserved sectors must be a constraint, not decoration. The check searches only up to par − 1, so it finishes even on full-disk boards. A level whose reserved sectors are decoration but whose homes drive the puzzle is labelled `homes`. For `homes` levels the check only warns, since some original levels keep the same optimum without their homes. A rework that changes a level's par takes a new id, so old best scores do not carry over.
 
 ### Quality metrics
 

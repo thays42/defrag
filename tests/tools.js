@@ -146,4 +146,14 @@ assert.strictEqual(E.initialState({board: 'A.AAACCC.BBBDD'}).cells.length, 14);
   }
 }
 
+// Every campaign level labelled reserved really depends on its reserved sectors. A bounded search proves it even on big boards.
+{
+  const {without} = require('../tools/metrics.js');
+  const {reservedMatters} = require('../tools/metrics.js');
+  for (const level of require('../levels.js').chapters.flatMap(c => c.levels).filter(l => l.mechanic === 'reserved' && !l.intro)) {
+    assert.strictEqual(reservedMatters(level, level.par), true, `${level.id}: reserved sectors are decoration`);
+  }
+  assert.strictEqual(reservedMatters({board: 'A#A.', par: 1}, 1), false, 'freeing # in A#A. still costs 1');
+}
+
 console.log('tools ok');

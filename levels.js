@@ -73,8 +73,8 @@ const chapters = [
       {id: 'four-files', mechanic: 'homes', par: 6, name: 'Four files', board: '#DA##D.CC##AACBB.', homes: {A: [15, 17], B: [12, 13], C: [7, 9], D: [2, 3]}, goal: 'Get four files home with only two free sectors.'},
       {id: 'free-the-pair', mechanic: 'homes', par: 6, name: 'Free the pair', board: 'AA.BBDCACD.C', homes: {A: [1, 3], B: [5, 6], C: [7, 9], D: [11, 12]}, goal: 'Clear the occupied homes and find the cheapest way to align B.'},
       {id: 'cut-across', mechanic: 'splitting', par: 6, name: 'Cut across', board: '###########..ABBB#BAAA', homes: {A: [12, 15], B: [19, 22]}, goal: 'Trade the two files between their homes with only two open sectors.'},
-      {id: 'split-workspace', mechanic: 'reserved', par: 6, name: 'Split workspace', board: '.#B#...BB######A#AABA.##', homes: {A: [19, 22], B: [5, 8]}, goal: 'Clear both homes with working space spread across four rows.'},
-      {id: 'across-the-disk', mechanic: 'reserved', par: 7, name: 'Across the disk', board: 'B.D##CB#####BAD.#A.C###', homes: {A: [19, 20], B: [14, 16], C: [6, 7], D: [2, 3]}, goal: 'Bring four files home around reserved sectors spread across the disk.'},
+      {id: 'split-workspace', mechanic: 'homes', par: 6, name: 'Split workspace', board: '.#B#...BB######A#AABA.##', homes: {A: [19, 22], B: [5, 8]}, goal: 'Clear both homes with working space spread across four rows.'},
+      {id: 'across-the-disk', mechanic: 'homes', par: 7, name: 'Across the disk', board: 'B.D##CB#####BAD.#A.C###', homes: {A: [19, 20], B: [14, 16], C: [6, 7], D: [2, 3]}, goal: 'Bring four files home around reserved sectors spread across the disk.'},
       {id: 'tight-fit', mechanic: 'splitting', par: 9, name: 'Tight fit', board: 'A.AAACCC.BBBDD', homes: {A: [1, 4], B: [5, 7], C: [9, 11], D: [13, 14]}, goal: 'Reshape the gaps to move three large files into place.'},
     ],
   },
@@ -141,7 +141,7 @@ const extras = {
   summary: 'Hard puzzles off the main path.',
   levels: [
     {id: 'trade-places', mechanic: 'splitting', par: 7, name: 'Trade places', board: 'CCCA#.BBAAB.##DDD', homes: {A: [1, 3], B: [6, 8], C: [9, 11], D: [15, 17]}, goal: 'Use two empty sectors to get A, B, and C past one another.'},
-    {id: 'broken-workspace', mechanic: 'reserved', par: 6, name: 'Broken workspace', board: '##AAA#C.DB.C#.CB##D', homes: {A: [3, 5], B: [7, 8], C: [10, 12], D: [14, 15]}, goal: 'Use the scattered gaps to reunite B, C, and D.'},
+    {id: 'broken-workspace', mechanic: 'homes', par: 6, name: 'Broken workspace', board: '##AAA#C.DB.C#.CB##D', homes: {A: [3, 5], B: [7, 8], C: [10, 12], D: [14, 15]}, goal: 'Use the scattered gaps to reunite B, C, and D.'},
     {id: 'pocket-change', mechanic: 'reserved', par: 4, name: 'Pocket change', board: '#BBA.B#.#.#.##AA.###', homes: {A: [2, 4], B: [15, 17]}, goal: 'Use the small pockets of space to bring both files home.'},
   ],
 };

@@ -91,4 +91,11 @@ function addDetail(level, result, limit = 1.5e6) {
   return result;
 }
 
-module.exports = {measure, addDetail, trapRate, without, uses};
+// True when freeing the reserved sectors lowers par. Bounded at par - 1, so it finishes even on full-disk boards.
+function reservedMatters(level, par) {
+  const freed = E.solve(without.reserved(level), undefined, {maxCost: par - 1, limit: 4e6});
+  if (freed.aborted) throw new Error('search too large to check');
+  return freed.cost !== null;
+}
+
+module.exports = {measure, addDetail, trapRate, without, uses, reservedMatters};

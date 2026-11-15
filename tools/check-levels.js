@@ -3,7 +3,7 @@
 // and the level's mechanic actually changes the result. Exits 1 on any failure.
 //   node tools/check-levels.js [--metrics]
 const E = require('../engine.js');
-const {measure, addDetail, without, uses} = require('./metrics.js');
+const {measure, addDetail, without, uses, reservedMatters} = require('./metrics.js');
 const {similarPairs} = require('./similarity.js');
 const {mechanics, chapters, levels} = require('../levels.js');
 const daily = require('../daily.js');
@@ -59,7 +59,7 @@ const matters = {
   fragile: (level, par) => optimum(without.fragile(level)) < par,
   links: (level, par) => optimum(without.links(level)) < par,
   nudge: (level, par) => !(optimum(without.nudge(level)) <= par),
-  reserved: (level, par) => optimum(without.reserved(level), {limit: 3e5}) < par,
+  reserved: reservedMatters,
 };
 
 for (const level of all) {
