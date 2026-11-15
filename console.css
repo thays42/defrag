@@ -85,10 +85,7 @@ button:disabled { opacity: .55; cursor: default; }
   display: flex;
   flex-direction: column;
   min-height: 0;
-  padding: clamp(9px, 3vw, 16px);
-  border: 2px solid #413253;
-  border-radius: 10px 10px 20px 10px;
-  box-shadow: 0 3px #110b19;
+  padding: 4px 2px 0;
   background: var(--screen);
   color: #f7edf9;
 }
@@ -388,6 +385,9 @@ main {
 
 /* Let five rows and their controls scroll together on shorter screens. */
 .game-screen .panel { flex: none; }
+/* In a level the console fills the screen and the move buttons sit at its foot, near the thumb. */
+.console:has(> .game-screen:not([hidden])) { max-height: none; }
+.game-screen .actions { margin-top: auto; padding-top: 11px; }
 
 /* ---- Mechanics and feedback ---- */
 .cell sub { font-size: .55em; vertical-align: baseline; margin-left: 1px; }

@@ -401,6 +401,24 @@ const check = (name, ok, detail = '') => {
   await get(() => perform(E.solve(level).path[0]));
   check('a full clipboard keeps the board in place', await get(() => state.clip !== null) && await clipTop() === emptyClip);
 
+  // Undo, Restart and Hint sit at the bottom of the screen, in the same place on every level.
+  for (const size of [{width: 420, height: 900}, {width: 360, height: 640}]) {
+    await page.setViewportSize(size);
+    const placed = await get(() => {
+      const tops = new Set();
+      for (const target of [...campaign, dailyLevel()]) {
+        openLevel(target);
+        tops.add(Math.round(document.querySelector('.actions').getBoundingClientRect().top));
+      }
+      const console_ = document.querySelector('.console');
+      const inner = console_.getBoundingClientRect().bottom - parseFloat(getComputedStyle(console_).paddingBottom) - console_.clientTop;
+      const gap = inner - document.querySelector('.actions').getBoundingClientRect().bottom;
+      return {tops: tops.size, gap: Math.round(gap), screenGap: Math.round(innerHeight - console_.getBoundingClientRect().bottom)};
+    });
+    check(`action row is fixed at the bottom at ${size.width}x${size.height}`, placed.tops === 1 && Math.abs(placed.gap) <= 1 && placed.screenGap <= 24, JSON.stringify(placed));
+  }
+  await page.setViewportSize({width: 420, height: 900});
+
   check('no page errors', !errors.length, errors.join('; '));
 
   // Touch: one tap selects, one tap moves. A touch never sets a preview.
