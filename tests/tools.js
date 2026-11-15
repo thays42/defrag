@@ -119,7 +119,9 @@ assert.strictEqual(E.initialState({board: 'A.AAACCC.BBBDD'}).cells.length, 14);
   assert.deepStrictEqual(L.extras.levels.map(l => l.id), ['trade-places', 'broken-workspace', 'pocket-change']);
   assert.strictEqual(L.levels.length, L.chapters.flatMap(c => c.levels).length + L.extras.levels.length);
   assert.strictEqual(new Set(L.levels.map(l => l.id)).size, L.levels.length, 'no level appears twice');
-  for (const id of ORIGINAL_55_IDS) assert.ok(L.levels.some(l => l.id === id), `${id} kept`);
+  // A rework that changes par takes a new id, so old best scores do not carry over.
+  const RENAMED = {'scattered-gaps': 'scattered-gaps-ii'};
+  for (const id of ORIGINAL_55_IDS) assert.ok(L.levels.some(l => l.id === (RENAMED[id] ?? id)), `${id} kept`);
 }
 
 // A level may only use a rule once the campaign has taught it. Row wrap is taught by across-the-break.
@@ -132,6 +134,16 @@ assert.strictEqual(E.initialState({board: 'A.AAACCC.BBBDD'}).cells.length, 14);
   assert.deepStrictEqual(teachOrderProblems([t('across-the-break', {board: 'A.AA..', offset: 9})]), []);
   assert.deepStrictEqual(teachOrderProblems([t('s', {board: 'AA.AA', par: 2})]), ['s uses splitting before it is taught']);
   assert.deepStrictEqual(teachOrderProblems(require('../levels.js').chapters.flatMap(c => c.levels)), []);
+}
+
+// Reserved sectors are a constraint, not decoration: freeing them must lower par.
+{
+  const {without} = require('../tools/metrics.js');
+  for (const id of ['scattered-gaps-ii', 'blocked-lanes', 'pocket-change']) {
+    const level = require('../levels.js').levels.find(l => l.id === id);
+    const freed = E.solve(without.reserved(level)).cost;
+    assert.ok(freed < level.par, `${id}: freeing the reserved sectors must lower par (freed ${freed}, par ${level.par})`);
+  }
 }
 
 console.log('tools ok');

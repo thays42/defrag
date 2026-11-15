@@ -41,7 +41,7 @@ const chapters = [
       {id: 'park-a-pair', mechanic: 'homes', par: 3, name: 'Park a pair', board: '#CC..#AABB', homes: {A: [9, 10], B: [7, 8], C: [2, 5]}, goal: 'Find a temporary space large enough for a whole pair.'},
       {id: 'choose-what-to-park', mechanic: 'homes', par: 3, name: 'Choose what to park', board: '###.CC..BAAB', homes: {A: [11, 12], B: [9, 10], C: [4, 8]}, goal: 'Choose which file to park in C’s home.'},
       {id: 'save-the-gap', mechanic: 'homes', intro: true, par: 3, name: 'Save the gap', board: '..ABB', homes: {B: [3, 4], A: [5, 5]}, goal: 'Keep the only two-sector gap free for the B pair.', prompt: 'Move the B pair first, then send A home.'},
-      {id: 'scattered-gaps', mechanic: 'reserved', par: 3, name: 'Scattered gaps', board: '######...#B.AB##.######A', homes: {A: [7, 8], B: [13, 14]}, goal: 'Bring two files home using the gaps between reserved sectors.'},
+      {id: 'scattered-gaps-ii', mechanic: 'reserved', par: 4, name: 'Scattered gaps', board: '#..BB#A#A#######.#A.#.##', homes: {A: [3, 5], B: [19, 20]}, goal: 'Bring two files home using the gaps between reserved sectors.'},
     ],
   },
   {
@@ -50,7 +50,7 @@ const chapters = [
     levels: [
       {id: 'a-can-wait', mechanic: 'homes', par: 4, name: 'A can wait', board: '##C.BB#A.C', homes: {B: [3, 4], C: [5, 6], A: [9, 9]}, goal: 'Choose when to send A home.'},
       {id: 'b-can-wait', mechanic: 'homes', par: 4, name: 'B can wait', board: 'BB#.ACC..A', homes: {C: [4, 5], A: [6, 7], B: [8, 9]}, goal: 'Get everyone home while keeping space to join A.'},
-      {id: 'blocked-lanes', mechanic: 'reserved', par: 4, name: 'Blocked lanes', board: 'BA.#..#CBA##C', homes: {A: [1, 2], B: [5, 6], C: [8, 9]}, goal: 'Route the files around the reserved sectors.'},
+      {id: 'blocked-lanes', mechanic: 'reserved', par: 4, name: 'Blocked lanes', board: 'B.#CC#.AAB##.', homes: {A: [1, 2], B: [8, 9], C: [4, 5]}, goal: 'Route the files around the reserved sectors.'},
     ],
   },
   {
@@ -142,7 +142,7 @@ const extras = {
   levels: [
     {id: 'trade-places', mechanic: 'splitting', par: 7, name: 'Trade places', board: 'CCCA#.BBAAB.##DDD', homes: {A: [1, 3], B: [6, 8], C: [9, 11], D: [15, 17]}, goal: 'Use two empty sectors to get A, B, and C past one another.'},
     {id: 'broken-workspace', mechanic: 'reserved', par: 6, name: 'Broken workspace', board: '##AAA#C.DB.C#.CB##D', homes: {A: [3, 5], B: [7, 8], C: [10, 12], D: [14, 15]}, goal: 'Use the scattered gaps to reunite B, C, and D.'},
-    {id: 'pocket-change', mechanic: 'reserved', par: 4, name: 'Pocket change', board: '#.BBA###.A##B.A###..', homes: {A: [2, 4], B: [13, 15]}, goal: 'Use the small pockets of space to bring both files home.'},
+    {id: 'pocket-change', mechanic: 'reserved', par: 4, name: 'Pocket change', board: '#BBA.B#.#.#.##AA.###', homes: {A: [2, 4], B: [15, 17]}, goal: 'Use the small pockets of space to bring both files home.'},
   ],
 };
 

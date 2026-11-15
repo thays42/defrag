@@ -13,5 +13,6 @@ const badgePool = {
   "long-way-round": {"tidy":11,"few":3},
   "head-travel": {"few":4},
   "broken-workspace": {"light":24},
+  "pocket-change": {"light":34},
 };
 if (typeof module !== 'undefined') module.exports = {badgePool};

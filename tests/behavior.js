@@ -303,7 +303,7 @@ const check = (name, ok, detail = '') => {
 
   // The action buttons never move while playing: the status line has a fixed height.
   const shifts = [];
-  for (const id of ['warm-up', 'park-a-pair', 'scattered-gaps', 'no-room-at-all']) {
+  for (const id of ['warm-up', 'park-a-pair', 'scattered-gaps-ii', 'no-room-at-all']) {
     await open(id);
     const y = () => get(() => Math.round(ui.hint.getBoundingClientRect().top));
     const start = await y();

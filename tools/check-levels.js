@@ -25,10 +25,9 @@ const baseline = require('fs').existsSync(baselinePath) ? require(baselinePath) 
 const mechanicIds = new Set(mechanics.map(m => m.id));
 const problems = [];
 const warnings = [];
-// Older campaign levels predate this check; report them without failing.
+// Homes predate this check in some older levels; report them without failing.
 const soft = {
   homes: (level, par) => optimum(without.homes(level), {limit: 3e5}) < par,
-  reserved: (level, par) => optimum(without.reserved(level), {limit: 3e5}) < par,
 };
 const ids = new Set();
 const all = [...levels, ...daily.dailyPool.map(level => ({...level, mechanic: level.mechanic ?? 'homes', daily: true}))];
@@ -60,6 +59,7 @@ const matters = {
   fragile: (level, par) => optimum(without.fragile(level)) < par,
   links: (level, par) => optimum(without.links(level)) < par,
   nudge: (level, par) => !(optimum(without.nudge(level)) <= par),
+  reserved: (level, par) => optimum(without.reserved(level), {limit: 3e5}) < par,
 };
 
 for (const level of all) {
@@ -89,9 +89,12 @@ for (const level of all) {
   if (level.beatable && level.mechanic === 'splitting' && optimum(level, {whole: true}) !== level.par) fail(`par ${level.par} is not the best unsplit score`);
   // Intro levels teach a rule; they need not depend on it.
   try {
-    if (!level.intro && matters[level.mechanic] && !matters[level.mechanic](level, best.cost)) fail(`${level.mechanic} does not change the result`);
+    // Daily boards are labelled reserved whenever they hold a reserved sector, so the reserved rule is for campaign levels only.
+    const checked = !level.intro && matters[level.mechanic] && !(level.daily && level.mechanic === 'reserved');
+    if (checked && !matters[level.mechanic](level, best.cost)) fail(`${level.mechanic} does not change the result`);
   } catch (error) {
-    fail(error.message);
+    // Large reserved boards cannot be checked in time; report them without failing.
+    (level.mechanic === 'reserved' ? warnings : problems).push(`${where}: ${error.message}`);
   }
   try {
     if (!level.intro && !level.daily && soft[level.mechanic] && !soft[level.mechanic](level, best.cost)) warnings.push(`${where}: ${level.mechanic} does not change the result`);

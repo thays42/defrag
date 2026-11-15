@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Generate-and-test level search.
-//   node tools/generate.js <preset> [--count 40] [--seed 7] [--tries 4000] [--write daily.js]
+//   node tools/generate.js <preset> [--count 40] [--seed 7] [--tries 4000] [--par N] [--length N] [--write daily.js]
+// --par and --length keep only candidates with exactly that optimum or board length.
 // --write saves the picks as the daily puzzle pool instead of printing them.
 // Prints the best candidates as JSON lines, ranked by quality. Pick, name and add them to levels.js by hand.
 // Presets: homes, split, reserved, ordered, clipboard, seek, consolidate, system, fragile, links, nudge, daily.
@@ -16,6 +17,8 @@ const flag = (name, fallback) => {
 const count = flag('count', 40);
 const tries = flag('tries', 4000);
 let seed = flag('seed', 7);
+const wantPar = flag('par', null);
+const wantLength = flag('length', null);
 
 // mulberry32: 32-bit integer math, so the sequence does not collapse into a short cycle.
 function random() {
@@ -70,7 +73,12 @@ function build({sizes, free, reserved = 0, ordered = false, homes = 0, slack = 0
 const presets = {
   homes: () => build({sizes: [between(2, 3), between(2, 3), between(1, 3)], free: between(1, 2), homes: 3}),
   split: () => build({sizes: [between(3, 4), between(3, 4)], free: between(1, 2), homes: 2}),
-  reserved: () => build({sizes: [between(2, 3), between(2, 3), 2], free: 3, reserved: between(4, 8), homes: 3}),
+  // Reserved sectors must raise par: with them freed, the puzzle gets cheaper.
+  reserved: () => {
+    const files = between(2, 3);
+    const sizes = [between(2, 3), between(2, 3), 2].slice(0, files);
+    return {...build({sizes, free: between(2, 4), reserved: between(4, 14), homes: files}), want: m => m.gains.reserved <= -1};
+  },
   ordered: () => ({...build({sizes: [3, between(2, 3)], free: between(1, 2), ordered: true}), want: m => m.gains.ordered <= -2}),
   clipboard: () => ({...build({sizes: [between(2, 3), between(2, 3), 2], free: 1, homes: 3}), clipboard: true, want: m => m.gains.clipboard >= 2}),
   seek: () => ({...build({sizes: [between(2, 3), between(2, 3), between(1, 2)], free: between(2, 3), homes: between(1, 2)}), cost: 'seek', want: m => m.gains.seekDetour >= 1}),
@@ -120,6 +128,7 @@ for (let n = 0; n < tries && found.length < count * 3; n++) {
   const {want} = level;
   delete level.want;
   if (!E.parseBoard(level.board).some(t => t === '.')) continue;
+  if (wantLength !== null && E.parseBoard(level.board).length !== wantLength) continue;
   const key = canonical(level);
   if (seen.has(key)) continue;
   seen.add(key);
@@ -127,6 +136,7 @@ for (let n = 0; n < tries && found.length < count * 3; n++) {
   if (E.solved(level, initial)) continue;
   const metrics = measure(level, {detail: false});
   if (metrics.par === null || metrics.par < 3 || metrics.par > 12) continue;
+  if (wantPar !== null && metrics.par !== wantPar) continue;
   if (want && !want(metrics)) continue;
   addDetail(level, metrics, 3e5);
   if (want && !want(metrics)) continue;
