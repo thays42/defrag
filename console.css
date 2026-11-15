@@ -95,8 +95,10 @@ button:disabled { opacity: .55; cursor: default; }
 .chapter { color: var(--arcade); margin-bottom: 4px; }
 h2 { font-size: clamp(1.2rem, 5vw, 1.55rem); line-height: 1.18; }
 .goal { color: var(--muted); font-size: .9rem; line-height: 1.4; margin: 4px 0 11px; }
-.panel h2 { margin-bottom: 10px; text-wrap: balance; }
-.title-chapter { color: var(--muted); font-weight: 500; }
+.panel h2 { margin-bottom: 10px; display: flex; white-space: pre; }
+.panel h2 > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.title-name { flex: 0 1 auto; }
+.title-chapter { color: var(--muted); font-weight: 500; flex: 0 1000 auto; }
 .sr-only { position: absolute !important; width: 1px; height: 1px; margin: 0 !important; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .stats {
   display: flex;
@@ -111,7 +113,8 @@ h2 { font-size: clamp(1.2rem, 5vw, 1.55rem); line-height: 1.18; }
 .stats .score + .score::before { content: '/'; color: #5e497c; margin-right: 8px; font: 700 1.1rem ui-monospace, monospace; }
 .stats span { color: var(--muted); font-size: .65rem; }
 .stats strong { font: 700 1.3rem/1.2 ui-monospace, monospace; color: var(--mint); }
-#stat-detail { margin-left: auto; color: var(--muted); font: .72rem/1.3 ui-monospace, monospace; text-align: right; }
+/* Up to two short lines fit beside the score, so the bar keeps one height. */
+#stat-detail { margin-left: auto; max-height: calc(2 * 1.15 * .68rem); overflow: hidden; color: var(--muted); font: .68rem/1.15 ui-monospace, monospace; text-align: right; }
 [data-home=A] { --home: #8ae8c1; }
 [data-home=B] { --home: #ffd28c; }
 [data-home=C] { --home: #b9c6ff; }
@@ -415,12 +418,15 @@ main {
 /* Corner marks that share the top-left corner move clear of the tab. */
 .cell.cracked.settled::before, .cell.cracked.locked::before, .cell.cracked.wrap-in::before { left: 18px; }
 .cell.failed { color: #ff654f; background: #1a0b0b; border-color: #5a1d18; font-size: 1rem; }
-.rules { display: flex; flex-wrap: wrap; gap: 5px; margin: -4px 0 9px; }
+/* Rule chips, the clipboard and the nudge count share one strip of fixed height, so the board never moves. */
+.level-bar { display: flex; align-items: center; gap: 8px; height: 36px; margin: -4px 0 6px; overflow-x: auto; scrollbar-width: none; }
+.level-bar::-webkit-scrollbar { display: none; }
+.rules { display: flex; flex: none; gap: 5px; margin: 0; }
 .rules span[data-met=true] { border-color: var(--mint); color: var(--mint); }
 .rules span { padding: 2px 7px; border: 1px solid #5e497c; border-radius: 10px; color: var(--arcade); font: 700 .7rem/1.4 ui-monospace, monospace; }
-.tools { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.tools { display: flex; flex: none; gap: 8px; }
 .tools:not(:has(> :not([hidden]))) { display: none; }
-.clipboard { display: flex; align-items: center; gap: 8px; padding: 4px 10px; border: 1px dashed #7a6898; border-radius: 6px; background: #0c0912; color: var(--muted); font: 700 .72rem ui-monospace, monospace; text-transform: uppercase; }
+.clipboard { display: flex; align-items: center; min-height: 0; height: 36px; gap: 8px; padding: 4px 10px; border: 1px dashed #7a6898; border-radius: 6px; background: #0c0912; color: var(--muted); font: 700 .72rem ui-monospace, monospace; text-transform: uppercase; }
 .clipboard.ready { border-color: var(--coral); color: var(--coral); }
 .clipboard[aria-pressed=true] { border-style: solid; border-color: var(--arcade); color: var(--arcade); }
 .clipboard.hinted { animation: hint-pulse 1s ease-in-out infinite alternate; }
@@ -457,7 +463,7 @@ main {
   .game-screen .back, .actions button { min-height: 36px; padding-block: 3px; }
   .panel h2 { font-size: 1.1rem; }
   .goal { font-size: .8rem; line-height: 1.3; }
-  .stats, .tools { margin-bottom: 4px; }
+  .stats, .level-bar { margin-bottom: 4px; }
   .clipboard { min-height: 36px; }
 }
 

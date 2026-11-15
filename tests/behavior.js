@@ -378,6 +378,29 @@ const check = (name, ok, detail = '') => {
   const sweep = await get(() => Number(getComputedStyle(ui.board, '::after').zIndex) > Number(getComputedStyle(ui.cells[0]).zIndex));
   check('clear sweep sits above the cells', sweep);
 
+  // The board does not move between levels: same top edge on every level, at three screen sizes.
+  for (const size of [{width: 420, height: 900}, {width: 360, height: 640}, {width: 844, height: 390}]) {
+    await page.setViewportSize(size);
+    const tops = await get(() => {
+      const out = {};
+      for (const target of [...campaign, dailyLevel()]) {
+        openLevel(target);
+        const top = Math.round(ui.board.getBoundingClientRect().top);
+        (out[top] ??= []).push(target.id);
+      }
+      return out;
+    });
+    const summary = Object.entries(tops).map(([top, ids]) => `${top}: ${ids.length} (${ids[0]})`).join(' | ');
+    check(`board top is fixed at ${size.width}x${size.height}`, Object.keys(tops).length === 1, summary);
+  }
+  await page.setViewportSize({width: 420, height: 900});
+  // Filling the clipboard does not move the board either.
+  await open('no-room-at-all');
+  const clipTop = () => get(() => Math.round(ui.board.getBoundingClientRect().top));
+  const emptyClip = await clipTop();
+  await get(() => perform(E.solve(level).path[0]));
+  check('a full clipboard keeps the board in place', await get(() => state.clip !== null) && await clipTop() === emptyClip);
+
   check('no page errors', !errors.length, errors.join('; '));
 
   // Touch: one tap selects, one tap moves. A touch never sets a preview.

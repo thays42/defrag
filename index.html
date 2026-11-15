@@ -41,16 +41,18 @@
 <header><button class="back" id="game-back"><span aria-hidden="true">← </span>Menu</button><button class="back" id="game-levels">Levels</button><button class="back icon" id="game-help" aria-haspopup="dialog" aria-label="How to play">?</button></header>
 <div class="panel">
 <h2 id="title"></h2><p id="goal" class="goal sr-only"></p>
-<p id="rules" class="rules" hidden></p>
 <div class="stats" id="stats">
 <div class="score"><span>Score</span><strong id="score"></strong></div>
 <div class="score"><span>Par</span><strong id="par"></strong></div>
 <p id="stat-detail"></p>
 </div>
+<div class="level-bar">
+<p id="rules" class="rules" hidden></p>
 <div class="tools">
 <button id="clipboard" class="clipboard" hidden aria-pressed="false"><span>Clipboard</span><span id="clip-contents" class="clip-contents"></span></button>
 <div id="nudges" class="nudges" hidden>
 <span id="nudge-count"></span>
+</div>
 </div>
 </div>
 <div class="board" id="board" role="group" aria-label="Disk sectors, read left to right across rows. Arrow keys move between sectors."></div>
