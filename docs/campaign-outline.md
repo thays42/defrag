@@ -204,6 +204,18 @@ Finale. Five new levels on the full disk. Each combines three or more earlier ru
 - Tools: generator presets for mechanic pairs, and a checker rule that each Combine level's mechanics all change par.
 - Rework or cut the three levels where reserved sectors are decoration.
 
+## Implementation roadmap
+
+Each phase is its own plan and ships working software. Later phases depend on earlier ones.
+
+| Phase | Delivers | Depends on | Plan |
+| --- | --- | --- | --- |
+| 1. Fixed disk | 6×4 frame, unallocated sectors, read-path track, `offset` level field. | — | `docs/superpowers/plans/2026-11-15-fixed-disk.md` |
+| 2. Campaign order | New chapter layout, catalog in campaign order, the two new Teach levels, rework of the three decoration levels, Extra set. | 1 (the row-break level needs `offset`) | Not written |
+| 3. Combine levels | Generator presets for mechanic pairs, checker rule that every Combine mechanic changes par, about 7 Combine levels, 5 finale levels. | 2 | Not written |
+| 4. First-time player fixes | The confusion table: par and score copy, hint warning, settled state, split cost preview, clipboard contents. | — | Not written |
+| 5. Partition reveal | Animation when the partition grows at a chapter start. | 1, 2, and the open question below | Not written |
+
 ## Decisions
 
 - The story is nice to have, not a priority.
