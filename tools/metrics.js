@@ -76,8 +76,7 @@ function measure(level, {detail = true, limit = 1.5e6} = {}) {
     if (!uses[name](level)) continue;
     gains[name] = cost(strip(level)) - best.cost;
   }
-  // Seek: does the cheapest route take more moves than the shortest one?
-  if (level.cost === 'seek') gains.seekDetour = best.path.length - cost(without.seek(level));
+  if (level.cost === 'seek') gains.seekDetour = seekDetour(level, {limit: 1e6});
   result.gains = gains;
   if (detail) addDetail(level, result, limit);
   return result;
@@ -89,6 +88,23 @@ function addDetail(level, result, limit = 1.5e6) {
   const counted = E.solve(level, undefined, {countPaths: true, limit});
   result.paths = counted.aborted ? Infinity : counted.paths;
   return result;
+}
+
+// Seek: how many more moves the cheapest routes need than the fewest-move route. 0 means some cheapest route
+// is also a fewest-move route, so seek changes nothing about the plan. Ranks routes by cost, then by moves,
+// so the answer never depends on which cheapest route the solver returns. NaN when a search is too large.
+const ROUTE_K = 1000;
+function seekDetour(level, {limit = 4e6} = {}) {
+  const ranked = E.solve(level, undefined, {limit, price: m => m.cost * ROUTE_K + 1, minPrice: ROUTE_K + 1, maxCost: 200 * ROUTE_K});
+  const fewest = E.solve(level, undefined, {limit, price: () => 1});
+  if (ranked.aborted || fewest.aborted) return NaN;
+  return (ranked.cost % ROUTE_K) - fewest.cost;
+}
+
+// True when a hint search stays within `limit` states at the start and after every first move.
+function hintCheap(level, limit) {
+  const start = E.initialState(level);
+  return [start, ...E.moves(level, start).map(move => E.apply(level, start, move))].every(state => !E.solve(level, state, {limit}).aborted);
 }
 
 // True when the rule changes par. Every search is capped at par, so it finishes even on full-disk boards.
@@ -113,8 +129,9 @@ function matters(level, rule, par, {limit = 4e6} = {}) {
     case 'system':
       return lowers(without.system(level)) && lowers(without.links(level));
     case 'seek': {
-      const fewest = bounded(without.seek(level), {}, limit).cost;
-      return bounded(level, {}, limit).path.length > fewest;
+      const detour = seekDetour(level, {limit});
+      if (Number.isNaN(detour)) throw new Error('search too large to check');
+      return detour > 0;
     }
     default:
       if (!without[rule]) throw new Error(`unknown rule ${rule}`);
@@ -122,4 +139,4 @@ function matters(level, rule, par, {limit = 4e6} = {}) {
   }
 }
 
-module.exports = {measure, addDetail, trapRate, without, uses, matters};
+module.exports = {measure, addDetail, trapRate, without, uses, matters, seekDetour, hintCheap};

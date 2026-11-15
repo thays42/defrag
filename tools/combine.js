@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 // Search for Combine levels: boards where every listed rule changes par.
 //   node tools/combine.js <rule,rule,...> [--sizes 3,3,2] [--free 3] [--length 24] [--active N] [--min-par N] [--par N]
-//                         [--seed 7] [--tries 4000] [--count 10] [--seconds N]
+//                         [--seed 7] [--tries 4000] [--count 10] [--seconds N] [--hint-limit N]
 // Sectors left over after files and free space are reserved, so the board is exactly --length long.
 // --active N keeps the puzzle in an N-sector stretch, with reserved padding at both ends.
 // Filters run cheapest first: already solved, par (search capped at 2e5 states), each rule matters, then detail metrics.
+// --hint-limit N drops boards whose hint search, at the start or one move in, needs more than N states.
 // --seconds stops the search after that long and reports what it found. (A signal cannot: the search never yields.)
 // Each kept candidate is also written to stderr as it is found (`kept {...}`).
 // Prints JSON lines ranked by quality. `similarity` is the closest match to an existing level (check-levels fails at 0.75).
 const E = require('../engine.js');
-const {addDetail, matters} = require('./metrics.js');
+const {addDetail, matters, hintCheap} = require('./metrics.js');
 const {makeRng, build, canonical, quality} = require('./board-builder.js');
 const {similarity} = require('./similarity.js');
 
@@ -60,7 +61,7 @@ function combineCandidate(rng, rules, {sizes = [3, 3, 2], free = 3, length = 24,
 const ORDER = ['reserved', 'homes', 'ordered', 'links', 'consolidate', 'fragile', 'system', 'splitting', 'clipboard', 'nudge', 'seek'];
 
 // `stats` counts why candidates were dropped, so a dry search shows which filter to loosen.
-function search(rules, {sizes, free, length, active, minPar, par, seed, tries, count, seconds = Infinity}, found = [], stats = {}) {
+function search(rules, {sizes, free, length, active, minPar, par, seed, tries, count, seconds = Infinity, hintLimit = Infinity}, found = [], stats = {}) {
   const stop = Date.now() + seconds * 1000;
   const drop = reason => {
     stats[reason] = (stats[reason] ?? 0) + 1;
@@ -106,6 +107,10 @@ function search(rules, {sizes, free, length, active, minPar, par, seed, tries, c
       drop(`${failed} does not change par`);
       continue;
     }
+    if (hintLimit < Infinity && !hintCheap(level, hintLimit)) {
+      drop('hint too slow');
+      continue;
+    }
     const metrics = addDetail(level, {par: best.cost}, 3e5);
     metrics.quality = quality(metrics);
     const candidate = {id: 'candidate', ...level};
@@ -143,6 +148,7 @@ if (require.main === module) {
     tries: number('tries', 4000),
     count,
     seconds: number('seconds', Infinity),
+    hintLimit: number('hint-limit', Infinity),
   }, found, stats);
   report(picks);
 }

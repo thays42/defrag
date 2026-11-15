@@ -71,6 +71,18 @@ const check = (name, ok, detail = '') => {
   await open('tight-fit');
   check('hint flag survives reopening', await get(() => hinted === true));
 
+  // A hint search too large to finish stops at its limit and says so, instead of freezing the page.
+  check('hint search has a state limit', await get(() => typeof hintLimit === 'number' && hintLimit > 0 && hintLimit <= 3e5));
+  await open('cut-across');
+  const cappedHint = await page.evaluate(async () => {
+    const saved = hintLimit;
+    hintLimit = 50;
+    await showHint();
+    hintLimit = saved;
+    return {notice, hint, hinted};
+  });
+  check('a capped hint explains itself and costs nothing', cappedHint.notice === 'Too many options to hint from here. Undo a move, or restart.' && cappedHint.hint === null && cappedHint.hinted === false, JSON.stringify(cappedHint));
+
   // A hint that resolves after the level changed is dropped.
   await open('find-home');
   await page.evaluate(() => { showHint(); openLevel(findLevel('two-files')); });

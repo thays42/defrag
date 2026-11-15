@@ -410,6 +410,10 @@ function restart() {
   render();
 }
 
+// Hints search on the main thread, so the search stops at this many states rather than freeze the page.
+// The hardest campaign level needs under 2e5 from its start and after any first move (tests/tools.js).
+let hintLimit = 3e5;
+
 async function showHint() {
   if (finished()) return;
   const token = ++hintToken;
@@ -419,8 +423,13 @@ async function showHint() {
   await new Promise(resolve => setTimeout(resolve, 30));
   // The player may have moved, finished or switched levels while we waited.
   if (token !== hintToken || asked.level !== level || asked.state !== state || finished()) return;
-  const result = E.solve(level, state);
+  const result = E.solve(level, state, {limit: hintLimit});
   clearSelection();
+  if (result.aborted) {
+    notice = 'Too many options to hint from here. Undo a move, or restart.';
+    render();
+    return;
+  }
   if (!result.path) {
     notice = 'No solution from here. Undo or restart.';
     render();
