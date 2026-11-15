@@ -42,12 +42,12 @@ function combineCandidate(rng, rules, {sizes = [3, 3, 2], free = 3, length = 24}
 // Rough cost order, so cheap rejections happen first.
 const ORDER = ['reserved', 'homes', 'ordered', 'links', 'consolidate', 'fragile', 'system', 'splitting', 'clipboard', 'nudge', 'seek'];
 
-function search(rules, {sizes, free, length, minPar, par, seed, tries, count}) {
+// `found` is filled as the search runs, so a caller can report it if the search is stopped early.
+function search(rules, {sizes, free, length, minPar, par, seed, tries, count}, found = []) {
   const rng = makeRng(seed);
   const existing = require('../levels.js').levels;
   const checks = [...rules].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
   const seen = new Set();
-  const found = [];
   for (let n = 0; n < tries && found.length < count * 3; n++) {
     const level = combineCandidate(rng, rules, {sizes, free, length});
     if (!level) continue;
@@ -73,8 +73,9 @@ function search(rules, {sizes, free, length, minPar, par, seed, tries, count}) {
     found.push({...level, ...metrics});
     console.error(`try ${n}: kept ${found.length}`);
   }
-  return found.sort((a, b) => b.quality - a.quality).slice(0, count);
+  return rank(found, count);
 }
+const rank = (found, count) => [...found].sort((a, b) => b.quality - a.quality).slice(0, count);
 
 if (require.main === module) {
   const args = process.argv.slice(2);
@@ -84,6 +85,17 @@ if (require.main === module) {
     return at < 0 ? fallback : args[at + 1];
   };
   const number = (name, fallback) => (flag(name, null) === null ? fallback : Number(flag(name)));
+  const found = [];
+  const count = number('count', 10);
+  const report = picks => {
+    for (const level of picks) console.log(JSON.stringify(level));
+    console.error(`${rules.join('+')}: showing ${picks.length}`);
+  };
+  // A time limit (for example `timeout 600`) still prints the best candidates found so far.
+  process.on('SIGTERM', () => {
+    report(rank(found, count));
+    process.exit(0);
+  });
   const picks = search(rules, {
     sizes: flag('sizes', '3,3,2').split(',').map(Number),
     free: number('free', 3),
@@ -92,10 +104,9 @@ if (require.main === module) {
     par: number('par', null),
     seed: number('seed', 7),
     tries: number('tries', 4000),
-    count: number('count', 10),
-  });
-  for (const level of picks) console.log(JSON.stringify(level));
-  console.error(`${rules.join('+')}: showing ${picks.length}`);
+    count,
+  }, found);
+  report(picks);
 }
 
 module.exports = {combineCandidate};
