@@ -419,6 +419,24 @@ const check = (name, ok, detail = '') => {
   }
   await page.setViewportSize({width: 420, height: 900});
 
+  // The title is two whole lines on every level: chapter above, level name below. Nothing is cut off.
+  for (const size of [{width: 360, height: 640}, {width: 844, height: 390}]) {
+    await page.setViewportSize(size);
+    const title = await get(() => {
+      const heights = new Set(), cut = [];
+      for (const target of [...campaign, dailyLevel()]) {
+        openLevel(target);
+        heights.add(Math.round(ui.title.getBoundingClientRect().height));
+        for (const part of ui.title.children) if (part.scrollWidth > part.clientWidth + 1 || part.getBoundingClientRect().right > ui.title.getBoundingClientRect().right + 1) cut.push(target.id);
+        if (ui.title.textContent.includes(' / ')) cut.push(target.id + ' (slash)');
+      }
+      const [chapter, name] = ui.title.children;
+      return {heights: heights.size, cut, stacked: chapter.getBoundingClientRect().bottom <= name.getBoundingClientRect().top + 1};
+    });
+    check(`title is two whole lines at ${size.width}x${size.height}`, title.heights === 1 && !title.cut.length && title.stacked, JSON.stringify(title));
+  }
+  await page.setViewportSize({width: 420, height: 900});
+
   check('no page errors', !errors.length, errors.join('; '));
 
   // Touch: one tap selects, one tap moves. A touch never sets a preview.

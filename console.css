@@ -92,10 +92,9 @@ button:disabled { opacity: .55; cursor: default; }
 .chapter { color: var(--arcade); margin-bottom: 4px; }
 h2 { font-size: clamp(1.2rem, 5vw, 1.55rem); line-height: 1.18; }
 .goal { color: var(--muted); font-size: .9rem; line-height: 1.4; margin: 4px 0 11px; }
-.panel h2 { margin-bottom: 10px; display: flex; white-space: pre; }
-.panel h2 > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.title-name { flex: 0 1 auto; }
-.title-chapter { color: var(--muted); font-weight: 500; flex: 0 1000 auto; }
+.panel h2 { margin-bottom: 10px; display: grid; }
+.panel h2 > span { white-space: nowrap; }
+.title-chapter { color: var(--muted); font: 600 .72rem/1.4 ui-monospace, monospace; letter-spacing: .06em; text-transform: uppercase; }
 .sr-only { position: absolute !important; width: 1px; height: 1px; margin: 0 !important; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .stats {
   display: flex;

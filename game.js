@@ -529,10 +529,11 @@ function render() {
   const position = campaign.findIndex(item => item.id === level.id);
   // The header reads "Chapter / Level". The board shows the goal, so its sentence is for screen readers.
   const [section, name] = level.daily ? ['Daily puzzle', level.date] : [level.chapter, level.name];
-  // One line always. A long title shortens the chapter first, then the level name.
+  // Two lines always: the chapter above, the level name below. Neither wraps or is cut off.
   ui.title.replaceChildren(
-    Object.assign(document.createElement('span'), {className: 'title-chapter', textContent: `${section} / `}),
+    Object.assign(document.createElement('span'), {className: 'title-chapter', textContent: section}),
     Object.assign(document.createElement('span'), {className: 'title-name', textContent: name}));
+  ui.title.setAttribute('aria-label', `${section}: ${name}`);
   ui.goal.textContent = level.goal;
   renderRules();
   ui.stats.hidden = false;
