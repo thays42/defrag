@@ -8,10 +8,12 @@ const badgePool = {
   "four-files": {"light":30},
   "free-the-pair": {"unsplit":7},
   "shuffled": {"light":10},
+  "filed-in-order": {"light":24},
   "driver-stack": {"light":18},
   "one-write-left": {"light":19},
   "long-way-round": {"tidy":11,"few":3},
   "head-travel": {"few":4},
+  "long-commute": {"few":5},
   "broken-workspace": {"light":24},
   "pocket-change": {"light":34},
 };

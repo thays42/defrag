@@ -233,4 +233,29 @@ assert.strictEqual(E.initialState({board: 'A.AAACCC.BBBDD'}).cells.length, 14);
   assert.deepStrictEqual(combineProblems(L.chapters), []);
 }
 
+// New Combine levels fill the disk, sit right after their chapter's Twists, and stay fast enough for hints.
+const fastEnough = level => {
+  const start = Date.now();
+  const best = E.solve(level);
+  assert.ok(!best.aborted && Date.now() - start < 2000, `${level.id} hint search is too slow`);
+  if (level.fragile) assert.ok(!E.solve(level, undefined, {limit: 2e5}).aborted, `${level.id} dead-end check aborts`);
+};
+{
+  const L = require('../levels.js');
+  const byId = id => L.levels.find(l => l.id === id);
+  const NEW_COMBINE = {
+    'filed-in-order': 'two-decks', 'broken-chain': 'daisy-chain', 'install-path': 'driver-stack',
+    'last-writes': 'failing-drive', 'fragile-hold': 'juggle', 'tight-quarters': 'shuffle-step', 'long-commute': 'head-travel',
+  };
+  const order = L.chapters.flatMap(c => c.levels).map(l => l.id);
+  for (const [id, after] of Object.entries(NEW_COMBINE)) {
+    const level = byId(id);
+    assert.ok(level, `${id} missing`);
+    assert.strictEqual(order.indexOf(id), order.indexOf(after) + 1, `${id} is not right after ${after}`);
+    assert.strictEqual(E.placement(level).length, 24, `${id} does not fill the disk`);
+    assert.ok(level.offset === undefined);
+    fastEnough(level);
+  }
+}
+
 console.log('tools ok');

@@ -86,12 +86,14 @@ const chapters = [
       {id: 'in-order', mechanic: 'ordered', intro: true, par: 1, name: 'In order', board: 'A2.A1.', goal: 'Join A with its fragments numbered 1, 2 from left to right.', prompt: 'Select A2 and move it into the sector after A1.'},
       {id: 'shuffled', mechanic: 'ordered', par: 5, name: 'Shuffled', board: 'A2B2B3.B1A1A3', goal: 'Put both files back together in number order.'},
       {id: 'two-decks', mechanic: 'ordered', par: 7, name: 'Two decks', board: 'B1A2B3B2A3A1.', goal: 'Sort two interleaved files with a single free sector.'},
+      {id: 'filed-in-order', mechanic: 'ordered', combines: ['ordered', 'homes'], par: 8, name: 'Filed in order', board: '########.A1.#A3B1B3A2C1B2#C2####', homes: {A: [14, 16], B: [9, 11], C: [17, 18]}, goal: 'Send each file home with its fragments in number order.'},
       {id: 'one-gap', mechanic: 'consolidate', intro: true, consolidate: true, par: 1, name: 'One gap', board: 'A.A.', goal: 'Join A and leave the free space in one stretch.', prompt: 'Some moves join A but leave the empty sectors in two pieces.'},
       {id: 'sweep-up', mechanic: 'consolidate', consolidate: true, par: 3, name: 'Sweep up', board: '##.AAB#CC##..B', goal: 'Join every file and gather the free space.'},
       {id: 'tidy-disk', mechanic: 'consolidate', combines: ['consolidate', 'homes'], consolidate: true, par: 6, name: 'Tidy disk', board: 'BA.C.AABB.C', homes: {A: [3, 5]}, goal: 'Send A home and leave one clean stretch of free space.'},
       {id: 'chained', mechanic: 'links', intro: true, links: [['A', 'B']], par: 1, name: 'Chained', board: '.BA', goal: 'A must end directly before B.', prompt: 'Move A to the sector in front of B.'},
       {id: 'chain-of-three', mechanic: 'links', links: [['A', 'B'], ['B', 'C']], par: 3, name: 'Chain of three', board: '.BA.CC##B', goal: 'Line up the chain A→B→C.'},
       {id: 'daisy-chain', mechanic: 'links', links: [['A', 'B'], ['B', 'C']], par: 4, name: 'Daisy chain', board: 'ABB.BC.#AA', goal: 'Rebuild the chain A→B→C with two free sectors.'},
+      {id: 'broken-chain', mechanic: 'links', combines: ['links', 'splitting'], links: [['A', 'B'], ['B', 'C']], par: 6, name: 'Broken chain', board: '#.CAAABBB.#C############', goal: 'Rebuild the chain A→B→C. One run must break to fit.'},
     ],
   },
   {
@@ -102,6 +104,7 @@ const chapters = [
       {id: 'load-order', mechanic: 'system', locked: ['S'], links: [['S', 'A']], par: 4, name: 'Load order', board: '###AA.SS.ABB', goal: 'Put all of A directly after the system file. S will not budge.'},
       {id: 'kernel-space', mechanic: 'system', locked: ['S'], links: [['S', 'A']], par: 4, name: 'Kernel space', board: 'B.AAASS.BB', goal: 'A sits right in front of S. Get it behind S instead.'},
       {id: 'driver-stack', mechanic: 'system', locked: ['S'], links: [['S', 'A']], par: 5, name: 'Driver stack', board: 'BSSBB.AA.A', goal: 'B is in the way behind S. Clear it out for A.'},
+      {id: 'install-path', mechanic: 'system', combines: ['system', 'homes'], locked: ['S'], links: [['S', 'A']], par: 6, name: 'Install path', board: '####AA.B.SSBBCCA########', homes: {B: [5, 7], C: [8, 9]}, goal: 'Put A right after S, and send B and C home.'},
     ],
   },
   {
@@ -111,6 +114,7 @@ const chapters = [
       {id: 'cracked', mechanic: 'fragile', intro: true, fragile: [1, 2], par: 1, name: 'Cracked', board: 'A.AA', goal: 'Join A. Both of the first two sectors are cracked.', prompt: 'Move the lone A onto the cracked sector. The 0 sector it leaves fails once empty.'},
       {id: 'one-write-left', mechanic: 'fragile', fragile: [1, 8, 11], par: 5, name: 'One write left', board: '.AB##CC.ABB', homes: {A: [6, 7], B: [1, 3], C: [8, 9]}, goal: 'Three cracked sectors. Use each one only when you must.'},
       {id: 'failing-drive', mechanic: 'fragile', fragile: [4], par: 6, name: 'Failing drive', board: 'AA.A.BB', homes: {A: [5, 7], B: [1, 2]}, goal: 'Swap A and B before the cracked sector fails at the wrong time.'},
+      {id: 'last-writes', mechanic: 'fragile', combines: ['fragile', 'consolidate'], fragile: [5, 9, 12], consolidate: true, par: 6, name: 'Last writes', board: '#.ABAAB#.CACB###########', goal: 'Join every file and gather the free space. Cracks wear out.'},
     ],
   },
   {
@@ -120,9 +124,11 @@ const chapters = [
       {id: 'no-room-at-all', mechanic: 'clipboard', intro: true, clipboard: true, par: 3, name: 'No room at all', board: 'AB', homes: {A: [2, 2], B: [1, 1]}, goal: 'Swap A and B. There are no empty sectors, so use the clipboard.', prompt: 'Select A, choose Clipboard to lift it, move B, then place A.'},
       {id: 'hold-that-thought', mechanic: 'clipboard', clipboard: true, par: 4, name: 'Hold that thought', board: '####CBBC.AA', homes: {A: [5, 6], B: [9, 10], C: [7, 8]}, goal: 'Send three files home through one free sector and the clipboard.'},
       {id: 'juggle', mechanic: 'clipboard', clipboard: true, par: 5, name: 'Juggle', board: '#####B.##BAA#CC', homes: {A: [10, 11], B: [14, 15], C: [6, 7]}, goal: 'Every file is in the wrong place. Decide what to hold.'},
+      {id: 'fragile-hold', mechanic: 'clipboard', combines: ['clipboard', 'fragile', 'homes'], clipboard: true, fragile: [14, 20], par: 6, name: 'Fragile hold', board: '############BCCBA##.AA##', homes: {A: [15, 17], B: [21, 22], C: [13, 14]}, goal: 'Send all three files home. Hold one, and spare the cracks.'},
       {id: 'nudge', mechanic: 'nudge', intro: true, nudges: 1, par: 1, name: 'Nudge', board: 'AA.', homes: {A: [2, 3]}, goal: 'Slide A one sector right into its home.', prompt: 'There is no two-sector gap for A. Select A, then choose the → sector.'},
       {id: 'scoot-over', mechanic: 'nudge', nudges: 2, par: 3, name: 'Scoot over', board: 'BAA.B#C', homes: {A: [4, 5], B: [1, 2], C: [7, 7]}, goal: 'Two nudges, one free sector. Get all three files home.'},
       {id: 'shuffle-step', mechanic: 'nudge', nudges: 2, par: 7, name: 'Shuffle step', board: '#C.AACB##BB', homes: {A: [2, 3], B: [5, 7], C: [10, 11]}, goal: 'Spend your two nudges where a normal move cannot go.'},
+      {id: 'tight-quarters', mechanic: 'nudge', combines: ['nudge', 'reserved', 'homes'], nudges: 1, par: 7, name: 'Tight quarters', board: '##############AB#A.BACC#', homes: {A: [19, 21], B: [22, 23], C: [15, 16]}, goal: 'One free sector and one nudge. Get all three files home.'},
     ],
   },
   {
@@ -132,6 +138,7 @@ const chapters = [
       {id: 'short-hops', mechanic: 'seek', intro: true, cost: 'seek', par: 2, name: 'Short hops', board: 'A.AAB.B', goal: 'Join both files. Each move costs the distance it travels.', prompt: 'Each destination shows its cost. Try a long move, then undo and find a cheaper way.'},
       {id: 'long-way-round', mechanic: 'seek', cost: 'seek', par: 6, name: 'The long way round', board: '..ACAB.CB', homes: {A: [3, 4]}, goal: 'An extra short move can beat one long one.'},
       {id: 'head-travel', mechanic: 'seek', cost: 'seek', par: 10, name: 'Head travel', board: '###CA.CBBA.', homes: {A: [8, 9]}, goal: 'Keep the read head’s total travel as low as you can.'},
+      {id: 'long-commute', mechanic: 'seek', combines: ['seek', 'homes'], cost: 'seek', par: 23, name: 'Long commute', board: '##C#BBA.ABC.#A##########', homes: {A: [5, 7], B: [10, 12], C: [8, 9]}, goal: 'Send every file home. Keep the read head’s travel low.'},
     ],
   },
 ];
