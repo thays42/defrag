@@ -292,4 +292,26 @@ const fastEnough = level => {
   assert.notStrictEqual(level.board, start.board);
 }
 
+// Seek matters only when every cheapest route takes more moves than the fewest-move route.
+// The answer must not depend on which cheapest route the solver happens to return.
+{
+  const {matters} = require('../tools/metrics.js');
+  const {seekDetour} = require('../tools/metrics.js');
+  const loadDrivers = {board: '###.C1B2A1.C2B3A2A3#B1##########', homes: {A: [10, 12], B: [7, 9], C: [4, 5]}, cost: 'seek'};
+  assert.strictEqual(seekDetour(loadDrivers), 0, 'a 6-move route also costs 18');
+  assert.strictEqual(matters(loadDrivers, 'seek', 18), false);
+  const byId = id => require('../levels.js').levels.find(l => l.id === id);
+  for (const id of ['long-way-round', 'head-travel']) assert.ok(seekDetour(byId(id)) >= 1, `${id} needs a detour`);
+}
+
+// Hints stay cheap after the first move too: every campaign level solves within 2e5 states from its start
+// and from every position one move in. game.js stops a hint at 3e5 states, so this keeps hints working early on.
+{
+  const L = require('../levels.js');
+  const {hintCheap} = require('../tools/metrics.js');
+  assert.strictEqual(hintCheap(L.levels.find(l => l.id === 'tight-fit'), 2e5), true);
+  assert.strictEqual(hintCheap({board: '###.C1B2A1.C2B3A2A3#B1##########', homes: {A: [10, 12], B: [7, 9], C: [4, 5]}, cost: 'seek'}, 2e5), false);
+  assert.deepStrictEqual(L.chapters.flatMap(c => c.levels).filter(level => !hintCheap(level, 2e5)).map(level => level.id), []);
+}
+
 console.log('tools ok');

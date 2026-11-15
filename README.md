@@ -84,6 +84,8 @@ A Combine level lists its rules in `combines`. The checker (`tools/combine-rules
 
 Find boards with `node tools/combine.js <rule,rule,...>`. Flags: `--sizes 3,3,2` (file sizes), `--free 3`, `--length 24`, `--min-par N`, `--par N`, `--seed`, `--tries`, `--count`. Sectors left over become reserved. Filters run cheapest first: par (capped at 2e5 states), then each rule's check, then the detail metrics. Each output line has `quality` and `similarity`, the closest match to an existing level. `--active N` keeps the puzzle in an N-sector stretch padded with reserved sectors; random spreads over all 24 sectors rarely work. `--seconds N` stops the search and reports what it found. Each kept board also streams to stderr as a `kept {...}` line.
 
+Hints run the solver on the main thread, and `game.js` stops a hint at 3e5 states with a message. So every campaign level must solve within 2e5 states at the start and after any first move (`hintCheap` in `tools/metrics.js`, tested in `tests/tools.js`). `combine.js --hint-limit 2e5` applies the same filter while searching. Numbered fragments on three files of 3 sectors are the usual cause of slow hints.
+
 When random search finds nothing, `node tools/climb.js <rule,rule,...> --from seeds.jsonl --min-par N` hill-climbs from earlier boards (for example `kept` lines with a field added for the new rule). It swaps sectors, moves homes and moves cracked sectors, and keeps changes that make more rules matter, raise par, or raise quality. `tools/board-builder.js` holds the random builder that `generate.js` and `combine.js` share.
 
 ### Quality metrics

@@ -185,13 +185,13 @@ Finale. Five new levels on the full disk. Each combines three or more earlier ru
 
 | Level | Rules | Par |
 | --- | --- | --- |
-| `power-on` | homes, numbered fragments, splitting | 9 |
+| `power-on` | numbered fragments, homes, splitting | 8 |
 | `self-test` | linked files, splitting, free space | 7 |
 | `mount` | cracked sectors, clipboard, homes | 8 |
-| `load-drivers` | seek, homes, numbered fragments | 18 (seek) |
-| `first-boot` | system file, numbered fragments, homes | 9 |
+| `load-drivers` | seek, homes, splitting | 14 (seek) |
+| `first-boot` | system file, numbered fragments, homes | 8 |
 
-The planned sets for `power-on` (with reserved) and `load-drivers` (with reserved) found no board where reserved sectors change par. Each swapped in another taught rule.
+The planned sets for `power-on` and `load-drivers` used reserved sectors. The searches tried found no board where they change par, so each swapped in splitting. Every campaign level keeps its hint search under 2e5 states, at the start and one move in.
 
 ## What a first-time player gets confused by
 

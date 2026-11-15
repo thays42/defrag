@@ -86,7 +86,7 @@ const chapters = [
       {id: 'in-order', mechanic: 'ordered', intro: true, par: 1, name: 'In order', board: 'A2.A1.', goal: 'Join A with its fragments numbered 1, 2 from left to right.', prompt: 'Select A2 and move it into the sector after A1.'},
       {id: 'shuffled', mechanic: 'ordered', par: 5, name: 'Shuffled', board: 'A2B2B3.B1A1A3', goal: 'Put both files back together in number order.'},
       {id: 'two-decks', mechanic: 'ordered', par: 7, name: 'Two decks', board: 'B1A2B3B2A3A1.', goal: 'Sort two interleaved files with a single free sector.'},
-      {id: 'filed-in-order', mechanic: 'ordered', combines: ['ordered', 'homes'], par: 8, name: 'Filed in order', board: '########.A1.#A3B1B3A2C1B2#C2####', homes: {A: [14, 16], B: [9, 11], C: [17, 18]}, goal: 'Send each file home with its fragments in number order.'},
+      {id: 'filed-in-order', mechanic: 'ordered', combines: ['ordered', 'homes'], par: 8, name: 'Filed in order', board: '########A3C1A1A2#B2#C2..B1#####', homes: {A: [10, 12], B: [18, 19], C: [16, 17]}, goal: 'Send each file home with its fragments in number order.'},
       {id: 'one-gap', mechanic: 'consolidate', intro: true, consolidate: true, par: 1, name: 'One gap', board: 'A.A.', goal: 'Join A and leave the free space in one stretch.', prompt: 'Some moves join A but leave the empty sectors in two pieces.'},
       {id: 'sweep-up', mechanic: 'consolidate', consolidate: true, par: 3, name: 'Sweep up', board: '##.AAB#CC##..B', goal: 'Join every file and gather the free space.'},
       {id: 'tidy-disk', mechanic: 'consolidate', combines: ['consolidate', 'homes'], consolidate: true, par: 6, name: 'Tidy disk', board: 'BA.C.AABB.C', homes: {A: [3, 5]}, goal: 'Send A home and leave one clean stretch of free space.'},
@@ -145,11 +145,11 @@ const chapters = [
     name: 'Boot',
     summary: 'The disk is ready. Start it up.',
     levels: [
-      {id: 'power-on', mechanic: 'homes', combines: ['homes', 'ordered', 'splitting'], par: 9, name: 'Power on', board: '###########C1#A2B3.B1B2A1A3.C2##', homes: {A: [19, 21], B: [16, 18], C: [14, 15]}, goal: 'Send each file home in number order. Some runs must break.'},
+      {id: 'power-on', mechanic: 'ordered', combines: ['ordered', 'homes', 'splitting'], par: 8, name: 'Power on', board: '#######A3B2B1C2.#.#A1A2C1######', homes: {A: [10, 12], B: [17, 18], C: [8, 9]}, goal: 'Send each file home in number order. Some runs must break.'},
       {id: 'self-test', mechanic: 'links', combines: ['links', 'splitting', 'consolidate'], links: [['A', 'B'], ['B', 'C']], consolidate: true, par: 7, name: 'Self-test', board: 'CABB.C.BAAA#############', goal: 'Rebuild A→B→C and gather the free space in one stretch.'},
       {id: 'mount', mechanic: 'fragile', combines: ['fragile', 'clipboard', 'homes'], clipboard: true, fragile: [14], par: 8, name: 'Mount', board: '###BAC#C#ACA#.BB########', homes: {A: [14, 16], B: [10, 12], C: [4, 6]}, goal: 'Send all three files home. Use the clipboard. Mind the crack.'},
-      {id: 'load-drivers', mechanic: 'seek', combines: ['seek', 'homes', 'ordered'], cost: 'seek', par: 18, name: 'Load drivers', board: '###.C1B2A1.C2B3A2A3#B1##########', homes: {A: [10, 12], B: [7, 9], C: [4, 5]}, goal: 'Send each file home in number order. Keep head travel low.'},
-      {id: 'first-boot', mechanic: 'system', combines: ['system', 'ordered', 'homes'], locked: ['S'], links: [['S', 'A']], par: 9, name: 'First boot', board: '####.B3SS.B2A1A3B1C1C2A2########', homes: {B: [14, 16], C: [5, 6]}, goal: 'Boot the disk: load A after S in order, and send B and C home.'},
+      {id: 'load-drivers', mechanic: 'seek', combines: ['seek', 'homes', 'splitting'], cost: 'seek', par: 14, name: 'Load drivers', board: '######ACB.BAAC.#########', homes: {A: [10, 12], B: [8, 9], C: [13, 14]}, goal: 'Send each file home. A run must break. Keep head travel low.'},
+      {id: 'first-boot', mechanic: 'system', combines: ['system', 'ordered', 'homes'], locked: ['S'], links: [['S', 'A']], par: 8, name: 'First boot', board: '####A2A3.B1.SSB2B3C1C2A1########', homes: {B: [5, 7], C: [8, 9]}, goal: 'Boot the disk: load A after S in order, and send B and C home.'},
     ],
   },
 ];
