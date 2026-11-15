@@ -9,7 +9,7 @@ const path = require('path');
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('file://' + path.resolve(__dirname, '..', 'index.html'));
-  const ids = await page.evaluate(() => [...campaign.map(l => l.id), dailyLevel().id]);
+  const ids = await page.evaluate(() => [...campaign, ...extraLevels].map(l => l.id).concat(dailyLevel().id));
   let failures = 0;
   for (const id of ids) {
     await page.evaluate(target => openLevel(findLevel(target)), id);

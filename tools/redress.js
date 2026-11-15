@@ -50,7 +50,7 @@ module.exports = {mirror, insertReserved, relabel};
 
 if (require.main === module) {
   const {similarity} = require('./similarity.js');
-  const levels = require('../levels.js').chapters.flatMap(c => c.levels);
+  const levels = require('../levels.js').levels;
   const level = levels.find(l => l.id === process.argv[2]);
   if (!level) {
     console.error('usage: node tools/redress.js <level id>');

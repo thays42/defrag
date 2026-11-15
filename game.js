@@ -1,7 +1,13 @@
 // Defrag game UI. Rules live in engine.js; level data in levels.js and daily.js.
 const E = DefragEngine;
 const campaign = chapters.flatMap(({name, levels}) => levels.map(level => ({...level, chapter: name})));
-const levelById = new Map(campaign.map(level => [level.id, level]));
+const extraLevels = extras.levels.map(level => ({...level, chapter: extras.name, extra: true}));
+const levelById = new Map([...campaign, ...extraLevels].map(level => [level.id, level]));
+// Old saves keyed scores by position in the campaign as it stood then. Frozen so reordering chapters never re-credits them.
+const LEGACY_IDS = ['join-two-blocks', 'move-a-run', 'split-a-run', 'find-home', 'two-files', 'reserved-intro', 'scattered-gaps', 'warm-up',
+  'required-split', 'borrow-a-home', 'park-a-pair', 'choose-what-to-park', 'make-a-parking-spot', 'save-the-gap', 'a-can-wait', 'b-can-wait',
+  'required-split-revisited', 'beat-par', 'one-sector-off', 'two-splits', 'four-files', 'free-the-pair', 'trade-places', 'tight-fit',
+  'blocked-lanes', 'broken-workspace', 'across-the-disk', 'pocket-change', 'split-workspace', 'cut-across'];
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(node => [node.id, node]));
 ui.cells = [];
 // Cell positions change with the board's size, so the track is redrawn on resize.
@@ -37,10 +43,10 @@ function loadProgress() {
   try {
     const saved = JSON.parse(localStorage.getItem(progressKey));
     if (saved?.version === 3) return {...fresh, ...saved, hinted: saved.hinted ?? {}, badges: saved.badges ?? {}};
-    // Older saves keyed scores by array position. The first 30 campaign levels kept their order.
+    // Older saves keyed scores by array position in the first 30 levels.
     const legacy = JSON.parse(localStorage.getItem('defrag-campaign-v2')) ?? shiftV1(JSON.parse(localStorage.getItem('defrag-campaign-v1')));
     if (legacy && Number.isInteger(legacy.level) && legacy.best) {
-      const idAt = index => (index < 30 ? campaign[index]?.id : undefined);
+      const idAt = index => LEGACY_IDS[index];
       for (const [index, score] of Object.entries(legacy.best)) {
         const id = idAt(Number(index));
         if (id) fresh.best[id] = fresh.clean[id] = score;
@@ -606,18 +612,17 @@ function clearMessage() {
   return `${versus} ${starText(earned)}` + (hinted ? ' · hint used' : '');
 }
 
-// Chips for rules the title does not already name. Stateful chips (links, free space) always show, since they track progress.
+// Chips for the level's special rules. Stateful chips (links, free space) always show, since they track progress.
 // The clipboard button and the nudge counter name their own mechanics.
 function renderRules() {
-  const named = name => level.chapter === name;
   const chips = [];
   for (const [before, after] of level.links ?? []) {
     chips.push({text: `${before}→${after}`, label: `Link: ${after} must start right after ${before}`, met: E.linksMet({links: [[before, after]]}, state)});
   }
   if (level.consolidate) chips.push({text: 'Free space together', label: 'Free space must be in one stretch', met: E.freeSpaceJoined(state)});
-  if (level.cost === 'seek' && !named('Seek cost')) chips.push({text: 'Seek cost', label: 'Moves cost the distance travelled'});
-  if (/[1-9]/.test(level.board) && !named('Numbered fragments')) chips.push({text: 'In number order', label: 'Fragments must finish in number order'});
-  if (level.fragile?.length && !named('Cracked sectors')) chips.push({text: 'Cracked sectors', label: 'Cracked sectors fail when emptied'});
+  if (level.cost === 'seek') chips.push({text: 'Seek cost', label: 'Moves cost the distance travelled'});
+  if (/[1-9]/.test(level.board)) chips.push({text: 'In number order', label: 'Fragments must finish in number order'});
+  if (level.fragile?.length) chips.push({text: 'Cracked sectors', label: 'Cracked sectors fail when emptied'});
   ui.rules.replaceChildren(...chips.map(({text, label, met}) => {
     const chip = Object.assign(document.createElement('span'), {textContent: met ? text + ' ✓' : text});
     if (met !== undefined) chip.dataset.met = met;

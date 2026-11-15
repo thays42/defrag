@@ -140,6 +140,11 @@ const check = (name, ok, detail = '') => {
   await page.reload();
   const migrated = await get(() => ({best: progress.best, current: progress.current, sound: progress.sound}));
   check('v2 save migrates', migrated.best['join-two-blocks'] === 1 && migrated.best['tight-fit'] === 9 && migrated.current === 'tight-fit' && migrated.sound, JSON.stringify(migrated));
+  check('legacy order is frozen', await get(() => LEGACY_IDS.length === 30 && LEGACY_IDS[23] === 'tight-fit' && LEGACY_IDS[2] === 'split-a-run'));
+  check('extra levels open by id', await get(() => levelById.get('pocket-change')?.extra === true));
+  await get(() => openLevel(levelById.get('long-way-round')));
+  check('seek chip shows on seek levels', await get(() => [...ui.rules.children].some(c => c.textContent === 'Seek cost')));
+  await get(() => showMenu(false));
 
   // Continue goes to the first level not yet cleared.
   await page.click('#continue');
@@ -383,7 +388,7 @@ const check = (name, ok, detail = '') => {
     await page.setViewportSize(size);
     const tops = await get(() => {
       const out = {};
-      for (const target of [...campaign, dailyLevel()]) {
+      for (const target of [...campaign, ...extraLevels, dailyLevel()]) {
         openLevel(target);
         const top = Math.round(ui.board.getBoundingClientRect().top);
         (out[top] ??= []).push(target.id);
@@ -406,7 +411,7 @@ const check = (name, ok, detail = '') => {
     await page.setViewportSize(size);
     const placed = await get(() => {
       const tops = new Set();
-      for (const target of [...campaign, dailyLevel()]) {
+      for (const target of [...campaign, ...extraLevels, dailyLevel()]) {
         openLevel(target);
         tops.add(Math.round(document.querySelector('.actions').getBoundingClientRect().top));
       }
@@ -424,7 +429,7 @@ const check = (name, ok, detail = '') => {
     await page.setViewportSize(size);
     const title = await get(() => {
       const heights = new Set(), cut = [];
-      for (const target of [...campaign, dailyLevel()]) {
+      for (const target of [...campaign, ...extraLevels, dailyLevel()]) {
         openLevel(target);
         heights.add(Math.round(ui.title.getBoundingClientRect().height));
         for (const part of ui.title.children) if (part.scrollWidth > part.clientWidth + 1 || part.getBoundingClientRect().right > ui.title.getBoundingClientRect().right + 1) cut.push(target.id);

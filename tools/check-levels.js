@@ -5,7 +5,7 @@
 const E = require('../engine.js');
 const {measure, addDetail, without, uses} = require('./metrics.js');
 const {similarPairs} = require('./similarity.js');
-const {mechanics, chapters} = require('../levels.js');
+const {mechanics, levels} = require('../levels.js');
 const daily = require('../daily.js');
 
 const showMetrics = process.argv.includes('--metrics');
@@ -13,7 +13,7 @@ const showMetrics = process.argv.includes('--metrics');
 const baselinePath = require('path').join(__dirname, 'metrics-baseline.json');
 if (process.argv.includes('--save-baseline')) {
   const baseline = {};
-  for (const level of chapters.flatMap(c => c.levels)) {
+  for (const level of levels) {
     const m = addDetail(level, {par: E.solve(level).cost}, 3e5);
     baseline[level.id] = {board: level.board, trapRate: m.trapRate, paths: m.paths};
   }
@@ -31,7 +31,7 @@ const soft = {
   reserved: (level, par) => optimum(without.reserved(level), {limit: 3e5}) < par,
 };
 const ids = new Set();
-const all = [...chapters.flatMap(c => c.levels), ...daily.dailyPool.map(level => ({...level, mechanic: level.mechanic ?? 'homes', daily: true}))];
+const all = [...levels, ...daily.dailyPool.map(level => ({...level, mechanic: level.mechanic ?? 'homes', daily: true}))];
 
 // Which flag each new mechanic needs, and how to tell it matters.
 const needs = {
@@ -109,7 +109,7 @@ for (const level of all) {
 }
 
 // Campaign levels must look distinct. Intro pairs only warn: tiny boards cannot differ much.
-for (const pair of similarPairs(chapters.flatMap(c => c.levels))) {
+for (const pair of similarPairs(levels)) {
   const line = `similar ${pair.score.toFixed(2)}: ${pair.a.id} ${pair.a.board} ~ ${pair.b.id} ${pair.b.board}`;
   (pair.level === 'fail' ? problems : warnings).push(line);
 }
@@ -118,8 +118,8 @@ for (const pair of similarPairs(chapters.flatMap(c => c.levels))) {
 if (process.argv.includes('--badges')) {
   const {computeBadges} = require('./badges.js');
   const {badgePool} = require('../badges.js');
-  const ids = new Set(chapters.flatMap(c => c.levels).map(l => l.id));
-  for (const level of chapters.flatMap(c => c.levels)) {
+  const ids = new Set(levels.map(l => l.id));
+  for (const level of levels) {
     const stored = JSON.stringify(badgePool[level.id] ?? {});
     const computed = JSON.stringify(computeBadges(level));
     if (stored !== computed) problems.push(`${level.id}: badges stale: stored ${stored}, computed ${computed}. Run node tools/badges.js --write badges.js`);

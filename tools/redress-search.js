@@ -6,7 +6,7 @@ const {without, addDetail} = require(R + 'tools/metrics.js');
 const {similarity} = require(R + 'tools/similarity.js');
 const {mirror, insertReserved, relabel} = require(R + 'tools/redress.js');
 const baseline = require(R + 'tools/metrics-baseline.json');
-const {chapters} = require(R + 'levels.js');
+const {levels} = require(R + 'levels.js');
 const maxLen = Number(process.argv[2] ?? 24);
 const pinned = new Set(['tight-fit', 'failing-drive', 'chained', 'find-home', 'two-files', 'join-two-blocks']);
 const opt = (l, o) => { const r = E.solve(l, undefined, {limit: 3e5, ...o}); if (r.aborted) throw 0; return r.cost ?? Infinity; };
@@ -21,7 +21,7 @@ const matters = {
   links: (l, p) => opt(without.links(l)) < p,
   nudge: (l, p) => !(opt(without.nudge(l)) <= p),
 };
-const all = chapters.flatMap(c => c.levels);
+const all = levels;
 const current = new Map(all.map(l => [l.id, l]));
 const others = id => [...current.values()].filter(l => l.id !== id && !l.intro);
 const worst = l => Math.max(...others(l.id).map(o => similarity(l, o)));

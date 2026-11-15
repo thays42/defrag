@@ -49,7 +49,7 @@ function computeBadges(level) {
 module.exports = {computeBadges, opsOf, K};
 
 if (require.main === module) {
-  const levels = require('../levels.js').chapters.flatMap(c => c.levels);
+  const levels = require('../levels.js').levels;
   const pool = {};
   for (const level of levels) {
     const badges = computeBadges(level);
