@@ -539,14 +539,7 @@ function render() {
   ui.stats.hidden = false;
   ui.score.textContent = stats.cost;
   ui.par.textContent = level.par;
-  // The score already counts moves and splits. Show a count only where it differs from the score or a badge tracks it.
-  const tracked = new Set(offeredBadges(level).map(b => b.id));
-  const seek = level.cost === 'seek';
-  ui['stat-detail'].textContent = [
-    seek || tracked.has('few') ? `${stats.moves} move${stats.moves === 1 ? '' : 's'}` : null,
-    seek || tracked.has('few') || tracked.has('unsplit') ? `${stats.splits} split${stats.splits === 1 ? '' : 's'}` : null,
-    tracked.has('light') ? `${stats.travel} travel` : null,
-  ].filter(Boolean).join(' · ');
+  renderCounters();
   const last = inCampaign && position === campaign.length - 1;
   ui.next.hidden = !done;
   // Once cleared, the results sheet carries the stars and badges. The button below the board reopens it.
@@ -633,6 +626,28 @@ function renderRules() {
     return chip;
   }));
   ui.rules.hidden = !chips.length;
+}
+
+// Counters beside the score. Each badge that needs one shows its icon, the count and the target,
+// and turns coral once the count passes the target. Seek levels without Few moves still count moves and splits,
+// since there the score is distance, not moves.
+function renderCounters() {
+  const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+  const counters = offeredBadges(level).flatMap(({id, target: T}) => {
+    const {icon, name} = badgeRules[id];
+    if (id === 'unsplit') return [{text: `${icon} ${plural(stats.splits, 'split')}`, over: stats.splits > 0, label: `${name} badge: ${plural(stats.splits, 'split')}, none allowed`}];
+    if (id === 'light') return [{text: `${icon} ${stats.travel}/${T} travel`, over: stats.travel > T, label: `${name} badge: ${stats.travel} of ${T} sectors travelled`}];
+    if (id === 'few') return [{text: `${icon} ${stats.moves + stats.splits}/${T} moves+splits`, over: stats.moves + stats.splits > T, label: `${name} badge: ${stats.moves + stats.splits} of ${T} moves plus splits`}];
+    return [];
+  });
+  const parts = counters.map(({text, over, label}) => {
+    const part = Object.assign(document.createElement('span'), {textContent: text});
+    part.dataset.over = over;
+    part.setAttribute('aria-label', label);
+    return part;
+  });
+  if (level.cost === 'seek' && !counters.length) parts.push(document.createTextNode(`${plural(stats.moves, 'move')} · ${plural(stats.splits, 'split')}`));
+  ui['stat-detail'].replaceChildren(...parts.flatMap((part, i) => (i ? [document.createTextNode(' · '), part] : [part])));
 }
 
 function renderClipboard() {

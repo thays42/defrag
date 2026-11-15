@@ -437,6 +437,18 @@ const check = (name, ok, detail = '') => {
   }
   await page.setViewportSize({width: 420, height: 900});
 
+  // A badge counter names its badge and target, and turns coral once past it.
+  await open('choose-what-to-park'); // offers Light touch, travel 8 or less
+  check('travel counter shows its badge and target', await get(() => ui['stat-detail'].textContent.trim() === '↝ 0/8 travel' && ui['stat-detail'].querySelector('[data-over]').dataset.over === 'false'),
+    await get(() => ui['stat-detail'].textContent));
+  await get(() => { stats.travel = 9; render(); });
+  check('travel counter turns coral past its target', await get(() => ui['stat-detail'].querySelector('[data-over]').dataset.over === 'true'));
+  check('travel counter says what it tracks', await get(() => ui['stat-detail'].querySelector('[data-over]').getAttribute('aria-label') === 'Light touch badge: 9 of 8 sectors travelled'));
+  await open('one-sector-off'); // offers Unsplit and Light touch
+  check('two counters show side by side', await get(() => ui['stat-detail'].textContent.trim() === '▮ 0 splits · ↝ 0/16 travel'), await get(() => ui['stat-detail'].textContent));
+  await open('join-two-blocks'); // offers no badge
+  check('no counter without a badge', await get(() => ui['stat-detail'].textContent === ''));
+
   check('no page errors', !errors.length, errors.join('; '));
 
   // Touch: one tap selects, one tap moves. A touch never sets a preview.

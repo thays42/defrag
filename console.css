@@ -110,6 +110,7 @@ h2 { font-size: clamp(1.2rem, 5vw, 1.55rem); line-height: 1.18; }
 .stats span { color: var(--muted); font-size: .65rem; }
 .stats strong { font: 700 1.3rem/1.2 ui-monospace, monospace; color: var(--mint); }
 /* Up to two short lines fit beside the score, so the bar keeps one height. */
+#stat-detail [data-over=true] { color: var(--coral); }
 #stat-detail { margin-left: auto; max-height: calc(2 * 1.15 * .68rem); overflow: hidden; color: var(--muted); font: .68rem/1.15 ui-monospace, monospace; text-align: right; }
 [data-home=A] { --home: #8ae8c1; }
 [data-home=B] { --home: #ffd28c; }
