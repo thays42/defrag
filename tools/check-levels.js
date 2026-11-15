@@ -3,7 +3,7 @@
 // and the level's mechanic actually changes the result. Exits 1 on any failure.
 //   node tools/check-levels.js [--metrics]
 const E = require('../engine.js');
-const {measure, addDetail, without, uses, reservedMatters} = require('./metrics.js');
+const {measure, addDetail, without, uses, matters} = require('./metrics.js');
 const {similarPairs} = require('./similarity.js');
 const {mechanics, chapters, levels} = require('../levels.js');
 const daily = require('../daily.js');
@@ -49,18 +49,7 @@ function optimum(level, options) {
   if (result.aborted) throw new Error('search too large to check');
   return result.cost ?? Infinity;
 }
-const matters = {
-  ordered: (level, par) => optimum(without.ordered(level)) < par,
-  clipboard: (level, par) => !(optimum(without.clipboard(level)) <= par),
-  seek: (level, par) => optimum(without.seek(level)) < par,
-  consolidate: (level, par) => optimum(without.consolidate(level)) < par,
-  system: (level, par) => optimum(without.system(level)) < par && optimum(without.links(level)) < par,
-  splitting: (level, par) => optimum(level, {whole: true}) > par,
-  fragile: (level, par) => optimum(without.fragile(level)) < par,
-  links: (level, par) => optimum(without.links(level)) < par,
-  nudge: (level, par) => !(optimum(without.nudge(level)) <= par),
-  reserved: reservedMatters,
-};
+const checked = new Set(['ordered', 'clipboard', 'seek', 'consolidate', 'system', 'splitting', 'fragile', 'links', 'nudge', 'reserved']);
 
 for (const level of all) {
   const where = level.id ?? level.name;
@@ -90,8 +79,8 @@ for (const level of all) {
   // Intro levels teach a rule; they need not depend on it.
   try {
     // Daily boards are labelled reserved whenever they hold a reserved sector, so the reserved rule is for campaign levels only.
-    const checked = !level.intro && matters[level.mechanic] && !(level.daily && level.mechanic === 'reserved');
-    if (checked && !matters[level.mechanic](level, best.cost)) fail(`${level.mechanic} does not change the result`);
+    const check = !level.intro && checked.has(level.mechanic) && !(level.daily && level.mechanic === 'reserved');
+    if (check && !matters(level, level.mechanic, best.cost)) fail(`${level.mechanic} does not change the result`);
   } catch (error) {
     // Large reserved boards cannot be checked in time; report them without failing.
     (level.mechanic === 'reserved' ? warnings : problems).push(`${where}: ${error.message}`);

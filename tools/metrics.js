@@ -91,11 +91,34 @@ function addDetail(level, result, limit = 1.5e6) {
   return result;
 }
 
-// True when freeing the reserved sectors lowers par. Bounded at par - 1, so it finishes even on full-disk boards.
-function reservedMatters(level, par) {
-  const freed = E.solve(without.reserved(level), undefined, {maxCost: par - 1, limit: 4e6});
-  if (freed.aborted) throw new Error('search too large to check');
-  return freed.cost !== null;
+// True when the rule changes par. Every search is capped at par, so it finishes even on full-disk boards.
+// Constraint rules: switching the rule off lowers par. Tools: switching the tool off puts par out of reach.
+// Splitting: no whole-run solution reaches par. Seek: the cheapest route takes more moves than the fewest-move one.
+// Throws when a bounded search still hits its size limit, so a check never passes by accident.
+function bounded(level, options) {
+  const result = E.solve(level, undefined, {limit: 4e6, ...options});
+  if (result.aborted) throw new Error('search too large to check');
+  return result;
+}
+const lowers = (level, par) => bounded(level, {maxCost: par - 1}).cost !== null;
+const outOfReach = (level, par, options = {}) => bounded(level, {maxCost: par, ...options}).cost === null;
+function matters(level, rule, par) {
+  switch (rule) {
+    case 'clipboard':
+    case 'nudge':
+      return outOfReach(without[rule](level), par);
+    case 'splitting':
+      return outOfReach(level, par, {whole: true});
+    case 'system':
+      return lowers(without.system(level), par) && lowers(without.links(level), par);
+    case 'seek': {
+      const fewest = bounded(without.seek(level), {}).cost;
+      return bounded(level, {}).path.length > fewest;
+    }
+    default:
+      if (!without[rule]) throw new Error(`unknown rule ${rule}`);
+      return lowers(without[rule](level), par);
+  }
 }
 
-module.exports = {measure, addDetail, trapRate, without, uses, reservedMatters};
+module.exports = {measure, addDetail, trapRate, without, uses, matters};

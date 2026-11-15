@@ -149,11 +149,26 @@ assert.strictEqual(E.initialState({board: 'A.AAACCC.BBBDD'}).cells.length, 14);
 // Every campaign level labelled reserved really depends on its reserved sectors. A bounded search proves it even on big boards.
 {
   const {without} = require('../tools/metrics.js');
-  const {reservedMatters} = require('../tools/metrics.js');
+  const {matters} = require('../tools/metrics.js');
   for (const level of require('../levels.js').chapters.flatMap(c => c.levels).filter(l => l.mechanic === 'reserved' && !l.intro)) {
-    assert.strictEqual(reservedMatters(level, level.par), true, `${level.id}: reserved sectors are decoration`);
+    assert.strictEqual(matters(level, 'reserved', level.par), true, `${level.id}: reserved sectors are decoration`);
   }
-  assert.strictEqual(reservedMatters({board: 'A#A.', par: 1}, 1), false, 'freeing # in A#A. still costs 1');
+  assert.strictEqual(matters({board: 'A#A.', par: 1}, 'reserved', 1), false, 'freeing # in A#A. still costs 1');
+}
+
+// One bounded check per rule: switching the rule off changes par.
+{
+  const {matters} = require('../tools/metrics.js');
+  const byId = id => require('../levels.js').levels.find(l => l.id === id);
+  assert.strictEqual(matters(byId('scattered-gaps-ii'), 'homes', 4), false);
+  assert.strictEqual(matters(byId('scattered-gaps-ii'), 'reserved', 4), true);
+  assert.strictEqual(matters(byId('blocked-lanes'), 'homes', 4), true);
+  assert.strictEqual(matters(byId('two-splits'), 'splitting', 7), true);
+  assert.strictEqual(matters(byId('tidy-disk'), 'consolidate', 6), true);
+  assert.strictEqual(matters(byId('hold-that-thought'), 'clipboard', 4), true);
+  assert.strictEqual(matters(byId('scoot-over'), 'nudge', 3), true);
+  assert.strictEqual(matters(byId('long-way-round'), 'seek', 6), true);
+  assert.strictEqual(matters(byId('load-order'), 'system', 4), true);
 }
 
 console.log('tools ok');
