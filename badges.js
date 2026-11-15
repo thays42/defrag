@@ -14,6 +14,7 @@ const badgePool = {
   "long-way-round": {"tidy":11,"few":3},
   "head-travel": {"few":4},
   "long-commute": {"few":5},
+  "power-on": {"light":21},
   "broken-workspace": {"light":24},
   "pocket-change": {"light":34},
 };

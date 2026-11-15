@@ -9,7 +9,7 @@ Run `make play`, or open `index.html` in a browser. There is no build step.
 | File | Purpose |
 | --- | --- |
 | `engine.js` | Rules and solver. The game and every tool share it, so the rules exist once. |
-| `levels.js` | Mechanics, chapters, and handmade levels. Each chapter has a one-line `summary`. `extras` holds the optional Extra set, and `levels` lists every level. Each level has a stable `id` and one primary `mechanic`. A Combine level also lists `combines`: two or more rules, each of which must change par (three or more in the Boot chapter). |
+| `levels.js` | Mechanics, chapters, and handmade levels. Each chapter has a one-line `summary`. `extras` holds the optional Extra set, and `levels` lists every level. Each level has a stable `id` and one primary `mechanic`. A Combine level also lists `combines`: two or more rules, each of which must change par. The last chapter, Boot, is the finale: three or more rules per level. |
 | `daily.js` | Generated pool for the daily puzzle. Do not edit by hand. |
 | `badges.js` | Generated badge targets per level. Do not edit by hand. |
 | `game.js` | User interface. |
@@ -82,7 +82,9 @@ A Combine level lists its rules in `combines`. The checker (`tools/combine-rules
 - Par is at least the par of every earlier plain level with the same `mechanic`.
 - In the Boot chapter, at least three rules per level, and the last level uses `system`.
 
-Find boards with `node tools/combine.js <rule,rule,...>`. Flags: `--sizes 3,3,2` (file sizes), `--free 3`, `--length 24`, `--min-par N`, `--par N`, `--seed`, `--tries`, `--count`. Sectors left over become reserved. Filters run cheapest first: par (capped at 2e5 states), then each rule's check, then the detail metrics. Each output line has `quality` and `similarity`, the closest match to an existing level. `tools/board-builder.js` holds the random builder that `generate.js` and `combine.js` share.
+Find boards with `node tools/combine.js <rule,rule,...>`. Flags: `--sizes 3,3,2` (file sizes), `--free 3`, `--length 24`, `--min-par N`, `--par N`, `--seed`, `--tries`, `--count`. Sectors left over become reserved. Filters run cheapest first: par (capped at 2e5 states), then each rule's check, then the detail metrics. Each output line has `quality` and `similarity`, the closest match to an existing level. `--active N` keeps the puzzle in an N-sector stretch padded with reserved sectors; random spreads over all 24 sectors rarely work. `--seconds N` stops the search and reports what it found. Each kept board also streams to stderr as a `kept {...}` line.
+
+When random search finds nothing, `node tools/climb.js <rule,rule,...> --from seeds.jsonl --min-par N` hill-climbs from earlier boards (for example `kept` lines with a field added for the new rule). It swaps sectors, moves homes and moves cracked sectors, and keeps changes that make more rules matter, raise par, or raise quality. `tools/board-builder.js` holds the random builder that `generate.js` and `combine.js` share.
 
 ### Quality metrics
 

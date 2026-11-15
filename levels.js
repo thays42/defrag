@@ -141,6 +141,17 @@ const chapters = [
       {id: 'long-commute', mechanic: 'seek', combines: ['seek', 'homes'], cost: 'seek', par: 23, name: 'Long commute', board: '##C#BBA.ABC.#A##########', homes: {A: [5, 7], B: [10, 12], C: [8, 9]}, goal: 'Send every file home. Keep the read head’s travel low.'},
     ],
   },
+  {
+    name: 'Boot',
+    summary: 'The disk is ready. Start it up.',
+    levels: [
+      {id: 'power-on', mechanic: 'homes', combines: ['homes', 'ordered', 'splitting'], par: 9, name: 'Power on', board: '###########C1#A2B3.B1B2A1A3.C2##', homes: {A: [19, 21], B: [16, 18], C: [14, 15]}, goal: 'Send each file home in number order. Some runs must break.'},
+      {id: 'self-test', mechanic: 'links', combines: ['links', 'splitting', 'consolidate'], links: [['A', 'B'], ['B', 'C']], consolidate: true, par: 7, name: 'Self-test', board: 'CABB.C.BAAA#############', goal: 'Rebuild A→B→C and gather the free space in one stretch.'},
+      {id: 'mount', mechanic: 'fragile', combines: ['fragile', 'clipboard', 'homes'], clipboard: true, fragile: [14], par: 8, name: 'Mount', board: '###BAC#C#ACA#.BB########', homes: {A: [14, 16], B: [10, 12], C: [4, 6]}, goal: 'Send all three files home. Use the clipboard. Mind the crack.'},
+      {id: 'load-drivers', mechanic: 'seek', combines: ['seek', 'homes', 'ordered'], cost: 'seek', par: 18, name: 'Load drivers', board: '###.C1B2A1.C2B3A2A3#B1##########', homes: {A: [10, 12], B: [7, 9], C: [4, 5]}, goal: 'Send each file home in number order. Keep head travel low.'},
+      {id: 'first-boot', mechanic: 'system', combines: ['system', 'ordered', 'homes'], locked: ['S'], links: [['S', 'A']], par: 9, name: 'First boot', board: '####.B3SS.B2A1A3B1C1C2A2########', homes: {B: [14, 16], C: [5, 6]}, goal: 'Boot the disk: load A after S in order, and send B and C home.'},
+    ],
+  },
 ];
 
 // Hard puzzles off the main path. They do not count toward the campaign's star total.

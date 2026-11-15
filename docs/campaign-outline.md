@@ -11,7 +11,7 @@ tags: [campaign, level-design, tutorial, defrag]
 
 ## What the campaign does today
 
-**Status:** Phases 1 and 2 are done. The list below describes the campaign before them.
+**Status:** Phases 1–3 are done. The list below describes the campaign before them.
 
 The campaign had 55 levels in 15 chapters. It had these problems.
 
@@ -134,9 +134,9 @@ Three rules that change what "done" means. Each gets a Teach, a Twist, and a Com
 
 | Rule | Teach | Twist | Combine gap |
 | --- | --- | --- | --- |
-| Numbered fragments | `in-order` | `shuffled`, `two-decks` | Needs one with homes. |
-| Free space | `one-gap` | `sweep-up`, `tidy-disk` | `tidy-disk` already uses homes. |
-| Linked files | `chained` | `chain-of-three`, `daisy-chain` | Needs one with splits. |
+| Numbered fragments | `in-order` | `shuffled`, `two-decks` | `filed-in-order` (with homes). |
+| Free space | `one-gap` | `sweep-up`, `tidy-disk` | `tidy-disk` (with homes). |
+| Linked files | `chained` | `chain-of-three`, `daisy-chain` | `broken-chain` (with splits). |
 
 This chapter is large, but it stays one chapter for now.
 
@@ -148,7 +148,7 @@ The operating system arrives. System files are locked and linked, so this follow
 | --- | --- |
 | Teach | `boot-sector` |
 | Twist | `load-order`, `kernel-space`, `driver-stack` |
-| Combine | **New:** system files with homes or numbered fragments. |
+| Combine | `install-path`: system files with homes. |
 
 ### Chapter 8: Wear
 
@@ -158,7 +158,7 @@ The disk ages. Cracked sectors.
 | --- | --- |
 | Teach | `cracked` |
 | Twist | `one-write-left`, `failing-drive` |
-| Combine | **New:** cracked sectors with free space, so every write counts twice. |
+| Combine | `last-writes`: cracked sectors with free space. |
 
 ### Chapter 9: Recovery tools
 
@@ -166,8 +166,8 @@ The disk is failing. Two tools help. Both are verbs, so they come after the cons
 
 | Tool | Teach | Twist | Combine gap |
 | --- | --- | --- | --- |
-| Clipboard | `no-room-at-all` | `hold-that-thought`, `juggle` | Needs one with cracked sectors. |
-| Nudges | `nudge` | `scoot-over`, `shuffle-step` | Needs one with reserved sectors on the full disk. |
+| Clipboard | `no-room-at-all` | `hold-that-thought`, `juggle` | `fragile-hold` (with cracked sectors and homes). |
+| Nudges | `nudge` | `scoot-over`, `shuffle-step` | `tight-quarters` (with reserved sectors and homes). |
 
 ### Chapter 10: Seek
 
@@ -177,11 +177,21 @@ The read head is slow. A move costs its distance. This changes what a good score
 | --- | --- |
 | Teach | `short-hops` |
 | Twist | `long-way-round`, `head-travel` |
-| Combine | **New:** seek with homes on the full disk. |
+| Combine | `long-commute`: seek with homes. |
 
 ### Chapter 11: Boot
 
 Finale. Five new levels on the full disk. Each combines three or more earlier rules. The last level uses the system file as the boot target and gives the story its end.
+
+| Level | Rules | Par |
+| --- | --- | --- |
+| `power-on` | homes, numbered fragments, splitting | 9 |
+| `self-test` | linked files, splitting, free space | 7 |
+| `mount` | cracked sectors, clipboard, homes | 8 |
+| `load-drivers` | seek, homes, numbered fragments | 18 (seek) |
+| `first-boot` | system file, numbered fragments, homes | 9 |
+
+The planned sets for `power-on` (with reserved) and `load-drivers` (with reserved) found no board where reserved sectors change par. Each swapped in another taught rule.
 
 ## What a first-time player gets confused by
 
@@ -216,7 +226,7 @@ Each phase is its own plan and ships working software. Later phases depend on ea
 | --- | --- | --- | --- |
 | 1. Fixed disk | 6×4 frame, unallocated sectors, read-path track, `offset` level field. | — | `docs/superpowers/plans/2026-11-15-fixed-disk.md` |
 | 2. Campaign order | New chapter layout, catalog in campaign order, the two new Teach levels, rework of the three decoration levels, Extra set. | 1 (the row-break level needs `offset`) | `docs/superpowers/plans/2026-11-15-campaign-order.md` |
-| 3. Combine levels | Generator presets for mechanic pairs, checker rule that every Combine mechanic changes par, about 7 Combine levels, 5 finale levels. | 2 | Not written |
+| 3. Combine levels | Generator presets for mechanic pairs, checker rule that every Combine mechanic changes par, about 7 Combine levels, 5 finale levels. | 2 | `docs/superpowers/plans/2026-11-15-combine-levels.md` |
 | 4. First-time player fixes | The confusion table: par and score copy, hint warning, settled state, split cost preview, clipboard contents. | — | Not written |
 | 5. Partition reveal | Animation when the partition grows at a chapter start. | 1, 2, and the open question below | Not written |
 

@@ -114,7 +114,7 @@ assert.strictEqual(E.initialState({board: 'A.AAACCC.BBBDD'}).cells.length, 14);
 {
   const L = require('../levels.js');
   const ORIGINAL_55_IDS = ["join-two-blocks","move-a-run","split-a-run","find-home","two-files","reserved-intro","scattered-gaps","warm-up","required-split","borrow-a-home","park-a-pair","choose-what-to-park","make-a-parking-spot","save-the-gap","a-can-wait","b-can-wait","required-split-revisited","beat-par","one-sector-off","two-splits","four-files","free-the-pair","trade-places","tight-fit","blocked-lanes","broken-workspace","across-the-disk","pocket-change","split-workspace","cut-across","in-order","shuffled","two-decks","no-room-at-all","hold-that-thought","juggle","short-hops","long-way-round","head-travel","one-gap","sweep-up","tidy-disk","boot-sector","load-order","kernel-space","driver-stack","cracked","one-write-left","failing-drive","chained","chain-of-three","daisy-chain","nudge","scoot-over","shuffle-step"];
-  assert.deepStrictEqual(L.chapters.map(c => c.name), ['Format', 'Allocation', 'Move order', 'Fragmentation', 'Full disk', 'File system rules', 'Install', 'Wear', 'Recovery tools', 'Seek']);
+  assert.deepStrictEqual(L.chapters.map(c => c.name), ['Format', 'Allocation', 'Move order', 'Fragmentation', 'Full disk', 'File system rules', 'Install', 'Wear', 'Recovery tools', 'Seek', 'Boot']);
   assert.ok(L.chapters.every(c => c.summary && c.levels.length), 'every chapter has a summary and levels');
   assert.deepStrictEqual(L.extras.levels.map(l => l.id), ['trade-places', 'broken-workspace', 'pocket-change']);
   assert.strictEqual(L.levels.length, L.chapters.flatMap(c => c.levels).length + L.extras.levels.length);
@@ -256,6 +256,40 @@ const fastEnough = level => {
     assert.ok(level.offset === undefined);
     fastEnough(level);
   }
+}
+
+// The Boot chapter closes the campaign: five full-disk finale levels, ending on the system file.
+{
+  const L = require('../levels.js');
+  const boot = L.chapters.find(c => c.name === 'Boot');
+  assert.deepStrictEqual(boot.levels.map(l => l.id), ['power-on', 'self-test', 'mount', 'load-drivers', 'first-boot']);
+  for (const level of boot.levels) {
+    assert.strictEqual(E.placement(level).length, 24, `${level.id} does not fill the disk`);
+    assert.ok(level.offset === undefined);
+    fastEnough(level);
+  }
+  const last = L.chapters.flatMap(c => c.levels).at(-1);
+  assert.strictEqual(last.id, 'first-boot');
+  assert.deepStrictEqual(last.locked, ['S']);
+  assert.deepStrictEqual(last.links[0], ['S', 'A']);
+}
+
+// climb.js mutations keep the board's length and contents, keep S fixed, and keep homes off reserved and system sectors.
+{
+  const {mutate} = require('../tools/climb.js');
+  const {makeRng} = require('../tools/board-builder.js');
+  const rng = makeRng(4);
+  const start = {board: '####.B3SS.B2A1A3B1C1C2A2########', homes: {B: [14, 16], C: [5, 6]}, locked: ['S'], links: [['S', 'A']], fragile: [5]};
+  const sorted = board => E.parseBoard(board).sort().join();
+  let level = start;
+  for (let n = 0; n < 200; n++) {
+    level = mutate(rng, level) ?? level;
+    const cells = E.parseBoard(level.board);
+    assert.strictEqual(sorted(level.board), sorted(start.board));
+    assert.strictEqual(cells.indexOf('S'), E.parseBoard(start.board).indexOf('S'));
+    for (const [a, b] of Object.values(level.homes)) for (let i = a; i <= b; i++) assert.ok(!['#', 'S'].includes(cells[i - 1]));
+  }
+  assert.notStrictEqual(level.board, start.board);
 }
 
 console.log('tools ok');
