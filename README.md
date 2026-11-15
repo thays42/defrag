@@ -9,7 +9,7 @@ Run `make play`, or open `index.html` in a browser. There is no build step.
 | File | Purpose |
 | --- | --- |
 | `engine.js` | Rules and solver. The game and every tool share it, so the rules exist once. |
-| `levels.js` | Mechanics, chapters, and handmade levels. Each chapter has a one-line `summary`. `extras` holds the optional Extra set, and `levels` lists every level. Each level has a stable `id` and one primary `mechanic`. |
+| `levels.js` | Mechanics, chapters, and handmade levels. Each chapter has a one-line `summary`. `extras` holds the optional Extra set, and `levels` lists every level. Each level has a stable `id` and one primary `mechanic`. A Combine level also lists `combines`: two or more rules, each of which must change par (three or more in the Boot chapter). |
 | `daily.js` | Generated pool for the daily puzzle. Do not edit by hand. |
 | `badges.js` | Generated badge targets per level. Do not edit by hand. |
 | `game.js` | User interface. |

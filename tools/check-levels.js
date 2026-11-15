@@ -103,6 +103,9 @@ for (const level of all) {
 // A campaign level may only use a rule after the campaign teaches it.
 problems.push(...require('./teach-order.js').teachOrderProblems(chapters.flatMap(c => c.levels)));
 
+// Combine levels: every combined rule changes par, and par never drops below earlier levels of the same rule.
+problems.push(...require('./combine-rules.js').combineProblems(chapters));
+
 // Campaign levels must look distinct. Intro pairs only warn: tiny boards cannot differ much.
 for (const pair of similarPairs(levels)) {
   const line = `similar ${pair.score.toFixed(2)}: ${pair.a.id} ${pair.a.board} ~ ${pair.b.id} ${pair.b.board}`;

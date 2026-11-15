@@ -1,6 +1,7 @@
 // Level data. Each level has a stable `id` (progress is saved by id) and one primary `mechanic`.
 // Board notation: '.' empty, '#' reserved, letters are files, a digit after a letter is a fragment number.
 // Sector numbers in homes, fragile and so on are 1-based. Run `node tools/check-levels.js` after editing.
+// `combines` lists the rules a Combine level mixes; each must change par (tools/combine-rules.js).
 // `intro` levels teach a rule and show a prompt. `beatable` means par is deliberately above the optimum.
 const mechanics = [
   {id: 'basics', name: 'Basics', rule: 'Join each file into one unbroken run.'},
@@ -50,7 +51,7 @@ const chapters = [
     levels: [
       {id: 'a-can-wait', mechanic: 'homes', par: 4, name: 'A can wait', board: '##C.BB#A.C', homes: {B: [3, 4], C: [5, 6], A: [9, 9]}, goal: 'Choose when to send A home.'},
       {id: 'b-can-wait', mechanic: 'homes', par: 4, name: 'B can wait', board: 'BB#.ACC..A', homes: {C: [4, 5], A: [6, 7], B: [8, 9]}, goal: 'Get everyone home while keeping space to join A.'},
-      {id: 'blocked-lanes', mechanic: 'reserved', par: 4, name: 'Blocked lanes', board: 'B.#CC#.AAB##.', homes: {A: [1, 2], B: [8, 9], C: [4, 5]}, goal: 'Route the files around the reserved sectors.'},
+      {id: 'blocked-lanes', mechanic: 'reserved', combines: ['reserved', 'homes'], par: 4, name: 'Blocked lanes', board: 'B.#CC#.AAB##.', homes: {A: [1, 2], B: [8, 9], C: [4, 5]}, goal: 'Route the files around the reserved sectors.'},
     ],
   },
   {
@@ -62,8 +63,8 @@ const chapters = [
       {id: 'make-a-parking-spot', mechanic: 'splitting', par: 5, name: 'Make a parking spot', board: 'BB#AA##.CC.', homes: {A: [1, 2], B: [4, 5], C: [8, 11]}, goal: 'Make enough room to borrow C’s home and get both other files home.'},
       {id: 'one-sector-off', mechanic: 'splitting', par: 5, name: 'One sector off', board: '##..ABBAABBA', homes: {A: [3, 6], B: [9, 12]}, goal: 'Use a split to fit a run into its exact home.'},
       {id: 'beat-par', mechanic: 'splitting', beatable: true, par: 5, name: 'Beat par', board: 'AA.AA##CCBC#B.B', goal: 'Par is the best score without splitting. Use a split to beat it.'},
-      {id: 'required-split-revisited', mechanic: 'splitting', par: 6, name: 'Required split revisited', board: '#####.BCCC##AA.BBAA', homes: {B: [6, 8], C: [13, 15], A: [16, 19]}, goal: 'The split from Required split, now into marked homes.'},
-      {id: 'two-splits', mechanic: 'splitting', par: 7, name: 'Two splits', board: '..ABBBBAAA', homes: {A: [1, 4], B: [7, 10]}, goal: 'Make room to get both four-block files home.'},
+      {id: 'required-split-revisited', mechanic: 'splitting', combines: ['splitting', 'homes', 'reserved'], par: 6, name: 'Required split revisited', board: '#####.BCCC##AA.BBAA', homes: {B: [6, 8], C: [13, 15], A: [16, 19]}, goal: 'The split from Required split, now into marked homes.'},
+      {id: 'two-splits', mechanic: 'splitting', combines: ['splitting', 'homes'], par: 7, name: 'Two splits', board: '..ABBBBAAA', homes: {A: [1, 4], B: [7, 10]}, goal: 'Make room to get both four-block files home.'},
     ],
   },
   {
@@ -87,7 +88,7 @@ const chapters = [
       {id: 'two-decks', mechanic: 'ordered', par: 7, name: 'Two decks', board: 'B1A2B3B2A3A1.', goal: 'Sort two interleaved files with a single free sector.'},
       {id: 'one-gap', mechanic: 'consolidate', intro: true, consolidate: true, par: 1, name: 'One gap', board: 'A.A.', goal: 'Join A and leave the free space in one stretch.', prompt: 'Some moves join A but leave the empty sectors in two pieces.'},
       {id: 'sweep-up', mechanic: 'consolidate', consolidate: true, par: 3, name: 'Sweep up', board: '##.AAB#CC##..B', goal: 'Join every file and gather the free space.'},
-      {id: 'tidy-disk', mechanic: 'consolidate', consolidate: true, par: 6, name: 'Tidy disk', board: 'BA.C.AABB.C', homes: {A: [3, 5]}, goal: 'Send A home and leave one clean stretch of free space.'},
+      {id: 'tidy-disk', mechanic: 'consolidate', combines: ['consolidate', 'homes'], consolidate: true, par: 6, name: 'Tidy disk', board: 'BA.C.AABB.C', homes: {A: [3, 5]}, goal: 'Send A home and leave one clean stretch of free space.'},
       {id: 'chained', mechanic: 'links', intro: true, links: [['A', 'B']], par: 1, name: 'Chained', board: '.BA', goal: 'A must end directly before B.', prompt: 'Move A to the sector in front of B.'},
       {id: 'chain-of-three', mechanic: 'links', links: [['A', 'B'], ['B', 'C']], par: 3, name: 'Chain of three', board: '.BA.CC##B', goal: 'Line up the chain A→B→C.'},
       {id: 'daisy-chain', mechanic: 'links', links: [['A', 'B'], ['B', 'C']], par: 4, name: 'Daisy chain', board: 'ABB.BC.#AA', goal: 'Rebuild the chain A→B→C with two free sectors.'},

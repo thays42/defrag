@@ -171,4 +171,22 @@ assert.strictEqual(E.initialState({board: 'A.AAACCC.BBBDD'}).cells.length, 14);
   assert.strictEqual(matters(byId('load-order'), 'system', 4), true);
 }
 
+// Combine rules: every combined rule changes par, and the level is no easier than earlier levels of its rule.
+{
+  const L = require('../levels.js');
+  const {combineProblems} = require('../tools/combine-rules.js');
+  const byId = id => L.levels.find(l => l.id === id);
+  const tag = (id, combines, extra = {}) => ({...byId(id), combines, ...extra});
+  assert.deepStrictEqual(combineProblems([{name: 'X', levels: [tag('blocked-lanes', ['reserved', 'homes'])]}]), []);
+  assert.deepStrictEqual(combineProblems([{name: 'X', levels: [tag('scattered-gaps-ii', ['reserved', 'homes'])]}]), ['scattered-gaps-ii: homes does not change par']);
+  assert.deepStrictEqual(combineProblems([{name: 'X', levels: [tag('blocked-lanes', ['reserved'])]}]), ['blocked-lanes: combines needs at least 2 rules']);
+  assert.deepStrictEqual(combineProblems([{name: 'X', levels: [tag('blocked-lanes', ['homes', 'splitting'])]}]),
+    ['blocked-lanes: combines does not include mechanic reserved', 'blocked-lanes: splitting does not change par']);
+  assert.ok(combineProblems([{name: 'X', levels: [byId('two-decks'), tag('in-order', ['ordered', 'homes'], {homes: {A: [3, 4]}, par: 1})]}])
+    .includes('in-order: par 1 is below 7 of earlier ordered level two-decks'));
+  assert.deepStrictEqual(combineProblems([{name: 'Boot', levels: [tag('two-splits', ['splitting', 'homes'])]}]),
+    ['two-splits: Boot levels combine at least 3 rules', 'two-splits: the last Boot level must use system']);
+  for (const level of L.chapters.flatMap(c => c.levels)) assert.ok(level.goal.length <= 70, `${level.id} goal is over 70 characters`);
+}
+
 console.log('tools ok');
