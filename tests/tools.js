@@ -189,4 +189,22 @@ assert.strictEqual(E.initialState({board: 'A.AAACCC.BBBDD'}).cells.length, 14);
   for (const level of L.chapters.flatMap(c => c.levels)) assert.ok(level.goal.length <= 70, `${level.id} goal is over 70 characters`);
 }
 
+// combine.js builds full-disk candidates with every listed rule switched on.
+{
+  const {makeRng} = require('../tools/board-builder.js');
+  const {combineCandidate} = require('../tools/combine.js');
+  const rng = makeRng(3);
+  let level = null;
+  for (let n = 0; n < 50 && !level; n++) level = combineCandidate(rng, ['ordered', 'homes'], {sizes: [3, 3, 2], free: 3, length: 24});
+  assert.ok(level, 'no candidate built');
+  assert.strictEqual(E.parseBoard(level.board).length, 24);
+  assert.ok(/[1-9]/.test(level.board) && Object.keys(level.homes).length === 3);
+  let sys = null;
+  const rng2 = makeRng(5);
+  for (let n = 0; n < 50 && !sys; n++) sys = combineCandidate(rng2, ['system', 'homes'], {sizes: [3, 2], free: 3, length: 24});
+  assert.deepStrictEqual(sys.links[0], ['S', 'A']);
+  assert.deepStrictEqual(sys.locked, ['S']);
+  assert.strictEqual(E.parseBoard(sys.board).length, 24);
+}
+
 console.log('tools ok');

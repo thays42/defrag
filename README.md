@@ -73,6 +73,17 @@ Campaign levels must also look distinct. The checker compares every pair of boar
 
 For `reserved` campaign levels the mechanic check fails when freeing the reserved sectors leaves par unchanged: reserved sectors must be a constraint, not decoration. The check searches only up to par − 1, so it finishes even on full-disk boards. A level whose reserved sectors are decoration but whose homes drive the puzzle is labelled `homes`. For `homes` levels the check only warns, since some original levels keep the same optimum without their homes. A rework that changes a level's par takes a new id, so old best scores do not carry over.
 
+### Combine levels
+
+A Combine level lists its rules in `combines`. The checker (`tools/combine-rules.js`) requires the following:
+
+- At least two rules, including the level's own `mechanic`.
+- Each rule changes par. A constraint rule lowers par when switched off. A tool (clipboard, nudges) puts par out of reach when switched off. Splitting: no whole-run solution reaches par. Seek: the cheapest route takes more moves than the fewest-move solution.
+- Par is at least the par of every earlier plain level with the same `mechanic`.
+- In the Boot chapter, at least three rules per level, and the last level uses `system`.
+
+Find boards with `node tools/combine.js <rule,rule,...>`. Flags: `--sizes 3,3,2` (file sizes), `--free 3`, `--length 24`, `--min-par N`, `--par N`, `--seed`, `--tries`, `--count`. Sectors left over become reserved. Filters run cheapest first: par (capped at 2e5 states), then each rule's check, then the detail metrics. Each output line has `quality` and `similarity`, the closest match to an existing level. `tools/board-builder.js` holds the random builder that `generate.js` and `combine.js` share.
+
 ### Quality metrics
 
 | Metric | Meaning | Good sign |
