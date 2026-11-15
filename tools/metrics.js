@@ -95,29 +95,30 @@ function addDetail(level, result, limit = 1.5e6) {
 // Constraint rules: switching the rule off lowers par. Tools: switching the tool off puts par out of reach.
 // Splitting: no whole-run solution reaches par. Seek: the cheapest route takes more moves than the fewest-move one.
 // Throws when a bounded search still hits its size limit, so a check never passes by accident.
-function bounded(level, options) {
-  const result = E.solve(level, undefined, {limit: 4e6, ...options});
+function bounded(level, options, limit = 4e6) {
+  const result = E.solve(level, undefined, {limit, ...options});
   if (result.aborted) throw new Error('search too large to check');
   return result;
 }
-const lowers = (level, par) => bounded(level, {maxCost: par - 1}).cost !== null;
-const outOfReach = (level, par, options = {}) => bounded(level, {maxCost: par, ...options}).cost === null;
-function matters(level, rule, par) {
+// `limit` caps each search's states; a search tool passes a lower one to save time and memory.
+function matters(level, rule, par, {limit = 4e6} = {}) {
+  const lowers = stripped => bounded(stripped, {maxCost: par - 1}, limit).cost !== null;
+  const outOfReach = (stripped, options = {}) => bounded(stripped, {maxCost: par, ...options}, limit).cost === null;
   switch (rule) {
     case 'clipboard':
     case 'nudge':
-      return outOfReach(without[rule](level), par);
+      return outOfReach(without[rule](level));
     case 'splitting':
-      return outOfReach(level, par, {whole: true});
+      return outOfReach(level, {whole: true});
     case 'system':
-      return lowers(without.system(level), par) && lowers(without.links(level), par);
+      return lowers(without.system(level)) && lowers(without.links(level));
     case 'seek': {
-      const fewest = bounded(without.seek(level), {}).cost;
-      return bounded(level, {}).path.length > fewest;
+      const fewest = bounded(without.seek(level), {}, limit).cost;
+      return bounded(level, {}, limit).path.length > fewest;
     }
     default:
       if (!without[rule]) throw new Error(`unknown rule ${rule}`);
-      return lowers(without[rule](level), par);
+      return lowers(without[rule](level));
   }
 }
 

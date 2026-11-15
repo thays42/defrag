@@ -209,6 +209,20 @@ assert.strictEqual(E.initialState({board: 'A.AAACCC.BBBDD'}).cells.length, 14);
   assert.deepStrictEqual(sys.links[0], ['S', 'A']);
   assert.deepStrictEqual(sys.locked, ['S']);
   assert.strictEqual(E.parseBoard(sys.board).length, 24);
+  // With a system file, A has no home and its run fits right after S.
+  assert.strictEqual(sys.homes.A, undefined);
+  const cells = E.parseBoard(sys.board);
+  const slot = cells.lastIndexOf('S') + 1;
+  assert.ok(cells.slice(slot, slot + 3).every(t => t !== '#') && slot + 3 <= 24);
+  // --active keeps the puzzle in one stretch; homes move with it and never cover padding.
+  const rng3 = makeRng(9);
+  let small = null;
+  for (let n = 0; n < 50 && !small; n++) small = combineCandidate(rng3, ['homes'], {sizes: [3, 2], free: 2, length: 24, active: 10});
+  const padded = E.parseBoard(small.board);
+  assert.strictEqual(padded.length, 24);
+  const open = padded.flatMap((t, i) => (t === '#' ? [] : [i]));
+  assert.ok(open[open.length - 1] - open[0] < 10, 'open sectors lie inside the active stretch');
+  for (const [a, b] of Object.values(small.homes)) for (let i = a; i <= b; i++) assert.notStrictEqual(padded[i - 1], '#');
 }
 
 // Every campaign Combine level passes the Combine rules; scattered gaps is the Allocation Combine.
