@@ -123,14 +123,25 @@ const check = (name, ok, detail = '') => {
   const dead = await get(() => ({deadEnd, status: ui.status.textContent, solvable: E.solve(level, state).cost !== null}));
   check('dead end matches solver', dead.deadEnd === !dead.solvable, JSON.stringify(dead));
 
-  // Levels screen: grouped by mechanic and sorted by par inside each group.
+  // Levels screen: one group per chapter in campaign order, then the Extra set.
   await page.evaluate(() => showCatalog());
   const groups = await page.$$eval('#levels section', sections => sections.map(s => ({
     name: s.querySelector('h3').textContent,
-    pars: [...s.querySelectorAll('button small')].map(x => Number(x.textContent.match(/(\d+)\s*$/)[1])),
+    summary: s.querySelector('.rule')?.textContent,
   })));
-  check('one group per mechanic', groups.length === 12, groups.map(g => g.name).join(', '));
-  check('each group sorted by par', groups.every(g => g.pars.every((p, i) => i === 0 || g.pars[i - 1] <= p)), JSON.stringify(groups));
+  const chapterNames = await get(() => [...chapters.map(c => c.name), 'Extra']);
+  check('one group per chapter, then Extra', groups.map(g => g.name.split(' · ')[0]).join('|') === chapterNames.join('|'), groups.map(g => g.name).join(', '));
+  check('each group shows its summary', groups.every(g => g.summary));
+  const listed = await page.$$eval('#levels section button > span:first-child', spans => spans.map(s => s.firstChild.textContent));
+  check('catalog lists levels in campaign order', listed.join('|') === (await get(() => [...campaign, ...extraLevels].map(l => l.name))).join('|'), listed.join('|'));
+
+  // Extra levels chain to each other, then return to Levels. Their stars stay out of the campaign total.
+  const solveAndNext = id => page.evaluate(target => { openLevel(levelById.get(target)); for (const m of E.solve(level, state).path) perform(m); ui.next.click(); return {id: level.id, catalog: !ui.catalog.hidden}; }, id);
+  check('next on an Extra level opens the next Extra', (await solveAndNext('trade-places')).id === 'broken-workspace');
+  check('next on the last Extra opens the catalog', (await solveAndNext('pocket-change')).catalog);
+  const extraTotal = await page.evaluate(() => { const saved = {...progress.best}; showMenu(false); const before = ui['resume-detail'].textContent; for (const l of extraLevels) progress.best[l.id] = l.par; showMenu(false); const after = ui['resume-detail'].textContent; progress.best = saved; return {before, after}; });
+  check('menu total ignores Extra stars', extraTotal.before === extraTotal.after, JSON.stringify(extraTotal));
+  check('last Extra says where Next goes', await page.evaluate(() => { openLevel(levelById.get('pocket-change')); for (const m of E.solve(level, state).path) perform(m); return ui.next.textContent === 'Back to levels'; }));
 
   // Old index-based saves migrate to ids.
   await page.evaluate(() => {

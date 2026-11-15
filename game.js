@@ -128,6 +128,19 @@ function dailyLevel() {
     goal: 'A new disk every day. Join each file inside its home.'};
 }
 
+// The level after this one on its own path: the main campaign, or the Extra set. Null at the end of either.
+function nextLevel(item) {
+  const path = item.extra ? extraLevels : campaign;
+  const position = path.findIndex(other => other.id === item.id);
+  return position < 0 ? null : path[position + 1] ?? null;
+}
+
+function nextText(item) {
+  if (item.daily) return 'Copy result';
+  if (nextLevel(item)) return 'Next puzzle →';
+  return item.extra ? 'Back to levels' : 'Finish campaign';
+}
+
 function findLevel(id) {
   if (id?.startsWith('daily-')) return dailyLevel().id === id ? dailyLevel() : null;
   return levelById.get(id) ?? null;
@@ -531,9 +544,7 @@ function moveFocus(event, index) {
 function render() {
   const focused = document.activeElement;
   const done = finished();
-  const inCampaign = !level.daily;
-  const position = campaign.findIndex(item => item.id === level.id);
-  // The header reads "Chapter / Level". The board shows the goal, so its sentence is for screen readers.
+  // The header shows the chapter above the level name. The board shows the goal, so its sentence is for screen readers.
   const [section, name] = level.daily ? ['Daily puzzle', level.date] : [level.chapter, level.name];
   // Two lines always: the chapter above, the level name below. Neither wraps or is cut off.
   ui.title.replaceChildren(
@@ -546,7 +557,6 @@ function render() {
   ui.score.textContent = stats.cost;
   ui.par.textContent = level.par;
   renderCounters();
-  const last = inCampaign && position === campaign.length - 1;
   ui.next.hidden = !done;
   // Once cleared, the results sheet carries the stars and badges. The button below the board reopens it.
   ui.badges.hidden = true;
@@ -554,7 +564,7 @@ function render() {
   // The sheet is drawn over these buttons, so a swipe reveals them. Inert keeps them out of reach until then.
   ui['cleared-actions'].inert = !ui.result.hidden;
   if (done && result) ui['result-open'].textContent = `${starText(hinted ? 1 : stats.cost <= level.par ? 3 : 2)}  Results`;
-  ui.next.textContent = level.daily ? 'Copy result' : last ? 'Finish campaign' : 'Next puzzle →';
+  ui.next.textContent = nextText(level);
   ui.board.dataset.cleared = done;
   ui.status.dataset.cleared = done;
   ui.status.dataset.warning = deadEnd && !notice;
@@ -917,14 +927,14 @@ function showResult() {
   ui['result-badges'].hidden = !offered.length;
 
   const total = ui['result-total'];
-  const after = level.daily ? null : starTotal();
+  // Extra levels sit outside the campaign total, so the sheet does not show it for them.
+  const after = level.daily || level.extra ? null : starTotal();
   const best = previousStars > earned ? `Your best here: ${starText(previousStars)}` : '';
   const totalText = count => [best, after == null ? '' : `★ ${count} of ${3 * campaign.length}`].filter(Boolean).join(' · ');
   total.hidden = !totalText(after);
   at(total, beat.total);
 
-  const last = !level.daily && campaign.findIndex(item => item.id === level.id) === campaign.length - 1;
-  ui['result-next'].textContent = level.daily ? 'Copy result' : last ? 'Finish campaign' : 'Next puzzle →';
+  ui['result-next'].textContent = nextText(level);
   const missingBadge = offered.some(({id}) => !owned.has(id));
   ui['result-retry'].textContent = earned < 3 ? 'Retry for ★★★' : missingBadge ? 'Retry for badges' : 'Replay';
 
@@ -1000,20 +1010,17 @@ function showMenu(moveFocus = true) {
   showScreen('menu', moveFocus ? ui.continue : null);
 }
 
-// Levels grouped by mechanic, easiest (lowest par) first.
+// Levels in campaign order, one group per chapter, then the Extra set.
 function showCatalog() {
   ui.levels.replaceChildren();
-  const order = new Map(campaign.map((item, index) => [item.id, index]));
-  for (const mechanic of mechanics) {
-    const members = campaign.filter(item => item.mechanic === mechanic.id)
-      .sort((a, b) => a.par - b.par || Number(Boolean(b.intro)) - Number(Boolean(a.intro)) || order.get(a.id) - order.get(b.id));
-    if (!members.length) continue;
+  for (const group of [...chapters, extras]) {
+    const members = group.levels.map(({id}) => levelById.get(id));
     const section = document.createElement('section');
     const heading = document.createElement('h3');
     const done = members.filter(item => progress.best[item.id] != null).length;
-    heading.textContent = `${mechanic.name} · ${done}/${members.length}`;
-    const rule = Object.assign(document.createElement('p'), {className: 'rule', textContent: mechanic.rule});
-    section.append(heading, rule);
+    heading.textContent = `${group.name} · ${done}/${members.length}`;
+    const summary = Object.assign(document.createElement('p'), {className: 'rule', textContent: group.summary});
+    section.append(heading, summary);
     for (const item of members) {
       const button = document.createElement('button');
       const name = Object.assign(document.createElement('span'), {textContent: item.name});
@@ -1045,7 +1052,7 @@ function showCatalog() {
 function showEnding() {
   const total = starTotal();
   ui['ending-detail'].textContent = `You cleared all ${campaign.length} levels and earned ${total} of ${3 * campaign.length} ★. ` +
-    (total < 3 * campaign.length ? 'Levels lists every puzzle by mechanic, so you can chase the stars you missed.' : 'Every star collected. The daily puzzle has a new disk every day.');
+    (total < 3 * campaign.length ? 'Levels lists every puzzle by chapter, plus an Extra set, so you can chase the stars you missed.' : 'Every star collected. The daily puzzle has a new disk every day.');
   showScreen('ending', ui['ending-levels']);
 }
 
@@ -1092,9 +1099,9 @@ ui['daily-button'].onclick = ui['ending-daily'].onclick = () => openLevel(dailyL
 ui['game-back'].onclick = ui['catalog-back'].onclick = ui['ending-menu'].onclick = () => showMenu();
 ui.next.onclick = () => {
   if (level.daily) return shareDaily();
-  const position = campaign.findIndex(item => item.id === level.id);
-  if (position === campaign.length - 1) return showEnding();
-  openLevel(campaign[position + 1]);
+  const next = nextLevel(level);
+  if (next) return openLevel(next);
+  return level.extra ? showCatalog() : showEnding();
 };
 ui['result-next'].onclick = async () => {
   if (level.daily) {
