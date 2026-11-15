@@ -4,6 +4,8 @@
   const EMPTY = '.';
   const RESERVED = '#';
   const COLUMNS = 6;
+  const FRAME_ROWS = 4;
+  const FRAME = COLUMNS * FRAME_ROWS;
 
   // Cells are tokens: '.', '#', a file letter, or a letter plus a fragment digit ('A2').
   function parseBoard(text) {
@@ -35,7 +37,6 @@
 
   function initialState(level) {
     const cells = parseBoard(level.board);
-    while (cells.length % COLUMNS) cells.push(RESERVED);
     const fragile = new Set(level.fragile ?? []);
     return {
       cells,
@@ -44,6 +45,15 @@
       wear: fragile.size ? cells.map((token, i) => (fragile.has(i + 1) ? (token === EMPTY ? 1 : 0) : -1)) : null,
       nudges: level.nudges ?? 0,
     };
+  }
+
+  // Where the board sits in the fixed frame. `offset` counts the unallocated sectors before it.
+  function placement(level) {
+    const length = parseBoard(level.board).length;
+    if (level.offset !== undefined) return {offset: level.offset, length};
+    const rows = Math.ceil(length / COLUMNS);
+    const startRow = Math.floor((FRAME_ROWS - rows) / 2);
+    return {offset: startRow * COLUMNS + (rows === 1 ? Math.floor((COLUMNS - length) / 2) : 0), length};
   }
 
   function keyOf(state) {
@@ -263,7 +273,7 @@
   }
 
   root.DefragEngine = {
-    EMPTY, RESERVED, COLUMNS, parseBoard, letterOf, isFile, info, initialState, keyOf, runAt, landing,
+    EMPTY, RESERVED, COLUMNS, FRAME_ROWS, FRAME, placement, parseBoard, letterOf, isFile, info, initialState, keyOf, runAt, landing,
     moveCost, travelOf, moves, apply, fileSettled, linksMet, freeSpaceJoined, solved, estimate, solve,
   };
   if (typeof module !== 'undefined') module.exports = root.DefragEngine;

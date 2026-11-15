@@ -32,7 +32,10 @@ Mechanics are level flags. One level can combine several.
 | `locked: ['S']` | File S never moves. |
 | `fragile: [4]` | Sector 4 is cracked. It fails as soon as it is emptied. |
 | `links: [['A', 'B']]` | A's run must end where B's starts. |
+| `offset: 9` | Nine unallocated sectors come before the board in the 6×4 frame. Without it, the board is centered. |
 | `nudges: 2` | Two one-sector slides into space the run already covers. |
+
+Every board sits in a fixed 6×4 frame of 24 sectors. Sectors outside the board are unallocated.
 
 ## Scoring
 

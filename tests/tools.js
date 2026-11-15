@@ -91,4 +91,21 @@ assert.strictEqual(E.travelOf({type: 'cut', from: 2}), 0);
   for (const [k, v] of Object.entries(computeBadges(L('required-split')))) assert.ok(Number.isInteger(v), k);
 }
 
+
+// Placement in the fixed 24-sector frame.
+const at = (board, extra) => E.placement({board, ...extra});
+assert.deepStrictEqual(at('A.A'), {offset: 7, length: 3}); // row 2, centered
+assert.deepStrictEqual(at('AB'), {offset: 8, length: 2});
+assert.deepStrictEqual(at('A.A.'), {offset: 7, length: 4});
+assert.deepStrictEqual(at('AA.AA'), {offset: 6, length: 5}); // odd gap leans left
+assert.deepStrictEqual(at('AA..AA'), {offset: 6, length: 6});
+assert.deepStrictEqual(at('A2.A1.'), {offset: 7, length: 4}); // a fragment digit is not a sector
+assert.deepStrictEqual(at('A.AAAAAA'), {offset: 6, length: 8}); // two rows: rows 2–3
+assert.deepStrictEqual(at('A.AAACCC.BBBDD'), {offset: 0, length: 14}); // three rows start in row 1
+assert.deepStrictEqual(at('.#B#...BB######A#AABA.##'), {offset: 0, length: 24});
+assert.deepStrictEqual(at('A.AA..', {offset: 9}), {offset: 9, length: 6});
+// Boards are no longer padded.
+assert.strictEqual(E.initialState({board: 'A.A'}).cells.length, 3);
+assert.strictEqual(E.initialState({board: 'A.AAACCC.BBBDD'}).cells.length, 14);
+
 console.log('tools ok');
