@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 // Search for Combine levels: boards where every listed rule changes par.
 //   node tools/combine.js <rule,rule,...> [--sizes 3,3,2] [--free 3] [--length 24] [--active N] [--min-par N] [--par N]
-//                         [--seed 7] [--tries 4000] [--count 10]
+//                         [--seed 7] [--tries 4000] [--count 10] [--seconds N]
 // Sectors left over after files and free space are reserved, so the board is exactly --length long.
 // --active N keeps the puzzle in an N-sector stretch, with reserved padding at both ends.
 // Filters run cheapest first: already solved, par (search capped at 2e5 states), each rule matters, then detail metrics.
+// --seconds stops the search after that long and reports what it found. (A signal cannot: the search never yields.)
 // Each kept candidate is also written to stderr as it is found (`kept {...}`).
 // Prints JSON lines ranked by quality. `similarity` is the closest match to an existing level (check-levels fails at 0.75).
 const E = require('../engine.js');
@@ -58,9 +59,9 @@ function combineCandidate(rng, rules, {sizes = [3, 3, 2], free = 3, length = 24,
 // Rough cost order, so cheap rejections happen first.
 const ORDER = ['reserved', 'homes', 'ordered', 'links', 'consolidate', 'fragile', 'system', 'splitting', 'clipboard', 'nudge', 'seek'];
 
-// `found` is filled as the search runs, so a caller can report it if the search is stopped early.
 // `stats` counts why candidates were dropped, so a dry search shows which filter to loosen.
-function search(rules, {sizes, free, length, active, minPar, par, seed, tries, count}, found = [], stats = {}) {
+function search(rules, {sizes, free, length, active, minPar, par, seed, tries, count, seconds = Infinity}, found = [], stats = {}) {
+  const stop = Date.now() + seconds * 1000;
   const drop = reason => {
     stats[reason] = (stats[reason] ?? 0) + 1;
   };
@@ -68,7 +69,7 @@ function search(rules, {sizes, free, length, active, minPar, par, seed, tries, c
   const existing = require('../levels.js').levels;
   const checks = [...rules].sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
   const seen = new Set();
-  for (let n = 0; n < tries && found.length < count * 3; n++) {
+  for (let n = 0; n < tries && found.length < count * 3 && Date.now() < stop; n++) {
     const level = combineCandidate(rng, rules, {sizes, free, length, active});
     if (!level) {
       drop('no fit');
@@ -131,11 +132,6 @@ if (require.main === module) {
     for (const level of picks) console.log(JSON.stringify(level));
     console.error(`${rules.join('+')}: showing ${picks.length}; dropped ${JSON.stringify(stats)}`);
   };
-  // A time limit (for example `timeout 600`) still prints the best candidates found so far.
-  process.on('SIGTERM', () => {
-    report(rank(found, count));
-    process.exit(0);
-  });
   const picks = search(rules, {
     sizes: flag('sizes', '3,3,2').split(',').map(Number),
     free: number('free', 3),
@@ -146,6 +142,7 @@ if (require.main === module) {
     seed: number('seed', 7),
     tries: number('tries', 4000),
     count,
+    seconds: number('seconds', Infinity),
   }, found, stats);
   report(picks);
 }
