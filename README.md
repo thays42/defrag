@@ -9,7 +9,7 @@ Run `make play`, or open `index.html` in a browser. There is no build step.
 | File | Purpose |
 | --- | --- |
 | `engine.js` | Rules and solver. The game and every tool share it, so the rules exist once. |
-| `levels.js` | Mechanics, chapters, and handmade levels. Each level has a stable `id` and one primary `mechanic`. |
+| `levels.js` | Mechanics, chapters, and handmade levels. Each chapter has a one-line `summary`. `extras` holds the optional Extra set, and `levels` lists every level. Each level has a stable `id` and one primary `mechanic`. |
 | `daily.js` | Generated pool for the daily puzzle. Do not edit by hand. |
 | `badges.js` | Generated badge targets per level. Do not edit by hand. |
 | `game.js` | User interface. |
@@ -64,6 +64,10 @@ A search too large to finish leaves the badge out, since its target is unproven.
 3. Verify: `node tools/check-levels.js`. Add `--metrics` to see the quality metrics for every level.
 
 The checker fails if a par is not the optimum, an id repeats, a home does not fit, or a level's mechanic does not change its result. Intro levels (`intro: true`) are exempt from the last check. A level with `beatable: true` may set par above the optimum.
+
+The checker also enforces teach order (`tools/teach-order.js`). A campaign level may use a rule only after the first intro level of that rule. No level before `split-a-run` may need a split, and no board before `across-the-break` may span two rows.
+
+`--par N` and `--length N` make the generator keep only candidates with that optimum or board length.
 
 Campaign levels must also look distinct. The checker compares every pair of boards, with files renamed in order of appearance, and scores 1 minus the normalized edit distance. It takes the higher of two views: the layout alone, and the layout with home and cracked sectors marked. Non-intro pairs at 0.75 or above fail. Pairs from 0.60 warn. Intro boards are tiny, so their pairs only warn. `tools/redress.js` mirrors, pads or relabels a level without changing its puzzle. `node tools/redress-search.js` proposes re-dresses that keep par, the mechanic check and trap rate.
 

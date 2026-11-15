@@ -11,7 +11,9 @@ tags: [campaign, level-design, tutorial, defrag]
 
 ## What the campaign does today
 
-The campaign has 55 levels in 15 chapters. It has these problems.
+**Status:** Phases 1 and 2 are done. The list below describes the campaign before them.
+
+The campaign had 55 levels in 15 chapters. It had these problems.
 
 - **Chapter 1 is overloaded.** It teaches basics, splitting, homes, and reserved sectors in 9 levels. A new player meets four rules before finishing one chapter.
 - **Row wrap is never taught.** "Warm-up" is the first board with more than one row. Only a small icon shows that the end of a row joins the start of the next. The goal sentence that mentioned it is now hidden.
@@ -95,7 +97,7 @@ Files have homes.
 | Teach | `find-home`, `two-files` |
 | Practice | `borrow-a-home`, `park-a-pair` |
 | Twist | `choose-what-to-park`, `save-the-gap` |
-| Combine | `scattered-gaps` (rework so reserved sectors change par) |
+| Combine | `scattered-gaps` (reworked in phase 2 as `scattered-gaps-ii`, par 4) |
 
 ### Chapter 3: Move order
 
@@ -123,6 +125,8 @@ Splitting.
 First chapter on all 24 sectors. A test of chapters 1–4, with no new rule. Pick five or six of the current hard levels. Move the rest to an optional "Extra" set.
 
 Candidates: `four-files`, `free-the-pair`, `trade-places`, `tight-fit`, `broken-workspace`, `across-the-disk`, `split-workspace`, `cut-across`. Cut or rework `pocket-change`.
+
+Chosen in phase 2: `four-files`, `free-the-pair`, `cut-across`, `split-workspace`, `across-the-disk`, `tight-fit`. Extra holds `trade-places`, `broken-workspace` and the reworked `pocket-change`.
 
 ### Chapter 6: File system rules
 
@@ -211,7 +215,7 @@ Each phase is its own plan and ships working software. Later phases depend on ea
 | Phase | Delivers | Depends on | Plan |
 | --- | --- | --- | --- |
 | 1. Fixed disk | 6×4 frame, unallocated sectors, read-path track, `offset` level field. | — | `docs/superpowers/plans/2026-11-15-fixed-disk.md` |
-| 2. Campaign order | New chapter layout, catalog in campaign order, the two new Teach levels, rework of the three decoration levels, Extra set. | 1 (the row-break level needs `offset`) | Not written |
+| 2. Campaign order | New chapter layout, catalog in campaign order, the two new Teach levels, rework of the three decoration levels, Extra set. | 1 (the row-break level needs `offset`) | `docs/superpowers/plans/2026-11-15-campaign-order.md` |
 | 3. Combine levels | Generator presets for mechanic pairs, checker rule that every Combine mechanic changes par, about 7 Combine levels, 5 finale levels. | 2 | Not written |
 | 4. First-time player fixes | The confusion table: par and score copy, hint warning, settled state, split cost preview, clipboard contents. | — | Not written |
 | 5. Partition reveal | Animation when the partition grows at a chapter start. | 1, 2, and the open question below | Not written |
