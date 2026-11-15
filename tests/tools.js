@@ -122,4 +122,16 @@ assert.strictEqual(E.initialState({board: 'A.AAACCC.BBBDD'}).cells.length, 14);
   for (const id of ORIGINAL_55_IDS) assert.ok(L.levels.some(l => l.id === id), `${id} kept`);
 }
 
+// A level may only use a rule once the campaign has taught it. Row wrap is taught by across-the-break.
+{
+  const {teachOrderProblems} = require('../tools/teach-order.js');
+  const t = (id, extra) => ({id, mechanic: 'basics', par: 1, board: 'A.A', ...extra});
+  assert.deepStrictEqual(teachOrderProblems([t('a', {homes: {A: [1, 2]}}), t('b', {mechanic: 'homes', intro: true})]), ['a uses homes before it is taught']);
+  assert.deepStrictEqual(teachOrderProblems([t('b', {mechanic: 'homes', intro: true, homes: {A: [2, 3]}}), t('a', {homes: {A: [1, 2]}})]), []);
+  assert.deepStrictEqual(teachOrderProblems([t('w', {board: 'A.....A'})]), ['w uses row wrap before it is taught']);
+  assert.deepStrictEqual(teachOrderProblems([t('across-the-break', {board: 'A.AA..', offset: 9})]), []);
+  assert.deepStrictEqual(teachOrderProblems([t('s', {board: 'AA.AA', par: 2})]), ['s uses splitting before it is taught']);
+  assert.deepStrictEqual(teachOrderProblems(require('../levels.js').chapters.flatMap(c => c.levels)), []);
+}
+
 console.log('tools ok');

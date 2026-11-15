@@ -5,7 +5,7 @@
 const E = require('../engine.js');
 const {measure, addDetail, without, uses} = require('./metrics.js');
 const {similarPairs} = require('./similarity.js');
-const {mechanics, levels} = require('../levels.js');
+const {mechanics, chapters, levels} = require('../levels.js');
 const daily = require('../daily.js');
 
 const showMetrics = process.argv.includes('--metrics');
@@ -107,6 +107,9 @@ for (const level of all) {
     if (drift && (m.trapRate < was.trapRate - 0.1 || m.paths > 2 * (was.paths ?? Infinity))) warnings.push(`${where}: re-dress changed difficulty${drift.replace('  (was', ' (was')}, now trap ${m.trapRate.toFixed(2)}, lines ${fmt(m.paths)}`);
   }
 }
+
+// A campaign level may only use a rule after the campaign teaches it.
+problems.push(...require('./teach-order.js').teachOrderProblems(chapters.flatMap(c => c.levels)));
 
 // Campaign levels must look distinct. Intro pairs only warn: tiny boards cannot differ much.
 for (const pair of similarPairs(levels)) {

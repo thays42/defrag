@@ -25,9 +25,9 @@ const chapters = [
     levels: [
       {id: 'join-two-blocks', mechanic: 'basics', intro: true, par: 1, name: 'Join two blocks', board: 'A.A', goal: 'Join the two A blocks.', prompt: 'Tap either A, then tap the empty sector.'},
       {id: 'move-a-run', mechanic: 'basics', intro: true, par: 1, name: 'Move a run', board: 'AA..AA', goal: 'Move a pair of A blocks as one run.', prompt: 'Tap either block in a pair to select both.'},
-      // across-the-break (phase 2, task 3)
+      {id: 'across-the-break', mechanic: 'basics', intro: true, par: 1, name: 'Across the break', board: 'A.AA..', offset: 9, goal: 'Join A. The end of a row continues at the start of the next.', prompt: 'The A pair crosses the row break. It is one run. Tap the lone A, then the sector beside the pair.'},
       {id: 'reserved-intro', mechanic: 'reserved', intro: true, par: 1, name: 'Reserved sectors', board: 'A#A.', goal: 'Join A using the open sector beside it.', prompt: 'The dark sector is reserved. Move the left A into the open sector.'},
-      // fewer-is-better (phase 2, task 3)
+      {id: 'fewer-is-better', mechanic: 'basics', par: 2, name: 'Fewer is better', board: 'ABA.BA', goal: 'Join both files in as few moves as you can.', prompt: 'Score counts your moves. Fewer is better. Par is the best possible score. Over par? Undo and try again.'},
       {id: 'warm-up', mechanic: 'basics', par: 2, name: 'Warm-up', board: '#C.##CAC.AABBB##.', goal: 'Bring all three files together. Runs can cross a row break.'},
     ],
   },
