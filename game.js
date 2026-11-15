@@ -3,11 +3,13 @@ const E = DefragEngine;
 const campaign = chapters.flatMap(({name, levels}) => levels.map(level => ({...level, chapter: name})));
 const levelById = new Map(campaign.map(level => [level.id, level]));
 const ui = Object.fromEntries([...document.querySelectorAll('[id]')].map(node => [node.id, node]));
+ui.cells = [];
 const progressKey = 'defrag-progress-v3';
 
 
 let progress = loadProgress();
 let level;
+let frameOffset = 0; // unallocated slots before the level's first sector
 let state;
 let stats;
 let history;
@@ -423,9 +425,18 @@ async function showHint() {
 
 // ---------- Rendering ----------
 
+// The board is a fixed frame of 24 slots. The level's sectors fill one unbroken stretch of it.
+// ui.cells holds the level's sector buttons, indexed like state.cells. Other slots are unallocated.
 function buildBoard() {
   ui.board.replaceChildren();
-  state.cells.forEach((_, index) => {
+  frameOffset = E.placement(level).offset;
+  ui.cells = [];
+  for (let slot = 0; slot < E.FRAME; slot++) {
+    const index = slot - frameOffset;
+    if (index < 0 || index >= state.cells.length) {
+      ui.board.append(Object.assign(document.createElement('div'), {className: 'void', ariaHidden: 'true'}));
+      continue;
+    }
     const button = document.createElement('button');
     button.className = 'cell';
     button.tabIndex = index === 0 ? 0 : -1;
@@ -438,7 +449,8 @@ function buildBoard() {
     button.onblur = () => setPreview(null);
     button.onkeydown = event => moveFocus(event, index);
     ui.board.append(button);
-  });
+    ui.cells.push(button);
+  }
 }
 
 function setPreview(index) {
@@ -453,8 +465,11 @@ function moveFocus(event, index) {
   const steps = {ArrowLeft: -1, ArrowRight: 1, ArrowUp: -E.COLUMNS, ArrowDown: E.COLUMNS, Home: -index, End: state.cells.length - 1 - index};
   if (!(event.key in steps)) return;
   event.preventDefault();
+  const vertical = event.key === 'ArrowUp' || event.key === 'ArrowDown';
+  // Up or down onto an unallocated slot stays put.
+  if (vertical && (index + steps[event.key] < 0 || index + steps[event.key] >= state.cells.length)) return;
   const next = Math.max(0, Math.min(state.cells.length - 1, index + steps[event.key]));
-  const cells = ui.board.children;
+  const cells = ui.cells;
   cells[index].tabIndex = -1;
   cells[next].tabIndex = 0;
   cells[next].focus();
@@ -602,7 +617,7 @@ function tile(token) {
 function renderBoard() {
   const {cells} = state;
   // Rebuilding the board blurs the old focused cell; skip that render.
-  if (ui.board.children.length !== cells.length) return;
+  if (ui.cells.length !== cells.length) return;
   const homes = Object.entries(level.homes ?? {});
   const settled = doneFiles();
   const range = selectedRange();
@@ -611,7 +626,7 @@ function renderBoard() {
   const ghostTokens = ghostFrom && (ghostFrom.type === 'paste' ? state.clip : cells.slice(ghostFrom.from, ghostFrom.from + ghostFrom.length));
   const fragile = new Set(level.fragile ?? []);
   const locked = E.info(level).locked;
-  [...ui.board.children].forEach((button, index) => {
+  ui.cells.forEach((button, index) => {
     const token = cells[index];
     const reserved = token === E.RESERVED;
     const empty = token === E.EMPTY;
@@ -623,7 +638,7 @@ function renderBoard() {
     const ghost = ghostFrom && ghostIndex >= 0 && ghostIndex < ghostFrom.length ? ghostTokens[ghostIndex] : null;
     const home = homes.find(([, [a, b]]) => index + 1 >= a && index + 1 <= b)?.[0];
     const same = other => file && E.isFile(other ?? '.') && E.letterOf(other) === file;
-    const column = index % E.COLUMNS;
+    const column = (frameOffset + index) % E.COLUMNS;
     button.dataset.file = reserved ? '#' : empty ? '.' : file;
     if (home) button.dataset.home = home;
     else delete button.dataset.home;
@@ -693,7 +708,7 @@ function stopMotion() {
 
 function animateMove(first, destination, length, done) {
   stopMotion();
-  const cells = [...ui.board.children];
+  const cells = ui.cells;
   if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches || !cells[0]?.animate) return;
   const origin = first === null ? ui.clipboard : null;
   for (let offset = 0; offset < length; offset++) {

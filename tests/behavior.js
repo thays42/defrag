@@ -50,7 +50,7 @@ const check = (name, ok, detail = '') => {
   // Arrow keys move focus across the board.
   await cell(0).focus();
   await page.keyboard.press('ArrowDown');
-  check('arrow keys move focus', await get(() => document.activeElement === ui.board.children[6]));
+  check('arrow keys move focus', await get(() => document.activeElement === ui.cells[6]));
 
   // Hints mark the attempt, and a hinted clear earns no star.
   await open('find-home');
@@ -310,6 +310,52 @@ const check = (name, ok, detail = '') => {
   });
   await open('tight-fit');
   check('padded saved attempt starts fresh', await get(() => state.cells.length === 14 && stats.moves === 0));
+
+  // Every level shows the same 24-slot frame.
+  const slots = () => get(() => {
+    const all = [...ui.board.querySelectorAll(':scope > .cell, :scope > .void')];
+    return {all: all.length, cells: all.filter(n => n.classList.contains('cell')).length, first: all.findIndex(n => n.classList.contains('cell'))};
+  });
+  for (const [id, length, first] of [['join-two-blocks', 3, 7], ['tight-fit', 14, 0], ['split-workspace', 24, 0]]) {
+    await open(id);
+    const s = await slots();
+    check(`${id} fills the frame`, s.all === 24 && s.cells === length && s.first === first, JSON.stringify(s));
+  }
+  await get(() => openLevel(dailyLevel()));
+  check('daily puzzle fills the frame', (await slots()).all === 24);
+
+  // The board keeps one size across levels, in portrait and in landscape. (A long title that wraps still moves it down.)
+  for (const size of [{width: 420, height: 900}, {width: 844, height: 390}]) {
+    await page.setViewportSize(size);
+    const rects = [];
+    for (const id of ['join-two-blocks', 'warm-up', 'split-workspace']) {
+      await open(id);
+      rects.push(await get(() => { const r = ui.board.getBoundingClientRect(); return [r.width, r.height].map(Math.round).join(','); }));
+    }
+    check(`board size is fixed at ${size.width}x${size.height}`, new Set(rects).size === 1, rects.join(' | '));
+  }
+  await page.setViewportSize({width: 420, height: 900});
+
+  // Unallocated slots do nothing.
+  await open('join-two-blocks');
+  await cell(0).click();
+  await page.locator('.board > .void').first().click({force: true});
+  check('tapping an unallocated slot makes no move', await get(() => stats.moves === 0));
+
+  // Up/Down onto an unallocated slot keeps focus in place.
+  await cell(0).focus();
+  await page.keyboard.press('ArrowDown');
+  check('ArrowDown off the partition keeps focus', await get(() => document.activeElement === ui.cells[0]));
+
+  // Row wrap follows the frame column, not the board index.
+  await get(() => openLevel({id: 'test-wrap', mechanic: 'basics', chapter: 'Test', name: 'Wrap', goal: '', par: 1, board: 'A.AA..', offset: 9}));
+  check('wrap marks use the frame column', await get(() => ui.cells[2].classList.contains('wrap-out') && ui.cells[3].classList.contains('wrap-in')));
+
+  // A failed cracked sector stays a cell.
+  await open('cracked');
+  await get(() => { for (const move of E.solve(level).path) perform(move); });
+  const cracked = await slots();
+  check('failed cracked sector keeps the frame', cracked.all === 24 && cracked.cells === 4, JSON.stringify(cracked));
 
   check('no page errors', !errors.length, errors.join('; '));
 
