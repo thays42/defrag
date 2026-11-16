@@ -225,9 +225,9 @@ function moveTo(to) {
 }
 
 // What the next move will add to the score, shown before the tap that commits it.
-// Seek moves differ by destination, and their marks already show the cost, so they show one only on a preview.
+// Seek moves differ by destination, and their marks already show each cost, so seek shows none.
+// It ignores the hover preview: a preview redraws only the board, so a number taken from it would go stale.
 function pendingCost() {
-  if (preview) return preview.cost;
   if (!selection || level.cost === 'seek') return null;
   const costs = state.cells.map((_, index) => moveTo(index)?.cost).filter(cost => cost !== undefined);
   return costs.length ? Math.min(...costs) : null;

@@ -537,6 +537,9 @@ const check = (name, ok, detail = '') => {
   await open('short-hops'); // seek destinations show their own costs
   await page.evaluate(() => tap(0));
   check('seek level shows no pending score without a preview', await get(() => selection !== null && pendingCost() === null && ui['score-pending'].hidden));
+  // A hover preview must not leave a stale number behind on the next full render.
+  await page.evaluate(() => { const to = state.cells.findIndex((_, i) => moveAt(i)); setPreview(to); render(); setPreview(null); });
+  check('seek preview leaves no stale pending score', await get(() => ui['score-pending'].hidden && !ui.score.hasAttribute('aria-label')));
   await open('required-split');
   await page.evaluate(() => tap(4));
   check('split prompt states the extra point', await get(() => /split it off \(\+1\)/.test(ui.status.textContent)), await get(() => ui.status.textContent));
