@@ -11,7 +11,7 @@ tags: [campaign, level-design, tutorial, defrag]
 
 ## What the campaign does today
 
-**Status:** Phases 1–4 are done. The list below describes the campaign before them.
+**Status:** Phases 1–5 are done. The list below describes the campaign before them.
 
 The campaign had 55 levels in 15 chapters. It had these problems.
 
@@ -40,7 +40,7 @@ Because a partition is contiguous, unallocated sectors only sit at its two ends.
 
 The frame also gives a permanent place to draw the **read path**. A track in the board's gutter runs from the end of each row to the start of the next. This shows wrap as part of the disk, not as a per-run icon. The track also separates the rows visually. Decided: keep it.
 
-**Strongest objection.** A 3-sector intro inside a 24-sector frame can look lost. A new player may also try to tap the unallocated sectors. Mitigations: keep unallocated sectors very faint, make them inert with no hover state, and animate the partition growing only at chapter starts, as a reveal.
+**Strongest objection.** A 3-sector intro inside a 24-sector frame can look lost. A new player may also try to tap the unallocated sectors. Mitigations: keep unallocated sectors very faint, make them inert with no hover state, and animate the partition on each level change, as a reveal.
 
 ## Principle 2: one new idea per chapter
 
@@ -228,7 +228,7 @@ Each phase is its own plan and ships working software. Later phases depend on ea
 | 2. Campaign order | New chapter layout, catalog in campaign order, the two new Teach levels, rework of the three decoration levels, Extra set. | 1 (the row-break level needs `offset`) | `docs/superpowers/plans/2026-11-15-campaign-order.md` |
 | 3. Combine levels | Generator presets for mechanic pairs, checker rule that every Combine mechanic changes par, about 7 Combine levels, 5 finale levels. | 2 | `docs/superpowers/plans/2026-11-15-combine-levels.md` |
 | 4. First-time player fixes | The confusion table: par and score copy, hint warning, settled state, split cost preview, clipboard contents. | — | `docs/superpowers/plans/2026-11-15-first-time-player.md` |
-| 5. Partition reveal | Animation when the partition grows at a chapter start. | 1, 2, and the open question below | Not written |
+| 5. Partition reveal | Animation on every level change where the partition moves or resizes. | 1, 2 | `docs/superpowers/plans/2026-11-16-partition-reveal.md` |
 
 ## Decisions
 
@@ -236,7 +236,4 @@ Each phase is its own plan and ships working software. Later phases depend on ea
 - Chapter 6 stays one chapter for now.
 - Levels cut from chapter 5 go to an Extra set (tentative).
 - Keep the read-path track.
-
-## Open questions
-
-- Should the partition reveal be diegetic (the disk comes online) or plain layout?
+- The partition reveal is plain layout, on every level change, not diegetic.

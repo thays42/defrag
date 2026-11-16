@@ -3,7 +3,7 @@ title: Partition reveal design
 created: 2026-11-16
 source: claude-code
 type: spec
-status: draft
+status: active
 tags: [defrag, animation, partition, campaign]
 ---
 
