@@ -555,6 +555,37 @@ const check = (name, ok, detail = '') => {
   await page.evaluate(() => { const place = E.moves(level, state).filter(m => m.type === 'move'); perform(place[0]); perform(E.moves(level, state).find(m => m.type === 'paste')); });
   check('empty clipboard drops the mark', await get(() => !ui.clipboard.classList.contains('full') && !('file' in ui.clipboard.dataset)));
 
+  // ---------- Partition reveal ----------
+  const tags = id => page.evaluate(target => {
+    openLevel(findLevel(target));
+    const slots = [...ui.board.querySelectorAll(':scope > .cell, :scope > .void')];
+    const pick = cls => slots.map((slot, i) => slot.classList.contains(cls) ? [i, parseFloat(slot.style.getPropertyValue('--delay'))] : null).filter(Boolean);
+    return {joining: pick('joining'), leaving: pick('leaving')};
+  }, id);
+  await open('join-two-blocks');                       // slots 7–9
+  const grow = await tags('move-a-run');               // slots 6–11
+  check('growing tags the new slots as joining', JSON.stringify(grow.joining.map(([i]) => i)) === '[6,10,11]' && !grow.leaving.length, JSON.stringify(grow));
+  const delay = Object.fromEntries(grow.joining);
+  check('joining slots stagger outward along the read path', delay[6] === delay[10] && delay[11] > delay[10] && Math.max(...Object.values(delay)) <= 200, JSON.stringify(delay));
+  await cell(0).click({force: true}); // force skips Playwright's wait for the animation to settle
+  check('a joining slot is clickable mid-animation', await get(() => selection !== null));
+  const shrink = await tags('join-two-blocks');
+  check('shrinking tags the old slots as leaving', JSON.stringify(shrink.leaving.map(([i]) => i)) === '[6,10,11]' && !shrink.joining.length, JSON.stringify(shrink));
+  const same = await tags('join-two-blocks');
+  check('reopening the same partition does not animate', !same.joining.length && !same.leaving.length, JSON.stringify(same));
+  await page.waitForTimeout(400);
+  check('tags are removed once the animation ends', await get(() => !ui.board.querySelector('.joining, .leaving')));
+  // A quick double change animates from the middle level's range.
+  await page.evaluate(() => openLevel(findLevel('move-a-run')));
+  const quick = await tags('warm-up');                 // slots 0–16
+  check('a quick second change starts from the last range', !quick.leaving.length && JSON.stringify(quick.joining.map(([i]) => i)) === JSON.stringify([0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 16]), JSON.stringify(quick));
+  await page.emulateMedia({reducedMotion: 'reduce'});
+  const calm = await tags('join-two-blocks');
+  check('reduced motion adds no reveal', !calm.joining.length && !calm.leaving.length, JSON.stringify(calm));
+  await page.emulateMedia({reducedMotion: 'no-preference'});
+  await page.reload();
+  check('the first board after load does not animate', await get(() => !ui.board.querySelector('.joining, .leaving')));
+
   check('no page errors', !errors.length, errors.join('; '));
 
   // Touch: one tap selects, one tap moves. A touch never sets a preview.

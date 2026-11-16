@@ -18,6 +18,7 @@ const progressKey = 'defrag-progress-v3';
 let progress = loadProgress();
 let level;
 let frameOffset = 0; // unallocated slots before the level's first sector
+let shownRange = null; // the last board's partition slots {start, end}, so the next board can animate the change
 let state;
 let stats;
 let history;
@@ -498,7 +499,26 @@ function buildBoard() {
     ui.board.append(button);
     ui.cells.push(button);
   }
+  const before = shownRange;
+  shownRange = {start: frameOffset, end: frameOffset + state.cells.length};
+  if (before && (before.start !== shownRange.start || before.end !== shownRange.end) && !reducedMotion()) revealPartition(before, shownRange);
   drawTrack();
+}
+
+// Slots that joined or left the partition animate, staggered by read-path distance from the old edge.
+// Growing, the edge travels outward; shrinking, it travels inward. Every slot is fully usable from the start.
+function revealPartition(before, after) {
+  const inside = (range, slot) => slot >= range.start && slot < range.end;
+  const slots = [...ui.board.querySelectorAll(':scope > .cell, :scope > .void')];
+  const changed = slots.map((node, slot) => ({node, slot})).filter(({slot}) => inside(before, slot) !== inside(after, slot));
+  const distance = slot => Math.min(Math.abs(slot - before.start), Math.abs(slot - (before.end - 1)));
+  const step = 200 / Math.max(1, ...changed.map(({slot}) => distance(slot)));
+  for (const {node, slot} of changed) {
+    const name = node.classList.contains('cell') ? 'joining' : 'leaving';
+    node.classList.add(name);
+    node.style.setProperty('--delay', Math.round(distance(slot) * step) + 'ms');
+    node.addEventListener('animationend', () => node.classList.remove(name), {once: true});
+  }
 }
 
 // The read path: a line through each row, and a link from each row's end to the next row's start.
