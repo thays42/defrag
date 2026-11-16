@@ -224,6 +224,15 @@ function moveTo(to) {
   return {type: 'move', from: first, length, to, split, nudge: fit.nudge, cost: E.moveCost(level, first, to, split)};
 }
 
+// What the next move will add to the score, shown before the tap that commits it.
+// Seek moves differ by destination, and their marks already show the cost, so they show one only on a preview.
+function pendingCost() {
+  if (preview) return preview.cost;
+  if (!selection || level.cost === 'seek') return null;
+  const costs = state.cells.map((_, index) => moveTo(index)?.cost).filter(cost => cost !== undefined);
+  return costs.length ? Math.min(...costs) : null;
+}
+
 function isSplit() {
   const [first, last] = selection.range;
   const [runFirst, runLast] = E.runAt(state.cells, first);
@@ -572,6 +581,12 @@ function render() {
   renderRules();
   ui.stats.hidden = false;
   ui.score.textContent = stats.cost;
+  const pending = pendingCost();
+  ui['score-pending'].hidden = pending === null;
+  ui['score-pending'].textContent = pending === null ? '' : `+${pending}`;
+  ui['score-pending'].dataset.split = selection?.kind === 'board' && isSplit();
+  if (pending === null) ui.score.removeAttribute('aria-label');
+  else ui.score.setAttribute('aria-label', `${stats.cost}, next move costs ${pending}`);
   ui.par.textContent = level.par;
   renderCounters();
   ui.next.hidden = !done;
@@ -794,8 +809,8 @@ function selectionPrompt() {
   if (selection.range[0] === selection.range[1]) return hasDestination ? `Choose a destination${extra}.` : `No gap fits. ${stuck}`;
   if (level.tutorial === 'split') return 'Tap an outside block of the run to split it off.';
   return hasDestination
-    ? `Choose a destination, or tap a block to split it off${extra}.`
-    : `No gap fits the whole run. Tap a block to split it off${extra}.`;
+    ? `Choose a destination, or tap a block to split it off (+1)${extra}.`
+    : `No gap fits the whole run. Tap a block to split it off (+1)${extra}.`;
 }
 
 // ---------- Motion and sound ----------

@@ -525,6 +525,22 @@ const check = (name, ok, detail = '') => {
   check('settled cells have a ring that joined cells lack', settledShadow !== joinedShadow, `${joinedShadow} / ${settledShadow}`);
   check('a file joined and home gives no home blocker', await get(() => !/not home/.test(String(blocker()))));
 
+  // The score shows what the next move will cost, and a split shows its extra point before it commits.
+  await open('find-home');
+  await page.evaluate(() => tap(0));
+  check('selected run previews +1', await get(() => pendingCost() === 1 && ui['score-pending'].textContent === '+1' && !ui['score-pending'].hidden));
+  await page.evaluate(() => tap(1));
+  check('pending split previews +2', await get(() => anchor !== null && pendingCost() === 2 && ui['score-pending'].textContent === '+2' && ui['score-pending'].dataset.split === 'true'));
+  check('score label states the pending cost', await get(() => ui.score.getAttribute('aria-label') === '0, next move costs 2'));
+  await page.evaluate(() => { clearSelection(); render(); });
+  check('no selection hides the pending score', await get(() => ui['score-pending'].hidden));
+  await open('short-hops'); // seek destinations show their own costs
+  await page.evaluate(() => tap(0));
+  check('seek level shows no pending score without a preview', await get(() => selection !== null && pendingCost() === null && ui['score-pending'].hidden));
+  await open('required-split');
+  await page.evaluate(() => tap(4));
+  check('split prompt states the extra point', await get(() => /split it off \(\+1\)/.test(ui.status.textContent)), await get(() => ui.status.textContent));
+
   check('no page errors', !errors.length, errors.join('; '));
 
   // Touch: one tap selects, one tap moves. A touch never sets a preview.

@@ -658,3 +658,7 @@ main {
 .cleared-actions { flex: none; display: flex; gap: 8px; margin-top: 10px; }
 .cleared-actions:not(:has(> :not([hidden]))) { display: none; }
 .cleared-actions #next { flex: 1.6; width: auto; margin-top: 0; }
+
+/* The next move's cost, beside the score. Coral when it includes a split's extra point. */
+.score-pending { margin-left: 4px; color: var(--muted); font: 700 .8rem ui-monospace, monospace; font-style: normal; }
+.score-pending[data-split=true] { color: var(--coral); }
