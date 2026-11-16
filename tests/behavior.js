@@ -515,6 +515,16 @@ const check = (name, ok, detail = '') => {
   await page.waitForFunction(() => !ui.result.hidden);
   check('beatable level says par can be beaten', await get(() => !ui['result-note'].hidden && ui['result-note'].textContent === 'Par can be beaten on this level.'));
 
+  // A joined file outside its home says why it is not done, and looks different from a settled file.
+  await open('find-home');
+  check('joined but not home is explained', await get(() => blocker() === 'A is joined but not home. Move it onto the A sectors.'), await get(() => String(blocker())));
+  const joinedShadow = await get(() => getComputedStyle(ui.cells[1]).boxShadow); // cell 0 may carry the focus ring
+  await open('two-files');
+  await page.evaluate(() => perform(E.moves(level, state).find(m => m.type === 'move' && m.from === 1 && m.to === 5 && !m.split)));
+  const settledShadow = await get(() => (ui.cells[4].classList.contains('settled') ? getComputedStyle(ui.cells[4]).boxShadow : 'not settled'));
+  check('settled cells have a ring that joined cells lack', settledShadow !== joinedShadow, `${joinedShadow} / ${settledShadow}`);
+  check('a file joined and home gives no home blocker', await get(() => !/not home/.test(String(blocker()))));
+
   check('no page errors', !errors.length, errors.join('; '));
 
   // Touch: one tap selects, one tap moves. A touch never sets a preview.

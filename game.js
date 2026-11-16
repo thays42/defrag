@@ -621,6 +621,7 @@ function blocker() {
     const run = state.cells.slice(first, last + 1);
     const joined = run.length === E.info(level).counts[file] && run.every(t => E.isFile(t) && E.letterOf(t) === file);
     if (joined && run.some((t, i) => t.length > 1 && Number(t.slice(1)) !== i + 1)) return `${file} is joined but out of order. The lowest number goes on the left.`;
+    if (joined && level.homes?.[file] && !E.fileSettled(level, state, file)) return `${file} is joined but not home. Move it onto the ${file} sectors.`;
   }
   const settled = E.info(level).movable.every(file => E.fileSettled(level, state, file));
   if (!settled) return null;
