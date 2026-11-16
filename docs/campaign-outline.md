@@ -11,7 +11,7 @@ tags: [campaign, level-design, tutorial, defrag]
 
 ## What the campaign does today
 
-**Status:** Phases 1–3 are done. The list below describes the campaign before them.
+**Status:** Phases 1–4 are done. The list below describes the campaign before them.
 
 The campaign had 55 levels in 15 chapters. It had these problems.
 
@@ -206,7 +206,7 @@ The planned sets for `power-on` and `load-drivers` used reserved sectors. The se
 | Tapping a selected run splits it. | Splitting | Already prompted. Show the split cost before the tap commits. |
 | Unallocated vs. reserved sectors. | Every small partition | Different visual weight. Unallocated is an outline. Reserved is solid. |
 | Numbers on empty sectors mean cost. | Seek | Teach level prompt. Only seek levels show numbers. |
-| Clipboard takes two taps to place. | Clipboard | Show clipboard contents beside the board at all times while full. |
+| Clipboard takes two taps to place. | Clipboard | Show clipboard contents beside the board at all times while full. Done before phase 4; phase 4 names the two-tap place in the status line and colors a full clipboard. |
 | Hints cost stars. | First hint | State it before the first hint, not after. |
 | The catalog's next level differs from Continue. | Menu | Order the catalog by campaign order. |
 
@@ -227,7 +227,7 @@ Each phase is its own plan and ships working software. Later phases depend on ea
 | 1. Fixed disk | 6×4 frame, unallocated sectors, read-path track, `offset` level field. | — | `docs/superpowers/plans/2026-11-15-fixed-disk.md` |
 | 2. Campaign order | New chapter layout, catalog in campaign order, the two new Teach levels, rework of the three decoration levels, Extra set. | 1 (the row-break level needs `offset`) | `docs/superpowers/plans/2026-11-15-campaign-order.md` |
 | 3. Combine levels | Generator presets for mechanic pairs, checker rule that every Combine mechanic changes par, about 7 Combine levels, 5 finale levels. | 2 | `docs/superpowers/plans/2026-11-15-combine-levels.md` |
-| 4. First-time player fixes | The confusion table: par and score copy, hint warning, settled state, split cost preview, clipboard contents. | — | Not written |
+| 4. First-time player fixes | The confusion table: par and score copy, hint warning, settled state, split cost preview, clipboard contents. | — | `docs/superpowers/plans/2026-11-15-first-time-player.md` |
 | 5. Partition reveal | Animation when the partition grows at a chapter start. | 1, 2, and the open question below | Not written |
 
 ## Decisions
