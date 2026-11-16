@@ -416,6 +416,14 @@ let hintLimit = 3e5;
 
 async function showHint() {
   if (finished()) return;
+  // Say what a hint costs before the first one. A level that already used a hint has nothing left to lose.
+  if (!progress.hintWarned && !hinted) {
+    progress.hintWarned = true;
+    save();
+    notice = 'A hint caps this level at one star. Tap Hint again to use one.';
+    render();
+    return;
+  }
   const token = ++hintToken;
   notice = 'Thinking…';
   render();

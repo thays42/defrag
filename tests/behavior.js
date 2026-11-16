@@ -55,6 +55,10 @@ const check = (name, ok, detail = '') => {
   // Hints mark the attempt, and a hinted clear earns no star.
   await open('find-home');
   await page.keyboard.press('h');
+  await page.waitForTimeout(80);
+  check('first hint warns instead of hinting', await get(() => hint === null && !hinted && ui.status.textContent === 'A hint caps this level at one star. Tap Hint again to use one.'), await get(() => ui.status.textContent));
+  check('warning is remembered', await get(() => progress.hintWarned === true));
+  await page.keyboard.press('h');
   await page.waitForFunction(() => hint !== null);
   check('hint text is visible', await get(() => ui.status.textContent.startsWith('Hint:') && getComputedStyle(ui.status).color !== 'rgba(0, 0, 0, 0)'));
   const hintRange = await get(() => [...selection.range]);
@@ -70,6 +74,18 @@ const check = (name, ok, detail = '') => {
   await page.evaluate(() => showMenu());
   await open('tight-fit');
   check('hint flag survives reopening', await get(() => hinted === true));
+  // The warning shows once ever, not once per level.
+  await open('warm-up');
+  await page.click('#hint');
+  await page.waitForFunction(() => hint !== null);
+  check('second level hints without a warning', await get(() => ui.status.textContent.startsWith('Hint:')));
+  // A level that already used a hint has lost its stars, so it never warns.
+  await page.evaluate(() => { progress.hintWarned = false; });
+  await open('tight-fit');
+  await page.click('#hint');
+  await page.waitForFunction(() => hint !== null);
+  check('an already hinted level does not warn', await get(() => ui.status.textContent.startsWith('Hint:') && progress.hintWarned === false));
+  await page.evaluate(() => { progress.hintWarned = true; save(); });
 
   // A hint search too large to finish stops at its limit and says so, instead of freezing the page.
   check('hint search has a state limit', await get(() => typeof hintLimit === 'number' && hintLimit > 0 && hintLimit <= 3e5));
@@ -244,6 +260,7 @@ const check = (name, ok, detail = '') => {
   await fresh();
   await open('free-the-pair');
   await page.click('#hint');
+  await page.click('#hint'); // the first press after a fresh save only warns
   await page.waitForFunction(() => hint !== null);
   await play({whole: true});
   check('hinted clear earns no badge', await get(() => !(progress.badges['free-the-pair'] ?? []).length && stars(level) === 1));
