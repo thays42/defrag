@@ -479,6 +479,25 @@ const check = (name, ok, detail = '') => {
   await open('join-two-blocks'); // offers no badge
   check('no counter without a badge', await get(() => ui['stat-detail'].textContent === ''));
 
+  // ---------- First-time player fixes ----------
+
+  // The first results sheet defines par. Later sheets do not repeat it.
+  await fresh();
+  await open('join-two-blocks');
+  await page.evaluate(() => perform(E.moves(level, state)[0]));
+  await page.waitForFunction(() => !ui.result.hidden);
+  check('first results sheet defines par', await get(() => !ui['result-note'].hidden && ui['result-note'].textContent === 'Par is the best possible score. Lower is better.'));
+  check('par note is remembered', await get(() => progress.parExplained === true));
+  await open('move-a-run');
+  await page.evaluate(() => { for (const m of E.solve(level, state).path) perform(m); });
+  await page.waitForFunction(() => !ui.result.hidden);
+  check('later sheets skip the par note', await get(() => ui['result-note'].hidden));
+  // A beatable level says so on every sheet.
+  await open('beat-par');
+  await page.evaluate(() => { for (const m of E.solve(level, state).path) perform(m); });
+  await page.waitForFunction(() => !ui.result.hidden);
+  check('beatable level says par can be beaten', await get(() => !ui['result-note'].hidden && ui['result-note'].textContent === 'Par can be beaten on this level.'));
+
   check('no page errors', !errors.length, errors.join('; '));
 
   // Touch: one tap selects, one tap moves. A touch never sets a preview.

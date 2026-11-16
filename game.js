@@ -39,7 +39,7 @@ const soundEffects = {move: [330, 494], split: [220, 392], undo: [392, 262], cle
 // ---------- Progress ----------
 
 function loadProgress() {
-  const fresh = {version: 3, current: campaign[0].id, best: {}, clean: {}, attempts: {}, hinted: {}, badges: {}, sound: false};
+  const fresh = {version: 3, current: campaign[0].id, best: {}, clean: {}, attempts: {}, hinted: {}, badges: {}, sound: false, parExplained: false, hintWarned: false};
   try {
     const saved = JSON.parse(localStorage.getItem(progressKey));
     if (saved?.version === 3) return {...fresh, ...saved, hinted: saved.hinted ?? {}, badges: saved.badges ?? {}};
@@ -894,6 +894,17 @@ function showResult() {
     : score > level.par ? `Finish in ${level.par} or fewer, without hints, for ★★★.` : '';
   ui['result-why'].hidden = earned === 3;
   at(ui['result-why'], beat.tag);
+  // The first sheet defines par once. A level whose par can be beaten says so every time.
+  const note = [];
+  if (!progress.parExplained) {
+    note.push('Par is the best possible score. Lower is better.');
+    progress.parExplained = true;
+    save();
+  }
+  if (level.beatable) note.push('Par can be beaten on this level.');
+  ui['result-note'].textContent = note.join(' ');
+  ui['result-note'].hidden = !note.length;
+  at(ui['result-note'], beat.tag);
 
   sheet.classList.toggle('skip', !motion);
   sheet.style.animation = sheet.style.transform = '';
