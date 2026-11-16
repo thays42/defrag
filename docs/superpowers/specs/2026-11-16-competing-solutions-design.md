@@ -63,6 +63,9 @@ Travel is the axis that started this. Every level counts it, but the game never 
 - New flag `--badge` for `tools/climb.js`. A candidate scores when `computeBadges(candidate)` returns at least one badge.
 - The existing guards stay: the level's own rules must still change par (the `matters` check from `tools/metrics.js`). For Combine levels, every rule in `combines` must still change par.
 - New guard: `|candidate par − original par| ≤ 1`.
+- A candidate may make another rule change par (for example, a split now required on a non-splitting level, which is what an Unsplit badge implies), provided `tools/teach-order.js` still passes. Ruling: tutorials carry the teaching, so a non-tutorial level may use any rule already taught.
+- Difficulty metrics from `check-levels --metrics` (trap rate, number of optimal lines) are soft. Among passing candidates, prefer the one whose metrics move least. Their warnings are allowed on edited levels.
+- Overlap is penalised: a candidate whose new badges overlap (section 2) ranks below one whose badges do not.
 - New mutation `grow`: add one `.` at the start or end of the board. Allowed only while the board is under 24 sectors. Homes, fragile, and other 1-based positions shift when growing at the start.
 - Score order: has badge, then par distance (0 before 1), then fewer sectors changed from the original (similarity), then quality.
 - Input: one level id. Output: JSON lines, ranked.
@@ -82,16 +85,18 @@ Travel is the axis that started this. Every level counts it, but the game never 
 
 ### 4. Travel Teach level
 
-- One new level in Allocation, placed before `choose-what-to-park`, the first Light touch level today. Ruling: id `near-or-far`, name "Near or far".
+- One new level in Format, right after `fewer-is-better` (the par lesson) and before `warm-up`. Ruling: id `near-or-far`, name "Near or far". Placing it this early means every later level may carry Light touch without meeting an unexplained chip, and keeps `warm-up` eligible. No level before it may offer Light touch; the checker enforces this.
 - It teaches that travel is the number of sectors moved, and that a second goal can pull against par.
 - Board: two routes. One clears in N moves using a far gap. One clears in N+1 moves using a near gap with less travel. Small partition, 1 row.
-- It is a Teach level, but it shows the score and the Light touch chip. Today `intro` levels hide the score and offer no badges. Ruling: add a level field `teaches: 'badges'`. `intro` stays true for the prompt and the "tutorial" tag. `computeBadges` and the score display read `teaches` to make the exception.
+- It is a Teach level that offers a badge. The score and badge chips already show on every level, including `intro` ones; only `computeBadges` skips `intro` levels. Ruling: add a level field `teaches: 'badges'`; `computeBadges` skips `intro` levels unless they have it. No `game.js` change is needed for the chip.
 - Prompt copy: "Travel counts every sector a run moves. Clear at par, then try for ↝: one more move, much less travel."
 - It counts as a tutorial, so it is outside the 80% count.
 
 ### 5. Process per level
 
 - Run the climber on each badge-less non-tutorial level, roughly one chapter at a time.
+- Already-badged levels may also be re-climbed, but only to fix the overlap ratio. Today `load-drivers` overlaps (Unsplit and Few moves), which is 1 of 4 two-badge levels: exactly the 25% limit.
+- Budget: 24 of the 33 badge-less levels must gain a badge (39 of 49 is 79.6%, a fail). 10 of the 33 fill all 24 sectors, so `grow` cannot help them, and `tools/generate.js` presets are single-mechanic, so approach B cannot replace Combine levels.
 - The builder picks the best candidate and checks it against the anti-goals. The goal text and prompt get updated if the board changed what they describe.
 - When the climber fails after `--seconds 300`, try approach B for that slot. If B also fails, leave the level as is. The 80% target allows 9 of 49 without a badge.
 - After all edits: regenerate `badges.js`, and run `tools/check-levels.js --badges`, `tests/play-all.js`, and `tests/behavior.js`.
