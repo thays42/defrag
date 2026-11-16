@@ -430,6 +430,11 @@ main {
 .tools:not(:has(> :not([hidden]))) { display: none; }
 .clipboard { display: flex; align-items: center; min-height: 0; height: 36px; gap: 8px; padding: 4px 10px; border: 1px dashed #7a6898; border-radius: 6px; background: #0c0912; color: var(--muted); font: 700 .72rem ui-monospace, monospace; text-transform: uppercase; }
 .clipboard.ready { border-color: var(--coral); color: var(--coral); }
+.clipboard[data-file=A] { --tile: #8ae8c1; }
+.clipboard[data-file=B] { --tile: #ffd28c; }
+.clipboard[data-file=C] { --tile: #b9c6ff; }
+.clipboard[data-file=D] { --tile: #ffaac6; }
+.clipboard.full { border: 2px solid var(--tile); color: var(--tile); }
 .clipboard[aria-pressed=true] { border-style: solid; border-color: var(--arcade); color: var(--arcade); }
 .clipboard.hinted { animation: hint-pulse 1s ease-in-out infinite alternate; }
 .clip-contents { display: flex; gap: 2px; text-transform: none; font-weight: 400; }

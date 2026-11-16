@@ -541,6 +541,17 @@ const check = (name, ok, detail = '') => {
   await page.evaluate(() => tap(4));
   check('split prompt states the extra point', await get(() => /split it off \(\+1\)/.test(ui.status.textContent)), await get(() => ui.status.textContent));
 
+  // After a lift, the status names the second tap, and the full clipboard stands out.
+  await open('no-room-at-all');
+  await page.evaluate(() => tap(0));
+  await page.click('#clipboard');
+  check('lift names the two-step place', await get(() => ui.status.textContent === 'Lifted A. To place it, choose Clipboard, then a destination.'), await get(() => ui.status.textContent));
+  check('full clipboard is marked', await get(() => ui.clipboard.classList.contains('full') && ui.clipboard.dataset.file === 'A'));
+  check('lift status fits its box', await get(() => ui.status.scrollHeight <= ui.status.clientHeight));
+  check('blocker names the clipboard step', await get(() => blocker() === 'To place A, choose Clipboard, then a destination.'));
+  await page.evaluate(() => { const place = E.moves(level, state).filter(m => m.type === 'move'); perform(place[0]); perform(E.moves(level, state).find(m => m.type === 'paste')); });
+  check('empty clipboard drops the mark', await get(() => !ui.clipboard.classList.contains('full') && !('file' in ui.clipboard.dataset)));
+
   check('no page errors', !errors.length, errors.join('; '));
 
   // Touch: one tap selects, one tap moves. A touch never sets a preview.

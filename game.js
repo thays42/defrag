@@ -301,7 +301,7 @@ function describeMove(move) {
   const tokens = move.type === 'paste' ? null : state.cells.slice(move.to, move.to + move.length);
   const file = E.letterOf(move.type === 'cut' ? state.clip[0] : tokens[0]);
   const where = `sector${move.length > 1 ? 's' : ''} ${move.to + 1}${move.length > 1 ? '–' + (move.to + move.length) : ''}`;
-  if (move.type === 'cut') return `Lifted ${file} onto the clipboard.`;
+  if (move.type === 'cut') return `Lifted ${file}. To place it, choose Clipboard, then a destination.`;
   if (move.type === 'paste') return `Placed ${file} from the clipboard in ${where}.`;
   return `${move.nudge ? 'Nudged' : 'Moved'} ${file} to ${where}.`;
 }
@@ -630,7 +630,7 @@ function doneFiles() {
 
 // When nothing else is being said, name what still stands between the player and a clear.
 function blocker() {
-  if (state.clip) return 'Place the clipboard contents to finish.';
+  if (state.clip) return `To place ${E.letterOf(state.clip[0])}, choose Clipboard, then a destination.`;
   for (const file of E.info(level).movable) {
     const [first, last] = [state.cells.findIndex(t => E.isFile(t) && E.letterOf(t) === file), state.cells.findLastIndex(t => E.isFile(t) && E.letterOf(t) === file)];
     const run = state.cells.slice(first, last + 1);
@@ -708,6 +708,10 @@ function renderClipboard() {
   } else {
     slot.textContent = 'empty';
   }
+  // A full clipboard wears the held file's color, so the waiting run is never out of mind.
+  ui.clipboard.classList.toggle('full', Boolean(state.clip));
+  if (state.clip) ui.clipboard.dataset.file = E.letterOf(state.clip[0]);
+  else delete ui.clipboard.dataset.file;
   ui.clipboard.setAttribute('aria-pressed', selection?.kind === 'clip');
   ui.clipboard.classList.toggle('ready', Boolean(cutMove()));
   ui.clipboard.classList.toggle('hinted', hint?.type === 'cut');
