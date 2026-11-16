@@ -517,8 +517,10 @@ function revealPartition(before, after) {
     const name = node.classList.contains('cell') ? 'joining' : 'leaving';
     node.classList.add(name);
     node.style.setProperty('--delay', Math.round(distance(slot) * step) + 'ms');
-    node.addEventListener('animationend', () => node.classList.remove(name), {once: true});
   }
+  // Clear the tags once the longest reveal (200 ms delay + 120 ms) is over. A timer, not animation events: a selection
+  // or hint pulse can replace the reveal before it starts, and then neither animationend nor animationcancel fires.
+  setTimeout(() => changed.forEach(({node}) => node.classList.remove('joining', 'leaving')), 350);
 }
 
 // The read path: a line through each row, and a link from each row's end to the next row's start.
@@ -527,9 +529,9 @@ function drawTrack() {
   const slots = [...ui.board.querySelectorAll(':scope > .cell, :scope > .void')];
   const box = ui.board.getBoundingClientRect();
   if (slots.length !== E.FRAME || !box.width) return;
-  const left = box.left + ui.board.clientLeft;
-  const top = box.top + ui.board.clientTop;
-  const rects = slots.map(slot => slot.getBoundingClientRect());
+  // Layout boxes, relative to the board's padding edge. They ignore transforms, so a reveal in progress does not skew the track.
+  const left = 0, top = 0;
+  const rects = slots.map(({offsetLeft: x, offsetTop: y, offsetWidth: w, offsetHeight: h}) => ({left: x, top: y, width: w, height: h, right: x + w, bottom: y + h}));
   const width = ui.board.clientWidth;
   const leftGutter = (rects[0].left - left) / 2;
   const rightGutter = (rects[E.COLUMNS - 1].right - left + width) / 2;

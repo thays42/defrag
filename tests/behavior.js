@@ -569,6 +569,8 @@ const check = (name, ok, detail = '') => {
   check('joining slots stagger outward along the read path', delay[6] === delay[10] && delay[11] > delay[10] && Math.max(...Object.values(delay)) <= 200, JSON.stringify(delay));
   await cell(0).click({force: true}); // force skips Playwright's wait for the animation to settle
   check('a joining slot is clickable mid-animation', await get(() => selection !== null));
+  await page.waitForTimeout(400);
+  check('selecting a joining slot does not leave the reveal behind', await get(() => !ui.board.querySelector('.joining, .leaving')), await get(() => JSON.stringify([...ui.board.querySelectorAll('.joining, .leaving')].map(n => [[...ui.board.children].indexOf(n), n.className, n.getAnimations().map(a => a.animationName + ':' + a.playState)]))));
   const shrink = await tags('join-two-blocks');
   check('shrinking tags the old slots as leaving', JSON.stringify(shrink.leaving.map(([i]) => i)) === '[6,10,11]' && !shrink.joining.length, JSON.stringify(shrink));
   const same = await tags('join-two-blocks');
@@ -579,12 +581,19 @@ const check = (name, ok, detail = '') => {
   await page.evaluate(() => openLevel(findLevel('move-a-run')));
   const quick = await tags('warm-up');                 // slots 0–16
   check('a quick second change starts from the last range', !quick.leaving.length && JSON.stringify(quick.joining.map(([i]) => i)) === JSON.stringify([0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 16]), JSON.stringify(quick));
+  // The track is measured from layout boxes, not from cells still scaled by the reveal.
+  await open('join-two-blocks');
+  await page.waitForTimeout(400);
+  await page.evaluate(() => openLevel(findLevel('warm-up')));
+  await page.waitForTimeout(500);
+  check('the track is drawn from settled cells', await get(() => { const drawn = ui.board.querySelector('.track').innerHTML; drawTrack(); return drawn === ui.board.querySelector('.track').innerHTML; }));
   await page.emulateMedia({reducedMotion: 'reduce'});
   const calm = await tags('join-two-blocks');
   check('reduced motion adds no reveal', !calm.joining.length && !calm.leaving.length, JSON.stringify(calm));
   await page.emulateMedia({reducedMotion: 'no-preference'});
   await page.reload();
-  check('the first board after load does not animate', await get(() => !ui.board.querySelector('.joining, .leaving')));
+  await open('move-a-run');
+  check('the first board after load does not animate', await get(() => ui.board.querySelectorAll('.cell').length === 6 && !ui.board.querySelector('.joining, .leaving')));
 
   check('no page errors', !errors.length, errors.join('; '));
 
