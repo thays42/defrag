@@ -331,4 +331,20 @@ const fastEnough = level => {
   assert.deepStrictEqual(L.chapters.flatMap(c => c.levels).filter(level => !hintCheap(level, 2e5)).map(level => level.id), []);
 }
 
+// Near or far teaches Light touch: one route at par, and a gentler one a move longer.
+{
+  const L = require('../levels.js');
+  const {computeBadges} = require('../tools/badges.js');
+  const format = L.chapters[0].levels.map(l => l.id);
+  assert.strictEqual(format.indexOf('near-or-far'), format.indexOf('fewer-is-better') + 1);
+  assert.strictEqual(format.indexOf('warm-up'), format.indexOf('near-or-far') + 1);
+  const near = L.levels.find(l => l.id === 'near-or-far');
+  assert.ok(near.intro && near.teaches === 'badges');
+  assert.ok(E.placement(near).length <= E.COLUMNS, 'one row');
+  const light = computeBadges(near).light;
+  assert.ok(Number.isInteger(light), 'offers Light touch');
+  // The low-travel route costs exactly one move more than par.
+  assert.strictEqual(E.solve(near, undefined, {budget: {price: E.travelOf, max: light}}).cost, near.par + 1);
+}
+
 console.log('tools ok');

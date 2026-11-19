@@ -250,6 +250,14 @@ const check = (name, ok, detail = '') => {
   await page.evaluate(() => showCatalog());
   check('Levels row shows the earned badge', await page.locator('#levels button', {hasText: 'Free the pair'}).locator('.badge[data-earned=true]').count() === 1);
 
+  // Near or far teaches Light touch: the prompt says so, and the chip shows once the level is cleared at par.
+  await fresh();
+  await open('near-or-far');
+  check('near or far prompt teaches travel', await get(() => ui.status.textContent) === 'Travel counts every sector a run moves. Clear at par, then try for ↝: one more move, much less travel.', await get(() => ui.status.textContent));
+  await play();
+  const taught = await page.locator('#result-badges li').allTextContents();
+  check('near or far offers Light touch after a par clear', taught.length === 1 && taught[0].includes('↝') && await page.locator('#result-badges li[data-earned=false]').count() === 1, JSON.stringify(taught));
+
   // A par clear shows the badge it did not earn as outlined.
   await open('one-sector-off');
   await play();

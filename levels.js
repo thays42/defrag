@@ -29,6 +29,7 @@ const chapters = [
       {id: 'across-the-break', mechanic: 'basics', intro: true, par: 1, name: 'Across the break', board: 'A.AA..', offset: 9, goal: 'Join A. The end of a row continues at the start of the next.', prompt: 'The A pair crosses the row break. It is one run. Tap the lone A, then the sector beside the pair.'},
       {id: 'reserved-intro', mechanic: 'reserved', intro: true, par: 1, name: 'Reserved sectors', board: 'A#A.', goal: 'Join A using the open sector beside it.', prompt: 'The dark sector is reserved. Move the left A into the open sector.'},
       {id: 'fewer-is-better', mechanic: 'basics', par: 2, name: 'Fewer is better', board: 'ABA.BA', goal: 'Join both files in as few moves as you can.', prompt: 'Score counts your moves. Fewer is better. Par is the best possible score. Over par? Undo and try again.'},
+      {id: 'near-or-far', mechanic: 'basics', intro: true, teaches: 'badges', par: 2, name: 'Near or far', board: 'BAB.BA', goal: 'Join both files at par, then again with less travel.', prompt: 'Travel counts every sector a run moves. Clear at par, then try for ↝: one more move, much less travel.'},
       {id: 'warm-up', mechanic: 'basics', par: 2, name: 'Warm-up', board: '#C.##CAC.AABBB##.', goal: 'Bring all three files together. Runs can cross a row break.'},
     ],
   },
