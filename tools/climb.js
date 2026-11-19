@@ -20,7 +20,7 @@ const {computeBadges, overlaps} = require('./badges.js');
 const {teachOrderProblems} = require('./teach-order.js');
 const {combineProblems} = require('./combine-rules.js');
 
-const METRIC_KEYS = ['par', 'splitGap', 'trapRate', 'paths', 'quality', 'similarity', 'moves', 'gains', 'ok', 'reason', 'badges', 'overlap', 'parDelta', 'changed', 'rank'];
+const METRIC_KEYS = ['par', 'splitGap', 'trapRate', 'paths', 'quality', 'similarity', 'moves', 'gains', 'ok', 'reason', 'badges', 'overlap', 'parDelta', 'changed', 'rank', 'optimum'];
 const strip = row => Object.fromEntries(Object.entries(row).filter(([key]) => !METRIC_KEYS.includes(key)));
 
 // The same level with one empty sector added at `side` ('start' or 'end'). Null when the board fills the frame
@@ -187,7 +187,8 @@ const homesMatter = (level, par) => {
 
 // Run check-levels.js's guards on a redesign of `original`, cheapest first, stopping at the first failure.
 // `chapters` is the campaign; the candidate replaces the original in a copy of it.
-// Returns {ok, reason, badges, overlap, parDelta, changed}. Badges are only computed when every guard passes.
+// Returns {ok, reason, badges, overlap, parDelta, changed}, plus `optimum` (the solver's best cost) when ok.
+// Badges are only computed when every guard passes.
 function judge(original, candidate, chapters) {
   const level = {...strip(candidate), id: original.id};
   const changed = changedSectors(original, level);
@@ -218,18 +219,25 @@ function judge(original, candidate, chapters) {
   if (pairs.some(p => p.level === 'fail' && (p.a.id === level.id || p.b.id === level.id))) return out('similar', parDelta);
   if (!hintCheap(level, HINT_LIMIT)) return out('hint', parDelta);
   const badges = computeBadges(level);
-  return out(null, parDelta, badges, overlaps(level, badges));
+  // Light touch is not offered before the level that teaches badges (mirrors badge-rules.js).
+  const campaign = swapped.flatMap(c => c.levels);
+  const teach = campaign.findIndex(l => l.teaches === 'badges');
+  const at = campaign.findIndex(l => l.id === level.id);
+  if (at >= 0 && at < teach) delete badges.light;
+  return {...out(null, parDelta, badges, overlaps(level, badges)), optimum: best.cost};
 }
 
 // Higher is better, compared in order: a badge set with no overlap, any badge, same par, fewer changes, quality.
 const rankOf = r => [r.badgeCount && !r.overlap.length ? 1 : 0, r.badgeCount ? 1 : 0, r.parDelta === 0 ? 1 : 0, -r.changed, r.quality];
-const compare = (a, b) => {
-  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i];
+const CHANGED = 3; // index of -changed in a rank
+const compare = (a, b, skip = -1) => {
+  for (let i = 0; i < a.length; i++) if (i !== skip && a[i] !== b[i]) return a[i] - b[i];
   return 0;
 };
 
-// Hill-climb a redesign of one level toward a badge. Returns candidates with a badge that pass every guard,
-// best first, each with par set to its new optimum.
+// Hill-climb a redesign of one level toward a badge. A step is kept when its rank is not lower; until the
+// current level holds a badge, the number of changed sectors is left out of that comparison.
+// Returns candidates with a badge that pass every guard, best first by the full rank, each with par set to its new optimum.
 function climbBadge(levelId, {steps = 300, seconds = Infinity, seed = 7, count = 8} = {}) {
   const L = require('../levels.js');
   const original = L.levels.find(l => l.id === levelId);
@@ -242,7 +250,7 @@ function climbBadge(levelId, {steps = 300, seconds = Infinity, seed = 7, count =
     if (!result.ok) return null;
     const par = original.par + result.parDelta;
     const scored = {...strip(level), id: original.id, par};
-    const metrics = addDetail(scored, {par: E.solve(scored).cost}, 2e5);
+    const metrics = addDetail(scored, {par: result.optimum}, 2e5);
     const row = {...scored, ok: true, badges: result.badges, overlap: result.overlap, parDelta: result.parDelta, changed: result.changed, quality: quality(metrics)};
     row.rank = rankOf({...row, badgeCount: Object.keys(row.badges).length});
     return row;
@@ -253,7 +261,9 @@ function climbBadge(levelId, {steps = 300, seconds = Infinity, seed = 7, count =
     const next = mutate(rng, strip(current), {grow: true});
     if (!next) continue;
     const tried = score(next);
-    if (!tried || compare(tried.rank, current.rank) < 0) continue;
+    // Until a badge is held, changes cost nothing, so the climb can wander toward one.
+    const skip = Object.keys(current.badges).length ? -1 : CHANGED;
+    if (!tried || compare(tried.rank, current.rank, skip) < 0) continue;
     current = tried;
     const key = JSON.stringify(strip(current));
     if (current.changed && Object.keys(current.badges).length && !found.has(key)) {

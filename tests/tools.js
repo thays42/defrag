@@ -312,6 +312,7 @@ const fastEnough = level => {
 // Badge mode: growth adds one empty sector at either end, and judge runs the check-levels guards on a candidate.
 {
   const {grow, judge} = require('../tools/climb.js');
+  const {computeBadges} = require('../tools/badges.js');
   const L = require('../levels.js');
   const byId = id => L.levels.find(l => l.id === id);
   const home = {board: 'AB.AB.', homes: {A: [1, 2], B: [5, 6]}, fragile: [3]};
@@ -320,7 +321,8 @@ const fastEnough = level => {
   assert.strictEqual(grow(byId('mount'), 'end'), null, 'a full disk cannot grow');
   const placed = byId('across-the-break');
   const grown = grow(placed, 'end');
-  assert.ok(!grown || E.placement(grown).offset + E.placement(grown).length <= E.FRAME, 'growth stays inside the frame');
+  assert.deepStrictEqual(E.placement(grown), {offset: 9, length: 7}, 'growth keeps the offset');
+  assert.strictEqual(grow({board: 'AA.', offset: 21}, 'end'), null, 'growth stays inside the frame');
   const original = byId('park-a-pair');
   assert.strictEqual(judge(original, original, L.chapters).ok, true);
   assert.strictEqual(judge(original, original, L.chapters).changed, 0);
@@ -328,6 +330,12 @@ const fastEnough = level => {
   assert.strictEqual(judge(original, {...original, board: original.board.replace(/\./g, '#')}, L.chapters).reason, 'unsolvable');
   // two-decks has par 7, park-a-pair par 3.
   assert.strictEqual(judge(original, {...byId('two-decks'), id: original.id}, L.chapters).reason, 'par');
+  // Light touch is not offered before near-or-far teaches it; the same board offers it on its own.
+  const fewer = byId('fewer-is-better');
+  assert.deepStrictEqual(computeBadges({...fewer, board: 'ABA.AB'}), {light: 5});
+  const early = judge(fewer, {...fewer, board: 'ABA.AB'}, L.chapters);
+  assert.ok(early.ok);
+  assert.deepStrictEqual(early.badges, {});
   // Growth is aligned before counting, so one added sector counts once.
   assert.strictEqual(judge(original, grow(original, 'start'), L.chapters).changed, 1);
   assert.strictEqual(judge(original, grow(grow(original, 'end'), 'start'), L.chapters).changed, 2);
