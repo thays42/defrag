@@ -11,7 +11,7 @@ tags: [campaign, level-design, tutorial, defrag]
 
 ## What the campaign does today
 
-**Status:** Phases 1–5 are done. The list below describes the campaign before them.
+**Status:** Phases 1–6 are done. The list below describes the campaign before them.
 
 The campaign had 55 levels in 15 chapters. It had these problems.
 
@@ -86,6 +86,7 @@ New disk. Learn to move data.
 | Teach | **New: across the break** | Partition is sectors 10–15, crossing rows 2 and 3. A run must cross the row break. |
 | Teach | `reserved-intro` | Reserved sectors block landing. |
 | Teach | **New: par** | The obvious solution costs 3. Par is 2. Teaches score, par, and undo. |
+| Teach | `near-or-far` | Travel counts every sector a run moves. A second goal can pull against par. |
 | Twist | `warm-up` | Three files, a row break, and reserved sectors. |
 
 ### Chapter 2: Allocation
@@ -229,6 +230,7 @@ Each phase is its own plan and ships working software. Later phases depend on ea
 | 3. Combine levels | Generator presets for mechanic pairs, checker rule that every Combine mechanic changes par, about 7 Combine levels, 5 finale levels. | 2 | `docs/superpowers/plans/2026-11-15-combine-levels.md` |
 | 4. First-time player fixes | The confusion table: par and score copy, hint warning, settled state, split cost preview, clipboard contents. | — | `docs/superpowers/plans/2026-11-15-first-time-player.md` |
 | 5. Partition reveal | Animation on every level change where the partition moves or resizes. | 1, 2 | `docs/superpowers/plans/2026-11-16-partition-reveal.md` |
+| 6. Competing solutions | A badge that pulls against par on 42 of 49 non-tutorial levels; the Near or far Teach level; checker floor 0.80 and overlap cap 0.25. Report: `docs/superpowers/reports/2026-11-19-badge-coverage.md`. | 2, 3 | `docs/superpowers/plans/2026-11-19-competing-solutions.md` |
 
 ## Decisions
 
@@ -237,3 +239,5 @@ Each phase is its own plan and ships working software. Later phases depend on ea
 - Levels cut from chapter 5 go to an Extra set (tentative).
 - Keep the read-path track.
 - The partition reveal is plain layout, on every level change, not diegetic.
+- Most levels offer a badge that pulls against par; Near or far teaches travel.
+- No badge appears before Near or far, and no Tidy badge appears before One gap teaches consolidate.

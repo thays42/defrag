@@ -3,7 +3,7 @@ title: Competing solutions design
 created: 2026-11-16
 source: claude-code
 type: spec
-status: draft
+status: active
 tags: [defrag, level-design, badge, travel, campaign]
 ---
 

@@ -149,7 +149,7 @@ const chapters = [
       {id: 'power-on', mechanic: 'ordered', combines: ['ordered', 'homes', 'splitting'], par: 8, name: 'Power on', board: '#######A3B1B2C2.#.#A1A2C1######', homes: {A: [10, 12], B: [17, 18], C: [8, 9]}, goal: 'Send each file home in number order. Break runs to reach par.'},
       {id: 'self-test', mechanic: 'links', combines: ['links', 'splitting', 'consolidate'], links: [['A', 'B'], ['B', 'C']], consolidate: true, par: 7, name: 'Self-test', board: 'CA.B.CBBAAA#############', goal: 'Rebuild A→B→C and gather the free space in one stretch.'},
       {id: 'mount', mechanic: 'fragile', combines: ['fragile', 'clipboard', 'homes'], clipboard: true, fragile: [14], par: 8, name: 'Mount', board: '###BAC#C#ACA#.BB########', homes: {A: [14, 16], B: [10, 12], C: [4, 6]}, goal: 'Send all three files home. Use the clipboard. Mind the crack.'},
-      {id: 'load-drivers', mechanic: 'seek', combines: ['seek', 'homes', 'splitting'], cost: 'seek', par: 14, name: 'Load drivers', board: '######ACB.BAAC.#.#######', homes: {A: [10, 12], B: [8, 9], C: [13, 14]}, goal: 'Send each file home. A run must break. Keep head travel low.'},
+      {id: 'load-drivers', mechanic: 'seek', combines: ['seek', 'homes', 'splitting'], cost: 'seek', par: 14, name: 'Load drivers', board: '######ACB.BAAC.#.#######', homes: {A: [10, 12], B: [8, 9], C: [13, 14]}, goal: 'Send each file home. Break a run to reach par. Keep head travel low.'},
       {id: 'first-boot', mechanic: 'system', combines: ['system', 'ordered', 'homes'], locked: ['S'], links: [['S', 'A']], par: 8, name: 'First boot', board: '####A2A3.B1.SSB2B3C1C2A1########', homes: {B: [5, 7], C: [8, 9]}, goal: 'Boot the disk: load A after S in order, and send B and C home.'},
     ],
   },

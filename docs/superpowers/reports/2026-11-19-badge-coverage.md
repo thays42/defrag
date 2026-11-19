@@ -69,7 +69,7 @@ Notes:
 
 Coverage 34/49 (0.69) → 42/49 (0.86). Overlap 1/3 → 0/4. `BADGE_LIMITS` is now `{floor: 0.80, maxOverlap: 0.25}`.
 
-A ruling came first, in its own commit: Tidy is barred on campaign levels before `one-gap`, the first level that teaches consolidate. `computeBadges`, `badgeProblems` and `judge` enforce it. `choose-what-to-park` went from {Tidy 4, Light 8} to {Light 8}. That left `load-drivers` as the only overlapping level among three two-badge levels (1/3, above 0.25), so it was re-designed here as well.
+A ruling came first, in the same commit: Tidy is barred on campaign levels before `one-gap`, the first level that teaches consolidate. `computeBadges`, `badgeProblems` and `judge` enforce it. `choose-what-to-park` went from {Tidy 4, Light 8} to {Light 8}. That left `load-drivers` as the only overlapping level among three two-badge levels (1/3, above 0.25), so it was re-designed here as well.
 
 There were 14 targets, plus `load-drivers`. 8 targets gained a badge, and `load-drivers` lost its overlap. Every pick was re-judged at the default 1e6 search limit, with `ok` and no overlap, and its par route was checked against its goal. Approach A is `tools/climb.js --badge` (300 s, seed 7, screened at 1e5 on the 24-sector boards), or a scratch copy of it with a lesson filter (A*). Approach C is a scan of every single edit (sector swaps, `.`↔`#`, homes ±1, moved cracks, growth), with each edit run through `judge`. Metric drift uses `addDetail` at 3e5, as `--save-baseline` does.
 

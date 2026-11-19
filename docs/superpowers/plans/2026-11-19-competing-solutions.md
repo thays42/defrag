@@ -3,7 +3,7 @@ title: Competing solutions implementation plan
 created: 2026-11-19
 source: claude-code
 type: spec
-status: draft
+status: active
 tags: [defrag, level-design, badge, travel, plan]
 ---
 
