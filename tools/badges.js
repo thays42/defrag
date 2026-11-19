@@ -27,12 +27,21 @@ function ranked(level, first, second, limit = LIMIT) {
   return [Math.floor(cost / K), cost % K];
 }
 
+// Ids of the campaign levels before consolidate is taught (one-gap: the first intro level for it).
+// Tidy is not offered there, since the player has not met it yet.
+function beforeConsolidate(campaign) {
+  const at = campaign.findIndex(l => l.intro && l.mechanic === 'consolidate');
+  return new Set(at < 0 ? [] : campaign.slice(0, at).map(l => l.id));
+}
+const defaultCampaign = () => require('../levels.js').chapters.flatMap(c => c.levels);
+
 // A smaller `limit` only drops badges (an aborted search offers none); applied levels use the default.
-function computeBadges(level, {limit = LIMIT} = {}) {
+// `campaign` (default: the chapters in levels.js) places the level for the Tidy bar.
+function computeBadges(level, {limit = LIMIT, campaign = defaultCampaign()} = {}) {
   const par = level.par;
   const out = {};
   if (level.intro && level.teaches !== 'badges') return out; // intro levels hide the score unless they teach badges
-  if (!level.consolidate && level.board.includes('.')) {
+  if (!level.consolidate && level.board.includes('.') && !beforeConsolidate(campaign).has(level.id)) {
     const tidy = optimum({...level, consolidate: true}, {limit});
     if (proven(tidy) && tidy > par) out.tidy = tidy;
   }
@@ -73,7 +82,7 @@ function overlaps(level, badges, {limit = LIMIT} = {}) {
   return pairs;
 }
 
-module.exports = {computeBadges, overlaps, ranked, opsOf, K, MEASURE, FLAGS, LIMIT};
+module.exports = {computeBadges, beforeConsolidate, overlaps, ranked, opsOf, K, MEASURE, FLAGS, LIMIT};
 
 if (require.main === module) {
   const levels = require('../levels.js').levels;

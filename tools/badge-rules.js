@@ -1,9 +1,9 @@
 // Badge rules over the campaign: enough levels offer a badge, few badges are redundant,
-// and no badge is offered before the level that teaches badges.
-const {overlaps} = require('./badges.js');
+// no badge is offered before the level that teaches badges, and no Tidy before one-gap teaches consolidate.
+const {overlaps, beforeConsolidate} = require('./badges.js');
 
 // These rise toward 0.80 (floor) and fall toward 0.25 (maxOverlap) as levels are redesigned, and never move back.
-const BADGE_LIMITS = {floor: 0.69, maxOverlap: 0.25};
+const BADGE_LIMITS = {floor: 0.80, maxOverlap: 0.25};
 
 // campaign: the chapter levels in order. pool: the stored badges by level id.
 function badgeProblems(campaign, pool, {floor, maxOverlap}, overlapsOf = overlaps) {
@@ -25,6 +25,11 @@ function badgeProblems(campaign, pool, {floor, maxOverlap}, overlapsOf = overlap
       const early = Object.keys(pool[level.id] ?? {});
       if (early.length) problems.push(`${level.id} offers ${early.join(', ')} before ${campaign[teach].id}`);
     }
+  }
+  const untaught = beforeConsolidate(campaign);
+  const gap = campaign.find(level => level.intro && level.mechanic === 'consolidate');
+  for (const level of campaign) {
+    if (untaught.has(level.id) && pool[level.id]?.tidy !== undefined) problems.push(`${level.id} offers tidy before ${gap.id}`);
   }
   return problems;
 }

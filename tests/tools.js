@@ -102,8 +102,11 @@ assert.strictEqual(E.travelOf({type: 'cut', from: 2}), 0);
   assert.strictEqual(E.solve(level, undefined, {budget: {price: E.travelOf, max: light}}).cost, opsAtLight);
   assert.strictEqual(E.solve(level, undefined, {budget: {price: E.travelOf, max: light - 1}}).cost, null);
   assert.strictEqual(E.solve(level, undefined, {budget: {price: E.travelOf, max: 999}}).cost, level.par);
-  // load-drivers: one route meets Unsplit and Few moves together.
-  assert.deepStrictEqual(overlaps(L('load-drivers'), {unsplit: 23, few: 5}), [['unsplit', 'few']]);
+  // load-drivers' earlier board: one route meets Unsplit and Few moves together.
+  const oldDrivers = {...L('load-drivers'), board: '######ACB.BAAC.#########'};
+  assert.deepStrictEqual(overlaps(oldDrivers, {unsplit: 23, few: 5}), [['unsplit', 'few']]);
+  // Its redesign frees reserved sector 17, and no route meets both any more.
+  assert.deepStrictEqual(overlaps(L('load-drivers'), {unsplit: 22, few: 5}), []);
   assert.deepStrictEqual(overlaps(L('a-can-wait'), {light}), [], 'one badge has no pairs');
   // An intro level offers badges only when it teaches them.
   assert.deepStrictEqual(computeBadges({...L('short-hops'), teaches: undefined}), {});
@@ -344,8 +347,17 @@ const fastEnough = level => {
   const early = judge(fewer, {...fewer, board: 'ABA.AB'}, L.chapters);
   assert.ok(early.ok);
   assert.deepStrictEqual(early.badges, {});
-  assert.deepStrictEqual(computeBadges({...fewer, board: '.ABA.BA'}), {tidy: 3});
+  // fewer-is-better also comes before one-gap, so only a level outside the campaign offers this board's Tidy.
+  assert.deepStrictEqual(computeBadges({...fewer, id: 'loose', board: '.ABA.BA'}), {tidy: 3});
   assert.deepStrictEqual(judge(fewer, {...fewer, board: '.ABA.BA'}, L.chapters).badges, {}, 'Tidy is held back too');
+  // Tidy is barred before one-gap teaches consolidate, even after near-or-far; other badges stay.
+  const park = byId('choose-what-to-park');
+  assert.deepStrictEqual(computeBadges({...park, id: 'loose'}), {tidy: 4, light: 8}, 'the board offers Tidy on its own');
+  assert.deepStrictEqual(computeBadges(park), {light: 8});
+  assert.deepStrictEqual(judge(park, park, L.chapters).badges, {light: 8});
+  // The campaign can be passed in: with consolidate taught first, the same level offers Tidy.
+  const taughtFirst = [{id: 'one-gap', intro: true, mechanic: 'consolidate'}, park];
+  assert.deepStrictEqual(computeBadges(park, {campaign: taughtFirst}), {tidy: 4, light: 8});
   // Growth is aligned before counting, so one added sector counts once.
   assert.strictEqual(judge(original, grow(original, 'start'), L.chapters).changed, 1);
   assert.strictEqual(judge(original, grow(grow(original, 'end'), 'start'), L.chapters).changed, 2);
@@ -412,6 +424,11 @@ const fastEnough = level => {
   assert.deepStrictEqual(badgeProblems(early, {e: {light: 3}, a: {tidy: 1}}, limits, none), ['e offers light before near-or-far']);
   assert.deepStrictEqual(badgeProblems(early, {e: {tidy: 3, unsplit: 4}, a: {tidy: 1}}, limits, none), ['e offers tidy, unsplit before near-or-far']);
   assert.deepStrictEqual(badgeProblems(early, {a: {tidy: 1}}, {floor: 0.5, maxOverlap: 0.5}, none), [], 'badges after the teach level are fine');
+  // Tidy is barred before the first consolidate intro level (one-gap); other badges there are fine.
+  const gap = lv('one-gap', {intro: true, mechanic: 'consolidate'});
+  const untaught = [lv('near-or-far', {intro: true, teaches: 'badges'}), lv('a'), gap, lv('b')];
+  assert.deepStrictEqual(badgeProblems(untaught, {a: {tidy: 3, light: 4}, b: {light: 2}}, limits, none), ['a offers tidy before one-gap']);
+  assert.deepStrictEqual(badgeProblems(untaught, {a: {light: 4}, b: {tidy: 2}}, limits, none), [], 'Tidy after one-gap is fine');
   const pool = {a: {tidy: 3, unsplit: 4}, b: {tidy: 1, light: 2}, c: {few: 2}};
   const both = level => (level.id === 'a' || level.id === 'b' ? [['x', 'y']] : []);
   assert.match(badgeProblems(campaign, pool, limits, both).join(), /overlap 2\/2/);

@@ -102,10 +102,10 @@ const chapters = [
     summary: 'The operating system arrives.',
     levels: [
       {id: 'boot-sector', mechanic: 'system', intro: true, locked: ['S'], links: [['S', 'A']], par: 1, name: 'Boot sector', board: 'A.SS.A', goal: 'The system file S is locked. Join A directly after it.', prompt: 'S cannot move. Move the left A to the far side of S.'},
-      {id: 'load-order', mechanic: 'system', locked: ['S'], links: [['S', 'A']], par: 4, name: 'Load order', board: '###AA.SS.ABB', goal: 'Put all of A directly after the system file. S will not budge.'},
-      {id: 'kernel-space', mechanic: 'system', locked: ['S'], links: [['S', 'A']], par: 4, name: 'Kernel space', board: 'B.AAASS.BB', goal: 'A sits right in front of S. Get it behind S instead.'},
+      {id: 'load-order', mechanic: 'system', locked: ['S'], links: [['S', 'A']], par: 4, name: 'Load order', board: '##.AA.SS.ABB', goal: 'Put all of A directly after the system file. S will not budge.'},
+      {id: 'kernel-space', mechanic: 'system', locked: ['S'], links: [['S', 'A']], par: 4, name: 'Kernel space', board: 'B.AAASS..BB', goal: 'A sits right in front of S. Get it behind S instead.'},
       {id: 'driver-stack', mechanic: 'system', locked: ['S'], links: [['S', 'A']], par: 5, name: 'Driver stack', board: 'BSSBB.AA.A', goal: 'B is in the way behind S. Clear it out for A.'},
-      {id: 'install-path', mechanic: 'system', combines: ['system', 'homes'], locked: ['S'], links: [['S', 'A']], par: 6, name: 'Install path', board: '####AA.B.SSBBCCA########', homes: {B: [5, 7], C: [8, 9]}, goal: 'Put A right after S, and send B and C home.'},
+      {id: 'install-path', mechanic: 'system', combines: ['system', 'homes'], locked: ['S'], links: [['S', 'A']], par: 7, name: 'Install path', board: '####AA.BASSBBCC.########', homes: {B: [5, 7], C: [8, 9]}, goal: 'Put A right after S, and send B and C home.'},
     ],
   },
   {
@@ -115,7 +115,7 @@ const chapters = [
       {id: 'cracked', mechanic: 'fragile', intro: true, fragile: [1, 2], par: 1, name: 'Cracked', board: 'A.AA', goal: 'Join A. Both of the first two sectors are cracked.', prompt: 'Move the lone A onto the cracked sector. The 0 sector it leaves fails once empty.'},
       {id: 'one-write-left', mechanic: 'fragile', fragile: [1, 8, 11], par: 5, name: 'One write left', board: '.AB##CC.ABB', homes: {A: [6, 7], B: [1, 3], C: [8, 9]}, goal: 'Three cracked sectors. Use each one only when you must.'},
       {id: 'failing-drive', mechanic: 'fragile', fragile: [4], par: 6, name: 'Failing drive', board: 'AA.A.BB', homes: {A: [5, 7], B: [1, 2]}, goal: 'Swap A and B before the cracked sector fails at the wrong time.'},
-      {id: 'last-writes', mechanic: 'fragile', combines: ['fragile', 'consolidate'], fragile: [5, 9, 12], consolidate: true, par: 6, name: 'Last writes', board: '#.ABAAB#.CACB###########', goal: 'Join every file and gather the free space. Cracks wear out.'},
+      {id: 'last-writes', mechanic: 'fragile', combines: ['fragile', 'consolidate'], fragile: [4, 10, 12], consolidate: true, par: 6, name: 'Last writes', board: '#.AABAB#C.ACB###########', goal: 'Join every file and gather the free space. Cracks wear out.'},
     ],
   },
   {
@@ -128,8 +128,8 @@ const chapters = [
       {id: 'fragile-hold', mechanic: 'clipboard', combines: ['clipboard', 'fragile', 'homes'], clipboard: true, fragile: [14, 20], par: 6, name: 'Fragile hold', board: '############BCCBA##.AA##', homes: {A: [15, 17], B: [21, 22], C: [13, 14]}, goal: 'Send all three files home. Hold one, and spare the cracks.'},
       {id: 'nudge', mechanic: 'nudge', intro: true, nudges: 1, par: 1, name: 'Nudge', board: 'AA.', homes: {A: [2, 3]}, goal: 'Slide A one sector right into its home.', prompt: 'There is no two-sector gap for A. Select A, then choose the → sector.'},
       {id: 'scoot-over', mechanic: 'nudge', nudges: 2, par: 3, name: 'Scoot over', board: 'BAA.B#C', homes: {A: [4, 5], B: [1, 2], C: [7, 7]}, goal: 'Two nudges, one free sector. Get all three files home.'},
-      {id: 'shuffle-step', mechanic: 'nudge', nudges: 2, par: 7, name: 'Shuffle step', board: '#C.AACB##BB', homes: {A: [2, 3], B: [5, 7], C: [10, 11]}, goal: 'Spend your two nudges where a normal move cannot go.'},
-      {id: 'tight-quarters', mechanic: 'nudge', combines: ['nudge', 'reserved', 'homes'], nudges: 1, par: 7, name: 'Tight quarters', board: '##############AB#A.BACC#', homes: {A: [19, 21], B: [22, 23], C: [15, 16]}, goal: 'One free sector and one nudge. Get all three files home.'},
+      {id: 'shuffle-step', mechanic: 'nudge', nudges: 2, par: 7, name: 'Shuffle step', board: '#C.AABC##BB', homes: {A: [2, 3], B: [4, 6], C: [10, 11]}, goal: 'Spend your two nudges where a normal move cannot go.'},
+      {id: 'tight-quarters', mechanic: 'nudge', combines: ['nudge', 'reserved', 'homes'], nudges: 1, par: 7, name: 'Tight quarters', board: '##############AB#AAB.CC#', homes: {A: [19, 21], B: [22, 23], C: [15, 16]}, goal: 'One free sector and one nudge. Get all three files home.'},
     ],
   },
   {
@@ -146,10 +146,10 @@ const chapters = [
     name: 'Boot',
     summary: 'The disk is ready. Start it up.',
     levels: [
-      {id: 'power-on', mechanic: 'ordered', combines: ['ordered', 'homes', 'splitting'], par: 8, name: 'Power on', board: '#######A3B2B1C2.#.#A1A2C1######', homes: {A: [10, 12], B: [17, 18], C: [8, 9]}, goal: 'Send each file home in number order. Some runs must break.'},
-      {id: 'self-test', mechanic: 'links', combines: ['links', 'splitting', 'consolidate'], links: [['A', 'B'], ['B', 'C']], consolidate: true, par: 7, name: 'Self-test', board: 'CABB.C.BAAA#############', goal: 'Rebuild A→B→C and gather the free space in one stretch.'},
+      {id: 'power-on', mechanic: 'ordered', combines: ['ordered', 'homes', 'splitting'], par: 8, name: 'Power on', board: '#######A3B1B2C2.#.#A1A2C1######', homes: {A: [10, 12], B: [17, 18], C: [8, 9]}, goal: 'Send each file home in number order. Break runs to reach par.'},
+      {id: 'self-test', mechanic: 'links', combines: ['links', 'splitting', 'consolidate'], links: [['A', 'B'], ['B', 'C']], consolidate: true, par: 7, name: 'Self-test', board: 'CA.B.CBBAAA#############', goal: 'Rebuild A→B→C and gather the free space in one stretch.'},
       {id: 'mount', mechanic: 'fragile', combines: ['fragile', 'clipboard', 'homes'], clipboard: true, fragile: [14], par: 8, name: 'Mount', board: '###BAC#C#ACA#.BB########', homes: {A: [14, 16], B: [10, 12], C: [4, 6]}, goal: 'Send all three files home. Use the clipboard. Mind the crack.'},
-      {id: 'load-drivers', mechanic: 'seek', combines: ['seek', 'homes', 'splitting'], cost: 'seek', par: 14, name: 'Load drivers', board: '######ACB.BAAC.#########', homes: {A: [10, 12], B: [8, 9], C: [13, 14]}, goal: 'Send each file home. A run must break. Keep head travel low.'},
+      {id: 'load-drivers', mechanic: 'seek', combines: ['seek', 'homes', 'splitting'], cost: 'seek', par: 14, name: 'Load drivers', board: '######ACB.BAAC.#.#######', homes: {A: [10, 12], B: [8, 9], C: [13, 14]}, goal: 'Send each file home. A run must break. Keep head travel low.'},
       {id: 'first-boot', mechanic: 'system', combines: ['system', 'ordered', 'homes'], locked: ['S'], links: [['S', 'A']], par: 8, name: 'First boot', board: '####A2A3.B1.SSB2B3C1C2A1########', homes: {B: [5, 7], C: [8, 9]}, goal: 'Boot the disk: load A after S in order, and send B and C home.'},
     ],
   },

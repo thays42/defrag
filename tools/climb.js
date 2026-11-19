@@ -220,9 +220,10 @@ function judge(original, candidate, chapters, {limit} = {}) {
   const pairs = similarPairs([...swapped.flatMap(c => c.levels), ...extras]);
   if (pairs.some(p => p.level === 'fail' && (p.a.id === level.id || p.b.id === level.id))) return out('similar', parDelta);
   if (!hintCheap(level, HINT_LIMIT)) return out('hint', parDelta);
-  const badges = computeBadges(level, {limit});
-  // No badge is offered before the level that teaches badges (mirrors badge-rules.js).
+  // No Tidy before one-gap teaches consolidate (computeBadges, placed in this campaign), and
+  // no badge before the level that teaches badges (both mirror badge-rules.js).
   const campaign = swapped.flatMap(c => c.levels);
+  const badges = computeBadges(level, {limit, campaign});
   const teach = campaign.findIndex(l => l.teaches === 'badges');
   const at = campaign.findIndex(l => l.id === level.id);
   if (at >= 0 && at < teach) for (const key of Object.keys(badges)) delete badges[key];

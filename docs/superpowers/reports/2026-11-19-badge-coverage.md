@@ -64,3 +64,50 @@ Notes:
 - `daisy-chain`: every pick with growth had three free sectors, which contradicts "with two free sectors". A climb without growth found the pick.
 - `chain-of-three` takes Tidy, which is allowed because it comes after `one-gap`. Its Light pick (`#BA.CC.#B`) dropped the trap rate from 1.00 to 0.00.
 - No goal or prompt text changed.
+
+## Group 5c: Install, Wear, Recovery tools, Seek, Boot
+
+Coverage 34/49 (0.69) → 42/49 (0.86). Overlap 1/3 → 0/4. `BADGE_LIMITS` is now `{floor: 0.80, maxOverlap: 0.25}`.
+
+A ruling came first, in its own commit: Tidy is barred on campaign levels before `one-gap`, the first level that teaches consolidate. `computeBadges`, `badgeProblems` and `judge` enforce it. `choose-what-to-park` went from {Tidy 4, Light 8} to {Light 8}. That left `load-drivers` as the only overlapping level among three two-badge levels (1/3, above 0.25), so it was re-designed here as well.
+
+There were 14 targets, plus `load-drivers`. 8 targets gained a badge, and `load-drivers` lost its overlap. Every pick was re-judged at the default 1e6 search limit, with `ok` and no overlap, and its par route was checked against its goal. Approach A is `tools/climb.js --badge` (300 s, seed 7, screened at 1e5 on the 24-sector boards), or a scratch copy of it with a lesson filter (A*). Approach C is a scan of every single edit (sector swaps, `.`↔`#`, homes ±1, moved cracks, growth), with each edit run through `judge`. Metric drift uses `addDetail` at 3e5, as `--save-baseline` does.
+
+| Level | Par old → new | Badges gained | Changed | Approach | Metric drift (trap, lines) |
+|---|---|---|---|---|---|
+| load-order | 4 → 4 | Light 15 | 1 | C (the climbs at seeds 7 and 11 missed it) | 1.00, 1 → 1.00, 2 |
+| kernel-space | 4 → 4 | Unsplit 5 | 2 (grown by 1) | A | 1.00, 1 → 1.00, 3 (split gap ∞ → 1) |
+| install-path | 6 → 7 | Light 29 | 2 | A, screened at 1e5 | 1.00, 4 → 1.00, 8 |
+| last-writes | 6 → 6 | Light 19 | 4 | A*, seed 11, screened at 1e5 | 1.00, 2 → 0.50, 64 |
+| shuffle-step | 7 → 7 | Light 25 | 3 | A*, both nudges needed | 1.00, 2 → 1.00, 2 |
+| tight-quarters | 7 → 7 | Light 29 | 2 | A, screened at 1e5 | 0.67, 2 → 1.00, 2 |
+| power-on | 8 → 8 | Unsplit 10, Light 34 (no overlap) | 2 | C | 1.00, 9 → 1.00, 35 (split gap ∞ → 2) |
+| self-test | 7 → 7 | Light 27 | 2 | A, screened at 1e5 | 0.67, 5 → 1.00, 3 |
+| load-drivers | 14 → 14 | Unsplit 23 + Few 5 (overlapping) → Unsplit 22 + Few 5 (no overlap) | 1 | C | 1.00, 4 → 1.00, 4 (split gap 9 → 8) |
+| failing-drive | 6 | none | 0 | missed: A, C and B all tried | unchanged |
+| hold-that-thought | 4 | none | 0 | missed: A, C and B all tried | unchanged |
+| juggle | 5 | none | 0 | missed: A, C and B all tried | unchanged |
+| fragile-hold | 6 | none | 0 | missed: A and A* tried, B does not apply (Combine) | unchanged |
+| scoot-over | 3 | none | 0 | missed: no candidate kept the lesson | unchanged |
+| mount | 8 | none | 0 | missed: A and C tried, B does not apply (Combine) | unchanged |
+
+Boards (old → new):
+- load-order: `###AA.SS.ABB` → `##.AA.SS.ABB`
+- kernel-space: `B.AAASS.BB` → `B.AAASS..BB`
+- install-path: `####AA.B.SSBBCCA########` → `####AA.BASSBBCC.########`
+- last-writes: `#.ABAAB#.CACB###########`, cracks [5, 9, 12] → `#.AABAB#C.ACB###########`, cracks [4, 10, 12]
+- shuffle-step: `#C.AACB##BB`, B home [5, 7] → `#C.AABC##BB`, B home [4, 6]
+- tight-quarters: `##############AB#A.BACC#` → `##############AB#AAB.CC#`
+- power-on: `#######A3B2B1C2.#.#A1A2C1######` → `#######A3B1B2C2.#.#A1A2C1######`
+- self-test: `CABB.C.BAAA#############` → `CA.B.CBBAAA#############`
+- load-drivers: `######ACB.BAAC.#########` → `######ACB.BAAC.#.#######`. The reserved sector 17 is freed.
+
+Notes:
+
+- The lesson filter (A*) is a scratch copy of `climbBadge` that rejects candidates that break the goal. For nudge levels, every nudge must be needed: par with one nudge fewer is higher. Levels whose goal names a count of free sectors keep that count. The plain climber's picks for `scoot-over` (`BCA.B#A`, par 4) and `shuffle-step` (`#C.ACAB##BB`) both left the second nudge unused (par with one nudge = par with two). Both were rejected.
+- `kernel-space` and `power-on` now finish unsplit at par + 1 and par + 2. Before, they could not finish unsplit at all. Their par routes still split. The `power-on` goal "Some runs must break." became "Break runs to reach par." The tests cap goals at 70 characters. `load-drivers` already allowed an unsplit finish (split gap 9 before, 8 now), so its goal stays.
+- `install-path` par 6 → 7: the new par route opens with one extra move, then follows the old one (A after S, B and C home).
+- `last-writes`: the trap rate drops from 1.00 to 0.50. The only other pick, from seed 7 (`#.CBAAB#.AACB…`, 2 changed), raised par to 7 and dropped the trap rate to 0.00. The chosen pick keeps par 6. The par route works around all three cracks, and the cracks still change par (5 without them). Lines rise from 2 to 64.
+- `shuffle-step`: the par route spends both nudges (with 0, 1 and 2 nudges, par is 8, 8, 7).
+- Misses. The clipboard levels (`hold-that-thought`, `juggle`, `fragile-hold`, `mount`) can only offer Tidy or Unsplit, because Light touch is off with the clipboard. On these boards a whole route always meets par, and the few free sectors are already joined at par. No edit in the scans offered either badge, and neither did 220 `generate.js clipboard` boards at par ±1. `failing-drive`: no single edit and no climb (seeds 7, 11, 23) found a badge. `generate.js fragile` found three badged boards. Each replaces the whole board (9–10 changed), adds a third file to a "swap A and B" level, and two of them drop par to 5. All three were rejected. `scoot-over`: `generate.js nudge` found two badged boards with both nudges needed (`BCC.AAABA`, `CAABBC.B`, par 4, 7–8 changed). Both drop the trap rate from 1.00 to 0.00 and replace the whole board, so both were rejected.
+- The 5c targets come after `one-gap`, so the Tidy bar did not limit them.

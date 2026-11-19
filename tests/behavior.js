@@ -293,9 +293,10 @@ const check = (name, ok, detail = '') => {
   check('light-touch line earns light', await get(() => (progress.badges['driver-stack'] ?? []).includes('light') && stats.travel === badgePool['driver-stack'].light));
 
   // Tidy and Under par play-throughs.
-  await open('choose-what-to-park');
+  // chain-of-three offers Tidy (choose-what-to-park comes before one-gap, so it no longer does).
+  await open('chain-of-three');
   await page.evaluate(() => { const lv = {...level, consolidate: true}; for (const move of E.solve(lv, state).path) perform(move); });
-  check('tidy line earns tidy', await get(() => (progress.badges['choose-what-to-park'] ?? []).includes('tidy') && stats.cost === badgePool['choose-what-to-park'].tidy));
+  check('tidy line earns tidy', await get(() => (progress.badges['chain-of-three'] ?? []).includes('tidy') && stats.cost === badgePool['chain-of-three'].tidy));
   await open('beat-par');
   await play();
   check('optimal line on a beatable level earns under par', await get(() => (progress.badges['beat-par'] ?? []).includes('under') && stats.cost < level.par));
