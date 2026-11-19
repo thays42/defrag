@@ -122,6 +122,8 @@ if (process.argv.includes('--badges')) {
     const computed = JSON.stringify(computeBadges(level));
     if (stored !== computed) problems.push(`${level.id}: badges stale: stored ${stored}, computed ${computed}. Run node tools/badges.js --write badges.js`);
   }
+  const {badgeProblems, BADGE_LIMITS} = require('./badge-rules.js');
+  problems.push(...badgeProblems(chapters.flatMap(c => c.levels), badgePool, BADGE_LIMITS));
   for (const id of Object.keys(badgePool)) if (!ids.has(id)) problems.push(`${id}: badges listed for an unknown level`);
 }
 
