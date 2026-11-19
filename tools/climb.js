@@ -221,11 +221,11 @@ function judge(original, candidate, chapters, {limit} = {}) {
   if (pairs.some(p => p.level === 'fail' && (p.a.id === level.id || p.b.id === level.id))) return out('similar', parDelta);
   if (!hintCheap(level, HINT_LIMIT)) return out('hint', parDelta);
   const badges = computeBadges(level, {limit});
-  // Light touch is not offered before the level that teaches badges (mirrors badge-rules.js).
+  // No badge is offered before the level that teaches badges (mirrors badge-rules.js).
   const campaign = swapped.flatMap(c => c.levels);
   const teach = campaign.findIndex(l => l.teaches === 'badges');
   const at = campaign.findIndex(l => l.id === level.id);
-  if (at >= 0 && at < teach) delete badges.light;
+  if (at >= 0 && at < teach) for (const key of Object.keys(badges)) delete badges[key];
   return {...out(null, parDelta, badges, overlaps(level, badges, {limit})), optimum: best.cost};
 }
 
@@ -284,7 +284,12 @@ if (require.main === module) {
     const at = args.indexOf('--' + name);
     return at < 0 ? fallback : args[at + 1];
   };
-  const number = (name, fallback) => (flag(name, null) === null ? fallback : Number(flag(name)));
+  const number = (name, fallback) => {
+    if (flag(name, null) === null) return fallback;
+    const value = Number(flag(name));
+    if (!Number.isFinite(value) && value !== Infinity) throw new Error(`--${name} needs a number, got ${flag(name)}`);
+    return value;
+  };
   if (flag('badge', null) !== null) {
     const id = flag('badge');
     const picks = climbBadge(id, {steps: number('steps', Infinity), seconds: number('seconds', 300), seed: number('seed', 7), count: number('count', 8), limit: number('limit', undefined)});

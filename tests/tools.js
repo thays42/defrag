@@ -338,12 +338,14 @@ const fastEnough = level => {
   assert.strictEqual(judge(original, {...original, board: original.board.replace(/\./g, '#')}, L.chapters).reason, 'unsolvable');
   // two-decks has par 7, park-a-pair par 3.
   assert.strictEqual(judge(original, {...byId('two-decks'), id: original.id}, L.chapters).reason, 'par');
-  // Light touch is not offered before near-or-far teaches it; the same board offers it on its own.
+  // No badge is offered before near-or-far teaches badges; the same boards offer them on their own.
   const fewer = byId('fewer-is-better');
   assert.deepStrictEqual(computeBadges({...fewer, board: 'ABA.AB'}), {light: 5});
   const early = judge(fewer, {...fewer, board: 'ABA.AB'}, L.chapters);
   assert.ok(early.ok);
   assert.deepStrictEqual(early.badges, {});
+  assert.deepStrictEqual(computeBadges({...fewer, board: '.ABA.BA'}), {tidy: 3});
+  assert.deepStrictEqual(judge(fewer, {...fewer, board: '.ABA.BA'}, L.chapters).badges, {}, 'Tidy is held back too');
   // Growth is aligned before counting, so one added sector counts once.
   assert.strictEqual(judge(original, grow(original, 'start'), L.chapters).changed, 1);
   assert.strictEqual(judge(original, grow(grow(original, 'end'), 'start'), L.chapters).changed, 2);
@@ -397,16 +399,19 @@ const fastEnough = level => {
   assert.strictEqual(E.solve(near, undefined, {budget: {price: E.travelOf, max: light}}).cost, near.par + 1);
 }
 
-// Badge rules: coverage floor, overlap ceiling, and no Light touch before it is taught.
+// Badge rules: coverage floor, overlap ceiling, and no badge before badges are taught.
 {
   const {badgeProblems} = require('../tools/badge-rules.js');
   const lv = (id, extra = {}) => ({id, ...extra});
-  const campaign = [lv('t', {intro: true}), lv('a'), lv('near-or-far', {intro: true, teaches: 'badges'}), lv('b'), lv('c'), lv('d')];
+  const campaign = [lv('t', {intro: true}), lv('near-or-far', {intro: true, teaches: 'badges'}), lv('a'), lv('b'), lv('c'), lv('d')];
+  const early = [lv('t', {intro: true}), lv('e'), lv('near-or-far', {intro: true, teaches: 'badges'}), lv('a')];
   const none = () => [];
   const limits = {floor: 0.75, maxOverlap: 0.5};
   assert.deepStrictEqual(badgeProblems(campaign, {a: {tidy: 3}, b: {light: 4}, c: {few: 2}}, limits, none), []);
   assert.match(badgeProblems(campaign, {a: {tidy: 3}, b: {light: 4}}, limits, none).join(), /coverage 2\/4 .*c, d/);
-  assert.match(badgeProblems(campaign, {a: {light: 3}, b: {tidy: 1}, c: {few: 2}}, limits, none).join(), /a offers Light touch before near-or-far/);
+  assert.deepStrictEqual(badgeProblems(early, {e: {light: 3}, a: {tidy: 1}}, limits, none), ['e offers light before near-or-far']);
+  assert.deepStrictEqual(badgeProblems(early, {e: {tidy: 3, unsplit: 4}, a: {tidy: 1}}, limits, none), ['e offers tidy, unsplit before near-or-far']);
+  assert.deepStrictEqual(badgeProblems(early, {a: {tidy: 1}}, {floor: 0.5, maxOverlap: 0.5}, none), [], 'badges after the teach level are fine');
   const pool = {a: {tidy: 3, unsplit: 4}, b: {tidy: 1, light: 2}, c: {few: 2}};
   const both = level => (level.id === 'a' || level.id === 'b' ? [['x', 'y']] : []);
   assert.match(badgeProblems(campaign, pool, limits, both).join(), /overlap 2\/2/);
