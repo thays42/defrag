@@ -309,6 +309,40 @@ const fastEnough = level => {
   assert.notStrictEqual(level.board, start.board);
 }
 
+// Badge mode: growth adds one empty sector at either end, and judge runs the check-levels guards on a candidate.
+{
+  const {grow, judge} = require('../tools/climb.js');
+  const L = require('../levels.js');
+  const byId = id => L.levels.find(l => l.id === id);
+  const home = {board: 'AB.AB.', homes: {A: [1, 2], B: [5, 6]}, fragile: [3]};
+  assert.deepStrictEqual(grow(home, 'start'), {...home, board: '.AB.AB.', homes: {A: [2, 3], B: [6, 7]}, fragile: [4]});
+  assert.deepStrictEqual(grow(home, 'end'), {...home, board: 'AB.AB..'});
+  assert.strictEqual(grow(byId('mount'), 'end'), null, 'a full disk cannot grow');
+  const placed = byId('across-the-break');
+  const grown = grow(placed, 'end');
+  assert.ok(!grown || E.placement(grown).offset + E.placement(grown).length <= E.FRAME, 'growth stays inside the frame');
+  const original = byId('park-a-pair');
+  assert.strictEqual(judge(original, original, L.chapters).ok, true);
+  assert.strictEqual(judge(original, original, L.chapters).changed, 0);
+  assert.strictEqual(judge(original, {...original, homes: undefined}, L.chapters).reason, 'mechanic');
+  assert.strictEqual(judge(original, {...original, board: original.board.replace(/\./g, '#')}, L.chapters).reason, 'unsolvable');
+  // two-decks has par 7, park-a-pair par 3.
+  assert.strictEqual(judge(original, {...byId('two-decks'), id: original.id}, L.chapters).reason, 'par');
+  // Growth is aligned before counting, so one added sector counts once.
+  assert.strictEqual(judge(original, grow(original, 'start'), L.chapters).changed, 1);
+  assert.strictEqual(judge(original, grow(grow(original, 'end'), 'start'), L.chapters).changed, 2);
+  // Growth is opt-in for mutate, and still keeps the frame.
+  const {mutate} = require('../tools/climb.js');
+  const {makeRng} = require('../tools/board-builder.js');
+  const rng = makeRng(3);
+  const lengths = new Set();
+  for (let n = 0; n < 200; n++) {
+    const next = mutate(rng, placed, {grow: true});
+    if (next) lengths.add(E.placement(next).length);
+  }
+  assert.ok(lengths.has(7) && lengths.has(6), 'mutate grows sometimes, not always');
+}
+
 // Seek matters only when every cheapest route takes more moves than the fewest-move route.
 // The answer must not depend on which cheapest route the solver happens to return.
 {
