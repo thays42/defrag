@@ -13,6 +13,8 @@ ui.cells = [];
 // Cell positions change with the board's size, so the track is redrawn on resize.
 new ResizeObserver(() => drawTrack()).observe(ui.board);
 const progressKey = 'defrag-progress-v3';
+// Version 4 changed these levels' pars but kept their ids. Scores from the old boards are dropped once.
+const PAR_CHANGED_V4 = ['tight-fit', 'required-split-revisited', 'install-path'];
 
 
 let progress = loadProgress();
@@ -40,10 +42,11 @@ const soundEffects = {move: [330, 494], split: [220, 392], undo: [392, 262], cle
 // ---------- Progress ----------
 
 function loadProgress() {
-  const fresh = {version: 3, current: campaign[0].id, best: {}, clean: {}, attempts: {}, hinted: {}, badges: {}, sound: false, parExplained: false, hintWarned: false};
+  const fresh = {version: 4, current: campaign[0].id, best: {}, clean: {}, attempts: {}, hinted: {}, badges: {}, sound: false, parExplained: false, hintWarned: false};
   try {
     const saved = JSON.parse(localStorage.getItem(progressKey));
-    if (saved?.version === 3) return {...fresh, ...saved, hinted: saved.hinted ?? {}, badges: saved.badges ?? {}};
+    if (saved?.version === 4) return {...fresh, ...saved};
+    if (saved?.version === 3) return dropScores({...fresh, ...saved, version: 4, hinted: saved.hinted ?? {}, badges: saved.badges ?? {}}, PAR_CHANGED_V4);
     // Older saves keyed scores by array position in the first 30 levels.
     const legacy = JSON.parse(localStorage.getItem('defrag-campaign-v2')) ?? shiftV1(JSON.parse(localStorage.getItem('defrag-campaign-v1')));
     if (legacy && Number.isInteger(legacy.level) && legacy.best) {
@@ -54,9 +57,20 @@ function loadProgress() {
       }
       fresh.current = idAt(legacy.level) ?? fresh.current;
       fresh.sound = Boolean(legacy.sound);
+      dropScores(fresh, PAR_CHANGED_V4);
     }
   } catch {}
   return fresh;
+}
+
+// Scores, stars and badges for these ids came from an older board. The level counts as not yet cleared.
+function dropScores(saved, ids) {
+  for (const id of ids) {
+    delete saved.best[id];
+    delete saved.clean[id];
+    delete saved.badges[id];
+  }
+  return saved;
 }
 
 function shiftV1(previous) {

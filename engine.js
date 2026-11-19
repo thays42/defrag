@@ -217,8 +217,10 @@
   // price: optional move => integer >= 1 that replaces move.cost (badge tools rank by two costs at once).
   // minPrice: the least any move can cost under `price`, so the heuristic stays admissible but sharper.
   // budget: {price: move => integer >= 0, max}. Least primary cost among paths whose summed budget.price is at most max.
+  // Not with countPaths.
   // Nodes are keyed by state and spent budget, so the search stays exact.
   function solve(level, start = initialState(level), {heuristic = true, countPaths = false, whole = false, limit = 4e6, maxCost = 200, price, minPrice = 1, budget} = {}) {
+    if (countPaths && budget) throw new Error('countPaths and budget cannot be combined: counts would sum across spent amounts');
     const useH = heuristic && !countPaths;
     // Each unsettled file needs at least one move, and every move costs at least minPrice.
     const h = state => estimate(level, state) * minPrice;

@@ -72,7 +72,7 @@ assert.strictEqual(E.travelOf({type: 'cut', from: 2}), 0);
 {
   const {computeBadges, opsOf} = require('../tools/badges.js');
   const L = id => require('../levels.js').levels.find(l => l.id === id);
-  assert.deepStrictEqual(computeBadges(L('short-hops')), {}, 'intro levels hide the score, so offer no badges');
+  assert.deepStrictEqual(computeBadges(L('short-hops')), {}, 'intro levels offer no badges unless they teach them');
   assert.strictEqual(opsOf({split: true}), 2);
   assert.strictEqual(opsOf({}), 1);
   const beat = computeBadges(L('beat-par'));
@@ -108,6 +108,8 @@ assert.strictEqual(E.travelOf({type: 'cut', from: 2}), 0);
   // Its redesign frees reserved sector 17, and no route meets both any more.
   assert.deepStrictEqual(overlaps(L('load-drivers'), {unsplit: 22, few: 5}), []);
   assert.deepStrictEqual(overlaps(L('a-can-wait'), {light}), [], 'one badge has no pairs');
+  // Path counts would sum across spent amounts, so the two options refuse to combine.
+  assert.throws(() => E.solve(level, undefined, {countPaths: true, budget: {price: E.travelOf, max: light}}), /countPaths/);
   // An intro level offers badges only when it teaches them.
   assert.deepStrictEqual(computeBadges({...L('short-hops'), teaches: undefined}), {});
   // A screening limit only drops badges: a search it cuts short offers none, and an unproven pair overlaps.
@@ -343,7 +345,8 @@ const fastEnough = level => {
   assert.strictEqual(judge(original, {...byId('two-decks'), id: original.id}, L.chapters).reason, 'par');
   // No badge is offered before near-or-far teaches badges; the same boards offer them on their own.
   const fewer = byId('fewer-is-better');
-  assert.deepStrictEqual(computeBadges({...fewer, board: 'ABA.AB'}), {light: 5});
+  assert.deepStrictEqual(computeBadges({...fewer, board: 'ABA.AB'}), {}, 'computeBadges holds them back, so --write cannot emit them');
+  assert.deepStrictEqual(computeBadges({...fewer, board: 'ABA.AB'}, {campaign: []}), {light: 5}, 'the board offers Light on its own');
   const early = judge(fewer, {...fewer, board: 'ABA.AB'}, L.chapters);
   assert.ok(early.ok);
   assert.deepStrictEqual(early.badges, {});
@@ -358,6 +361,13 @@ const fastEnough = level => {
   // The campaign can be passed in: with consolidate taught first, the same level offers Tidy.
   const taughtFirst = [{id: 'one-gap', intro: true, mechanic: 'consolidate'}, park];
   assert.deepStrictEqual(computeBadges(park, {campaign: taughtFirst}), {tidy: 4, light: 8});
+  // --limit must be a positive number: an empty or zero limit would abort every search.
+  const {spawnSync} = require('child_process');
+  for (const bad of ['', '0', '-5']) {
+    const run = spawnSync(process.execPath, [require.resolve('../tools/climb.js'), '--badge', 'near-or-far', '--steps', '1', '--seconds', '5', '--limit', bad], {encoding: 'utf8'});
+    assert.notStrictEqual(run.status, 0, `--limit '${bad}' is refused`);
+    assert.match(run.stderr, /--limit needs a positive number/);
+  }
   // Growth is aligned before counting, so one added sector counts once.
   assert.strictEqual(judge(original, grow(original, 'start'), L.chapters).changed, 1);
   assert.strictEqual(judge(original, grow(grow(original, 'end'), 'start'), L.chapters).changed, 2);

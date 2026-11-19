@@ -47,7 +47,7 @@ Every board sits in a fixed 6×4 frame of 24 sectors. Sectors outside the board 
 
 The first Hint press ever only warns that a hint caps the level at one star; the next press shows the hint. The first results sheet defines par, and a level with `beatable: true` says on every sheet that par can be beaten.
 
-Badges reward a different goal that costs more than par, so 3 stars never earns one for free. `tools/badges.js` solves each campaign level under each condition and offers a badge only where the solver proves that trade-off. Intro levels and the daily puzzle offer none. Hints void badges.
+Badges reward a different goal that costs more than par, so 3 stars never earns one for free. `tools/badges.js` solves each campaign level under each condition and offers a badge only where the solver proves that trade-off. The daily puzzle and most intro levels offer none. The intro level `near-or-far` teaches badges with Light touch. Hints void badges.
 
 | Badge | Condition | Target |
 | --- | --- | --- |
@@ -73,7 +73,7 @@ The checker also enforces teach order (`tools/teach-order.js`). A campaign level
 
 Campaign levels must also look distinct. The checker compares every pair of boards, with files renamed in order of appearance, and scores 1 minus the normalized edit distance. It takes the higher of two views: the layout alone, and the layout with home and cracked sectors marked. Non-intro pairs at 0.75 or above fail. Pairs from 0.60 warn. Intro boards are tiny, so their pairs only warn. `tools/redress.js` mirrors, pads or relabels a level without changing its puzzle. `node tools/redress-search.js` proposes re-dresses that keep par, the mechanic check and trap rate.
 
-For `reserved` campaign levels the mechanic check fails when freeing the reserved sectors leaves par unchanged: reserved sectors must be a constraint, not decoration. The check searches only up to par − 1, so it finishes even on full-disk boards. A level whose reserved sectors are decoration but whose homes drive the puzzle is labelled `homes`. For `homes` levels the check only warns, since some original levels keep the same optimum without their homes. A rework that changes a level's par takes a new id, so old best scores do not carry over.
+For `reserved` campaign levels the mechanic check fails when freeing the reserved sectors leaves par unchanged: reserved sectors must be a constraint, not decoration. The check searches only up to par − 1, so it finishes even on full-disk boards. A level whose reserved sectors are decoration but whose homes drive the puzzle is labelled `homes`. For `homes` levels the check only warns, since some original levels keep the same optimum without their homes. A rework that changes a level's par keeps the level's id. A one-time save migration in `game.js` (`loadProgress`) drops that level's old best scores, stars and badges, so they do not carry over.
 
 ### Combine levels
 
@@ -110,6 +110,18 @@ After changing any campaign level, regenerate badge targets and verify them:
 node tools/badges.js --write badges.js
 node tools/check-levels.js --badges
 ```
+
+### Badge rules
+
+`check-levels --badges` enforces these rules (`tools/badge-rules.js`):
+
+- A level with `teaches: 'badges'` teaches badges. Today that is `near-or-far`, an intro level that offers Light touch.
+- No level before `near-or-far` offers a badge. No level before `one-gap` offers Tidy. `tools/badges.js` applies both bars, so `--write` never emits a badge the checker rejects.
+- At least 80% of non-intro campaign levels offer a badge (the coverage floor).
+- At most 25% of levels with two or more badges let one solution meet two badges at once (the overlap cap).
+- These limits only ratchet: the floor never falls and the cap never rises. Do not loosen them to pass a level.
+
+To find a board for a level that has no badge, run `node tools/climb.js --badge <id>`. It changes the board a little at a time and keeps candidates that pass every check-levels guard. `--limit N` caps each badge search to screen big boards faster. A capped search offers no badge, so re-verify a pick at the default limit of 1e6 before applying it.
 
 ### Regenerate the daily pool
 

@@ -181,7 +181,24 @@ const check = (name, ok, detail = '') => {
   });
   await page.reload();
   const migrated = await get(() => ({best: progress.best, current: progress.current, sound: progress.sound}));
-  check('v2 save migrates', migrated.best['join-two-blocks'] === 1 && migrated.best['tight-fit'] === 9 && migrated.current === 'tight-fit' && migrated.sound, JSON.stringify(migrated));
+  // tight-fit's par changed since v2, so its old score is dropped; the level is still current.
+  check('v2 save migrates', migrated.best['join-two-blocks'] === 1 && migrated.best['tight-fit'] === undefined && migrated.current === 'tight-fit' && migrated.sound, JSON.stringify(migrated));
+
+  // A v3 save from before three pars changed drops those levels' scores once; other levels keep theirs.
+  const changed = ['tight-fit', 'required-split-revisited', 'install-path'];
+  await page.evaluate(ids => {
+    localStorage.clear();
+    const old = {best: {'join-two-blocks': 1}, clean: {'join-two-blocks': 1}, badges: {'join-two-blocks': []}};
+    for (const id of ids) { old.best[id] = old.clean[id] = 6; old.badges[id] = ['light']; }
+    localStorage.setItem(progressKey, JSON.stringify({version: 3, current: 'tight-fit', attempts: {}, hinted: {}, sound: false, ...old}));
+  }, changed);
+  await page.reload();
+  const rescored = await get(() => ({best: progress.best, clean: progress.clean, badges: progress.badges}));
+  check('par changes drop old scores', changed.every(id => rescored.best[id] === undefined && rescored.clean[id] === undefined && rescored.badges[id] === undefined), JSON.stringify(rescored));
+  check('par changes keep other scores', rescored.best['join-two-blocks'] === 1 && rescored.clean['join-two-blocks'] === 1, JSON.stringify(rescored));
+  await page.evaluate(() => { progress.best['tight-fit'] = progress.clean['tight-fit'] = 8; persist(); });
+  await page.reload();
+  check('scores on the new boards survive reloads', await get(() => progress.best['tight-fit'] === 8 && progress.clean['tight-fit'] === 8 && progress.best['join-two-blocks'] === 1));
   check('legacy order is frozen', await get(() => LEGACY_IDS.length === 30 && LEGACY_IDS[23] === 'tight-fit' && LEGACY_IDS[2] === 'split-a-run'));
   check('extra levels open by id', await get(() => levelById.get('pocket-change')?.extra === true));
   await get(() => openLevel(levelById.get('long-way-round')));

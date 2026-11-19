@@ -220,13 +220,9 @@ function judge(original, candidate, chapters, {limit} = {}) {
   const pairs = similarPairs([...swapped.flatMap(c => c.levels), ...extras]);
   if (pairs.some(p => p.level === 'fail' && (p.a.id === level.id || p.b.id === level.id))) return out('similar', parDelta);
   if (!hintCheap(level, HINT_LIMIT)) return out('hint', parDelta);
-  // No Tidy before one-gap teaches consolidate (computeBadges, placed in this campaign), and
-  // no badge before the level that teaches badges (both mirror badge-rules.js).
-  const campaign = swapped.flatMap(c => c.levels);
-  const badges = computeBadges(level, {limit, campaign});
-  const teach = campaign.findIndex(l => l.teaches === 'badges');
-  const at = campaign.findIndex(l => l.id === level.id);
-  if (at >= 0 && at < teach) for (const key of Object.keys(badges)) delete badges[key];
+  // computeBadges, placed in this campaign, offers no badge before the level that teaches badges
+  // and no Tidy before one-gap teaches consolidate (both mirror badge-rules.js).
+  const badges = computeBadges(level, {limit, campaign: swapped.flatMap(c => c.levels)});
   return {...out(null, parDelta, badges, overlaps(level, badges, {limit})), optimum: best.cost};
 }
 
@@ -291,9 +287,15 @@ if (require.main === module) {
     if (!Number.isFinite(value) && value !== Infinity) throw new Error(`--${name} needs a number, got ${flag(name)}`);
     return value;
   };
+  // A limit of 0 (as `--limit ''` parses) would abort every search.
+  const positive = (name, fallback) => {
+    const value = number(name, fallback);
+    if (value !== fallback && !(value > 0)) throw new Error(`--${name} needs a positive number, got ${flag(name)}`);
+    return value;
+  };
   if (flag('badge', null) !== null) {
     const id = flag('badge');
-    const picks = climbBadge(id, {steps: number('steps', Infinity), seconds: number('seconds', 300), seed: number('seed', 7), count: number('count', 8), limit: number('limit', undefined)});
+    const picks = climbBadge(id, {steps: number('steps', Infinity), seconds: number('seconds', 300), seed: number('seed', 7), count: number('count', 8), limit: positive('limit', undefined)});
     for (const level of picks) console.log(JSON.stringify(level));
     console.error(`${id}: showing ${picks.length}`);
     process.exit(0);
