@@ -273,8 +273,8 @@ const check = (name, ok, detail = '') => {
   await play({whole: true});
   check('hinted clear earns no badge', await get(() => !(progress.badges['free-the-pair'] ?? []).length && stars(level) === 1));
 
-  // A level that offers no badges shows none.
-  await open('warm-up');
+  // A level that offers no badges shows none. (An intro level: the campaign levels are being redesigned to offer one.)
+  await open('two-files');
   await play();
   check('no badges on a level without any', await get(() => finished()) && !(await page.locator('#result-badges li').count()) && await page.locator('#result-badges').isHidden());
 
@@ -414,9 +414,9 @@ const check = (name, ok, detail = '') => {
 
   // The track draws every row and every row break. Breaks inside the board are live.
   const track = () => get(() => ({rows: ui.board.querySelectorAll('.track-row').length, wraps: ui.board.querySelectorAll('.track-wrap').length, live: ui.board.querySelectorAll('.track-wrap.live').length}));
-  await open('warm-up'); // 17 sectors at offset 0: the breaks after sectors 6 and 12 are inside
+  await open('warm-up'); // 20 sectors at offset 0: the breaks after sectors 6, 12 and 18 are inside
   const warm = await track();
-  check('track on warm-up', JSON.stringify(warm) === JSON.stringify({rows: 4, wraps: 3, live: 2}), JSON.stringify(warm));
+  check('track on warm-up', JSON.stringify(warm) === JSON.stringify({rows: 4, wraps: 3, live: 3}), JSON.stringify(warm));
   await open('join-two-blocks');
   check('track on a one-row board has no live break', (await track()).live === 0);
   // The track follows the board when the viewport changes.
@@ -549,7 +549,7 @@ const check = (name, ok, detail = '') => {
   await page.evaluate(() => { const to = state.cells.findIndex((_, i) => moveAt(i)); setPreview(to); render(); setPreview(null); });
   check('seek preview leaves no stale pending score', await get(() => ui['score-pending'].hidden && !ui.score.hasAttribute('aria-label')));
   await open('required-split');
-  await page.evaluate(() => tap(4));
+  await page.evaluate(() => tap(5)); // the first A pair
   check('split prompt states the extra point', await get(() => /split it off \(\+1\)/.test(ui.status.textContent)), await get(() => ui.status.textContent));
 
   // After a lift, the status names the second tap, and the full clipboard stands out.
@@ -587,8 +587,8 @@ const check = (name, ok, detail = '') => {
   check('tags are removed once the animation ends', await get(() => !ui.board.querySelector('.joining, .leaving')));
   // A quick double change animates from the middle level's range.
   await page.evaluate(() => openLevel(findLevel('move-a-run')));
-  const quick = await tags('warm-up');                 // slots 0–16
-  check('a quick second change starts from the last range', !quick.leaving.length && JSON.stringify(quick.joining.map(([i]) => i)) === JSON.stringify([0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 16]), JSON.stringify(quick));
+  const quick = await tags('warm-up');                 // slots 0–19
+  check('a quick second change starts from the last range', !quick.leaving.length && JSON.stringify(quick.joining.map(([i]) => i)) === JSON.stringify([0, 1, 2, 3, 4, 5, 12, 13, 14, 15, 16, 17, 18, 19]), JSON.stringify(quick));
   // The track is measured from layout boxes, not from cells still scaled by the reveal.
   await open('join-two-blocks');
   await page.waitForTimeout(400);

@@ -8,7 +8,8 @@
 // for boards where every rule changes par and par reaches --min-par.
 //
 // Badge mode redesigns an existing level so it offers a badge (a second goal that pulls against par):
-//   node tools/climb.js --badge <level-id> [--seconds 300] [--steps N] [--seed 7] [--count 8]
+//   node tools/climb.js --badge <level-id> [--seconds 300] [--steps N] [--seed 7] [--count 8] [--limit N]
+// --limit caps each badge search (default 1e6) to screen big boards faster; re-judge a pick at the default.
 // It also grows the board by one empty sector at either end. Every kept candidate passes the same guards as
 // check-levels.js (see judge). Prints one JSON line per candidate with a badge, best first.
 const fs = require('fs');
@@ -188,8 +189,9 @@ const homesMatter = (level, par) => {
 // Run check-levels.js's guards on a redesign of `original`, cheapest first, stopping at the first failure.
 // `chapters` is the campaign; the candidate replaces the original in a copy of it.
 // Returns {ok, reason, badges, overlap, parDelta, changed}, plus `optimum` (the solver's best cost) when ok.
-// Badges are only computed when every guard passes.
-function judge(original, candidate, chapters) {
+// Badges are only computed when every guard passes. A smaller `limit` screens badges cheaply: a search it cuts
+// short offers no badge and counts as overlapping, so re-judge a pick at the default before applying it.
+function judge(original, candidate, chapters, {limit} = {}) {
   const level = {...strip(candidate), id: original.id};
   const changed = changedSectors(original, level);
   const out = (reason, parDelta = null, badges = null, overlap = null) => ({ok: reason === null, reason, badges, overlap, parDelta, changed});
@@ -218,13 +220,13 @@ function judge(original, candidate, chapters) {
   const pairs = similarPairs([...swapped.flatMap(c => c.levels), ...extras]);
   if (pairs.some(p => p.level === 'fail' && (p.a.id === level.id || p.b.id === level.id))) return out('similar', parDelta);
   if (!hintCheap(level, HINT_LIMIT)) return out('hint', parDelta);
-  const badges = computeBadges(level);
+  const badges = computeBadges(level, {limit});
   // Light touch is not offered before the level that teaches badges (mirrors badge-rules.js).
   const campaign = swapped.flatMap(c => c.levels);
   const teach = campaign.findIndex(l => l.teaches === 'badges');
   const at = campaign.findIndex(l => l.id === level.id);
   if (at >= 0 && at < teach) delete badges.light;
-  return {...out(null, parDelta, badges, overlaps(level, badges)), optimum: best.cost};
+  return {...out(null, parDelta, badges, overlaps(level, badges, {limit})), optimum: best.cost};
 }
 
 // Higher is better, compared in order: a badge set with no overlap, any badge, same par, fewer changes, quality.
@@ -238,7 +240,7 @@ const compare = (a, b, skip = -1) => {
 // Hill-climb a redesign of one level toward a badge. A step is kept when its rank is not lower; until the
 // current level holds a badge, the number of changed sectors is left out of that comparison.
 // Returns candidates with a badge that pass every guard, best first by the full rank, each with par set to its new optimum.
-function climbBadge(levelId, {steps = 300, seconds = Infinity, seed = 7, count = 8} = {}) {
+function climbBadge(levelId, {steps = 300, seconds = Infinity, seed = 7, count = 8, limit} = {}) {
   const L = require('../levels.js');
   const original = L.levels.find(l => l.id === levelId);
   if (!original) throw new Error(`unknown level ${levelId}`);
@@ -246,7 +248,7 @@ function climbBadge(levelId, {steps = 300, seconds = Infinity, seed = 7, count =
   const stop = Date.now() + seconds * 1000;
   const found = new Map();
   const score = level => {
-    const result = judge(original, level, L.chapters);
+    const result = judge(original, level, L.chapters, {limit});
     if (!result.ok) return null;
     const par = original.par + result.parDelta;
     const scored = {...strip(level), id: original.id, par};
@@ -285,7 +287,7 @@ if (require.main === module) {
   const number = (name, fallback) => (flag(name, null) === null ? fallback : Number(flag(name)));
   if (flag('badge', null) !== null) {
     const id = flag('badge');
-    const picks = climbBadge(id, {steps: number('steps', Infinity), seconds: number('seconds', 300), seed: number('seed', 7), count: number('count', 8)});
+    const picks = climbBadge(id, {steps: number('steps', Infinity), seconds: number('seconds', 300), seed: number('seed', 7), count: number('count', 8), limit: number('limit', undefined)});
     for (const level of picks) console.log(JSON.stringify(level));
     console.error(`${id}: showing ${picks.length}`);
     process.exit(0);

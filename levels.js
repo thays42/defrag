@@ -28,9 +28,9 @@ const chapters = [
       {id: 'move-a-run', mechanic: 'basics', intro: true, par: 1, name: 'Move a run', board: 'AA..AA', goal: 'Move a pair of A blocks as one run.', prompt: 'Tap either block in a pair to select both.'},
       {id: 'across-the-break', mechanic: 'basics', intro: true, par: 1, name: 'Across the break', board: 'A.AA..', offset: 9, goal: 'Join A. The end of a row continues at the start of the next.', prompt: 'The A pair crosses the row break. It is one run. Tap the lone A, then the sector beside the pair.'},
       {id: 'reserved-intro', mechanic: 'reserved', intro: true, par: 1, name: 'Reserved sectors', board: 'A#A.', goal: 'Join A using the open sector beside it.', prompt: 'The dark sector is reserved. Move the left A into the open sector.'},
-      {id: 'fewer-is-better', mechanic: 'basics', par: 2, name: 'Fewer is better', board: 'ABA.BA', goal: 'Join both files in as few moves as you can.', prompt: 'Score counts your moves. Fewer is better. Par is the best possible score. Over par? Undo and try again.'},
+      {id: 'fewer-is-better', mechanic: 'basics', par: 2, name: 'Fewer is better', board: '.ABA.BA', goal: 'Join both files in as few moves as you can.', prompt: 'Score counts your moves. Fewer is better. Par is the best possible score. Over par? Undo and try again.'},
       {id: 'near-or-far', mechanic: 'basics', intro: true, teaches: 'badges', par: 2, name: 'Near or far', board: 'BAB.BA', goal: 'Join both files at par, then again with less travel.', prompt: 'Travel counts every sector a run moves. Clear at par, then try for ↝: one more move, much less travel.'},
-      {id: 'warm-up', mechanic: 'basics', par: 2, name: 'Warm-up', board: '#C.##CAC.AABBB##.', goal: 'Bring all three files together. Runs can cross a row break.'},
+      {id: 'warm-up', mechanic: 'basics', par: 2, name: 'Warm-up', board: '#.#A.A#CAC..CBBB##..', goal: 'Bring all three files together. Runs can cross a row break.'},
     ],
   },
   {
@@ -40,10 +40,10 @@ const chapters = [
       {id: 'find-home', mechanic: 'homes', intro: true, par: 1, name: 'Find home', board: 'AA..', homes: {A: [3, 4]}, goal: 'Move A into the two marked home sectors.', prompt: 'Tap either A to select the run.'},
       {id: 'two-files', mechanic: 'homes', intro: true, par: 2, name: 'Two files', board: 'AB.AB.', homes: {A: [1, 2], B: [5, 6]}, goal: 'Join each file inside its marked home.', prompt: 'Try making room in A’s home first.'},
       {id: 'borrow-a-home', mechanic: 'homes', intro: true, par: 3, name: 'Borrow a home', board: 'BA.C', homes: {A: [1, 1], B: [2, 2], C: [3, 4]}, goal: 'Send A and B home by borrowing an empty C sector.', prompt: 'Move A into sector 3 to make room for B.'},
-      {id: 'park-a-pair', mechanic: 'homes', par: 3, name: 'Park a pair', board: '#CC..#AABB', homes: {A: [9, 10], B: [7, 8], C: [2, 5]}, goal: 'Find a temporary space large enough for a whole pair.'},
+      {id: 'park-a-pair', mechanic: 'homes', par: 3, name: 'Park a pair', board: '.#CC.A#.ABB..', homes: {A: [10, 11], B: [8, 9], C: [3, 6]}, goal: 'Find a temporary space large enough for a whole pair.'},
       {id: 'choose-what-to-park', mechanic: 'homes', par: 3, name: 'Choose what to park', board: '###.CC..BAAB', homes: {A: [11, 12], B: [9, 10], C: [4, 8]}, goal: 'Choose which file to park in C’s home.'},
       {id: 'save-the-gap', mechanic: 'homes', intro: true, par: 3, name: 'Save the gap', board: '..ABB', homes: {B: [3, 4], A: [5, 5]}, goal: 'Keep the only two-sector gap free for the B pair.', prompt: 'Move the B pair first, then send A home.'},
-      {id: 'scattered-gaps-ii', mechanic: 'reserved', combines: ['reserved', 'homes'], par: 4, name: 'Scattered gaps', board: '########BB..AA.##A######', homes: {A: [9, 11], B: [13, 14]}, goal: 'Bring two files home using the gaps between reserved sectors.'},
+      {id: 'scattered-gaps-ii', mechanic: 'reserved', combines: ['reserved', 'homes'], par: 4, name: 'Scattered gaps', board: '########BB..AA.##A######', homes: {A: [9, 11], B: [14, 15]}, goal: 'Bring two files home using the gaps between reserved sectors.'},
     ],
   },
   {
@@ -52,7 +52,7 @@ const chapters = [
     levels: [
       {id: 'a-can-wait', mechanic: 'homes', par: 4, name: 'A can wait', board: '##C.BB#A.C', homes: {B: [3, 4], C: [5, 6], A: [9, 9]}, goal: 'Choose when to send A home.'},
       {id: 'b-can-wait', mechanic: 'homes', par: 4, name: 'B can wait', board: 'BB#.ACC..A', homes: {C: [4, 5], A: [6, 7], B: [8, 9]}, goal: 'Get everyone home while keeping space to join A.'},
-      {id: 'blocked-lanes', mechanic: 'reserved', combines: ['reserved', 'homes'], par: 4, name: 'Blocked lanes', board: 'B.#CC#.AAB##.', homes: {A: [1, 2], B: [8, 9], C: [4, 5]}, goal: 'Route the files around the reserved sectors.'},
+      {id: 'blocked-lanes', mechanic: 'reserved', combines: ['reserved', 'homes'], par: 4, name: 'Blocked lanes', board: '..BCC##AAB##.', homes: {A: [2, 3], B: [8, 9], C: [4, 5]}, goal: 'Route the files around the reserved sectors.'},
     ],
   },
   {
@@ -60,12 +60,12 @@ const chapters = [
     summary: 'Break a run to make it fit.',
     levels: [
       {id: 'split-a-run', mechanic: 'splitting', intro: true, tutorial: 'split', par: 2, name: 'Split a run', board: 'AA.AA', goal: 'Use the single empty sector to join both pairs.', prompt: 'Tap either pair to select the whole run.'},
-      {id: 'required-split', mechanic: 'splitting', par: 4, name: 'Required split', board: '####AA##BB.##AACCCB.', goal: 'Find a split that opens enough space to finish.'},
-      {id: 'make-a-parking-spot', mechanic: 'splitting', par: 5, name: 'Make a parking spot', board: 'BB#AA##.CC.', homes: {A: [1, 2], B: [4, 5], C: [8, 11]}, goal: 'Make enough room to borrow C’s home and get both other files home.'},
+      {id: 'required-split', mechanic: 'splitting', par: 4, name: 'Required split', board: '.####AA##BB.##AACCCB.', goal: 'Find a split that opens enough space to finish at par.'},
+      {id: 'make-a-parking-spot', mechanic: 'splitting', par: 5, name: 'Make a parking spot', board: '.BB#AA##.CC.', homes: {A: [2, 3], B: [5, 6], C: [9, 12]}, goal: 'Make enough room to borrow C’s home and get both other files home.'},
       {id: 'one-sector-off', mechanic: 'splitting', par: 5, name: 'One sector off', board: '##..ABBAABBA', homes: {A: [3, 6], B: [9, 12]}, goal: 'Use a split to fit a run into its exact home.'},
       {id: 'beat-par', mechanic: 'splitting', beatable: true, par: 5, name: 'Beat par', board: 'AA.AA##CCBC#B.B', goal: 'Par is the best score without splitting. Use a split to beat it.'},
-      {id: 'required-split-revisited', mechanic: 'splitting', combines: ['splitting', 'homes', 'reserved'], par: 6, name: 'Required split revisited', board: '#####.BCCC##AA.BBAA', homes: {B: [6, 8], C: [13, 15], A: [16, 19]}, goal: 'The split from Required split, now into marked homes.'},
-      {id: 'two-splits', mechanic: 'splitting', combines: ['splitting', 'homes'], par: 7, name: 'Two splits', board: '..ABBBBAAA', homes: {A: [1, 4], B: [7, 10]}, goal: 'Make room to get both four-block files home.'},
+      {id: 'required-split-revisited', mechanic: 'splitting', combines: ['splitting', 'homes', 'reserved'], par: 7, name: 'Required split revisited', board: '#####.BCCC##AA.BBAA', homes: {B: [7, 9], C: [13, 15], A: [16, 19]}, goal: 'The split from Required split, now into marked homes.'},
+      {id: 'two-splits', mechanic: 'splitting', combines: ['splitting', 'homes'], par: 7, name: 'Two splits', board: 'A.ABBBBA.A', homes: {A: [2, 5], B: [7, 10]}, goal: 'Make room to get both four-block files home.'},
     ],
   },
   {

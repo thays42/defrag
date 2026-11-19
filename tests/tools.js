@@ -107,6 +107,14 @@ assert.strictEqual(E.travelOf({type: 'cut', from: 2}), 0);
   assert.deepStrictEqual(overlaps(L('a-can-wait'), {light}), [], 'one badge has no pairs');
   // An intro level offers badges only when it teaches them.
   assert.deepStrictEqual(computeBadges({...L('short-hops'), teaches: undefined}), {});
+  // A screening limit only drops badges: a search it cuts short offers none, and an unproven pair overlaps.
+  assert.deepStrictEqual(computeBadges(level, {limit: 1e6}), {light});
+  assert.deepStrictEqual(computeBadges(level, {limit: 5}), {});
+  assert.deepStrictEqual(overlaps(L('choose-what-to-park'), {tidy: 4, light: 8}, {limit: 5}), [['tidy', 'light']]);
+  const {judge} = require('../tools/climb.js');
+  const chapters = require('../levels.js').chapters;
+  assert.deepStrictEqual(judge(level, level, chapters).badges, {light});
+  assert.deepStrictEqual(judge(level, level, chapters, {limit: 5}).badges, {});
 }
 
 // Placement in the fixed 24-sector frame.

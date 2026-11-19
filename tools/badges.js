@@ -8,38 +8,42 @@ const E = require('../engine.js');
 const K = 64; // weight for ranking by two costs at once; operation counts stay well below it
 const opsOf = move => 1 + (move.split ? 1 : 0);
 
+// Searches stop at this many states unless a caller passes a smaller `limit` to screen candidates cheaply.
+const LIMIT = 1e6;
+
 // Infinity when impossible; null when the search is too large to prove either way (no badge then).
 function optimum(level, options) {
-  const result = E.solve(level, undefined, {limit: 1e6, ...options});
+  const result = E.solve(level, undefined, {limit: LIMIT, ...options});
   if (result.aborted) return null;
   return result.cost ?? Infinity;
 }
 const proven = value => value !== null && value !== Infinity;
 
 // Best cost by `first`, then by `second`. Returns [first, second] totals.
-function ranked(level, first, second) {
-  const cost = optimum(level, {price: m => first(m) * K + second(m), maxCost: 200 * K, minPrice: K + 1});
+function ranked(level, first, second, limit = LIMIT) {
+  const cost = optimum(level, {price: m => first(m) * K + second(m), maxCost: 200 * K, minPrice: K + 1, limit});
   if (!proven(cost)) return [null, null];
   if (cost % K >= K - 1) throw new Error(`${level.id}: second cost too large to rank`);
   return [Math.floor(cost / K), cost % K];
 }
 
-function computeBadges(level) {
+// A smaller `limit` only drops badges (an aborted search offers none); applied levels use the default.
+function computeBadges(level, {limit = LIMIT} = {}) {
   const par = level.par;
   const out = {};
   if (level.intro && level.teaches !== 'badges') return out; // intro levels hide the score unless they teach badges
   if (!level.consolidate && level.board.includes('.')) {
-    const tidy = optimum({...level, consolidate: true});
+    const tidy = optimum({...level, consolidate: true}, {limit});
     if (proven(tidy) && tidy > par) out.tidy = tidy;
   }
-  const unsplit = optimum(level, {whole: true});
+  const unsplit = optimum(level, {whole: true, limit});
   if (proven(unsplit) && unsplit > par) out.unsplit = unsplit;
   if (level.cost !== 'seek' && !level.clipboard) {
-    const [travel, ops] = ranked(level, E.travelOf, m => m.cost);
+    const [travel, ops] = ranked(level, E.travelOf, m => m.cost, limit);
     if (travel !== null && ops > par) out.light = travel;
   }
   if (level.cost === 'seek') {
-    const [ops, cost] = ranked(level, opsOf, m => m.cost);
+    const [ops, cost] = ranked(level, opsOf, m => m.cost, limit);
     if (ops !== null && cost > par) out.few = ops;
   }
   if (level.beatable) out.under = E.solve(level).cost;
@@ -51,7 +55,7 @@ const MEASURE = {tidy: m => m.cost, unsplit: m => m.cost, under: m => m.cost, li
 const FLAGS = {tidy: {level: {consolidate: true}}, unsplit: {options: {whole: true}}};
 
 // Badge pairs that one solution can meet together, in the key order of `badges`. Unproven pairs are listed.
-function overlaps(level, badges) {
+function overlaps(level, badges, {limit = LIMIT} = {}) {
   const keys = Object.keys(badges);
   const pairs = [];
   for (let i = 0; i < keys.length; i++) {
@@ -60,7 +64,7 @@ function overlaps(level, badges) {
       // Travel can be 0 and a primary price needs at least 1, so light is never primary.
       const [first, other] = a === 'light' ? [b, a] : [a, b];
       const result = E.solve({...level, ...FLAGS[a]?.level, ...FLAGS[b]?.level}, undefined, {
-        limit: 1e6, ...FLAGS[a]?.options, ...FLAGS[b]?.options,
+        limit, ...FLAGS[a]?.options, ...FLAGS[b]?.options,
         price: MEASURE[first], budget: {price: MEASURE[other], max: badges[other]},
       });
       if (result.aborted || (result.cost !== null && result.cost <= badges[first])) pairs.push([a, b]);
@@ -69,7 +73,7 @@ function overlaps(level, badges) {
   return pairs;
 }
 
-module.exports = {computeBadges, overlaps, ranked, opsOf, K, MEASURE, FLAGS};
+module.exports = {computeBadges, overlaps, ranked, opsOf, K, MEASURE, FLAGS, LIMIT};
 
 if (require.main === module) {
   const levels = require('../levels.js').levels;
