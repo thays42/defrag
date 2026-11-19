@@ -27,7 +27,7 @@ function ranked(level, first, second) {
 function computeBadges(level) {
   const par = level.par;
   const out = {};
-  if (level.intro) return out; // intro levels hide the score
+  if (level.intro && level.teaches !== 'badges') return out; // intro levels hide the score unless they teach badges
   if (!level.consolidate && level.board.includes('.')) {
     const tidy = optimum({...level, consolidate: true});
     if (proven(tidy) && tidy > par) out.tidy = tidy;
@@ -46,7 +46,30 @@ function computeBadges(level) {
   return out;
 }
 
-module.exports = {computeBadges, opsOf, K};
+// How each badge measures a move, and the level or solver flags its route must follow.
+const MEASURE = {tidy: m => m.cost, unsplit: m => m.cost, under: m => m.cost, light: E.travelOf, few: opsOf};
+const FLAGS = {tidy: {level: {consolidate: true}}, unsplit: {options: {whole: true}}};
+
+// Badge pairs that one solution can meet together, in the key order of `badges`. Unproven pairs are listed.
+function overlaps(level, badges) {
+  const keys = Object.keys(badges);
+  const pairs = [];
+  for (let i = 0; i < keys.length; i++) {
+    for (let j = i + 1; j < keys.length; j++) {
+      const [a, b] = [keys[i], keys[j]];
+      // Travel can be 0 and a primary price needs at least 1, so light is never primary.
+      const [first, other] = a === 'light' ? [b, a] : [a, b];
+      const result = E.solve({...level, ...FLAGS[a]?.level, ...FLAGS[b]?.level}, undefined, {
+        limit: 1e6, ...FLAGS[a]?.options, ...FLAGS[b]?.options,
+        price: MEASURE[first], budget: {price: MEASURE[other], max: badges[other]},
+      });
+      if (result.aborted || (result.cost !== null && result.cost <= badges[first])) pairs.push([a, b]);
+    }
+  }
+  return pairs;
+}
+
+module.exports = {computeBadges, overlaps, ranked, opsOf, K, MEASURE, FLAGS};
 
 if (require.main === module) {
   const levels = require('../levels.js').levels;

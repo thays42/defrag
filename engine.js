@@ -216,12 +216,15 @@
   // heuristic: A* (fast, for hints). countPaths: plain Dijkstra that also counts optimal lines.
   // price: optional move => integer >= 1 that replaces move.cost (badge tools rank by two costs at once).
   // minPrice: the least any move can cost under `price`, so the heuristic stays admissible but sharper.
-  function solve(level, start = initialState(level), {heuristic = true, countPaths = false, whole = false, limit = 4e6, maxCost = 200, price, minPrice = 1} = {}) {
+  // budget: {price: move => integer >= 0, max}. Least primary cost among paths whose summed budget.price is at most max.
+  // Nodes are keyed by state and spent budget, so the search stays exact.
+  function solve(level, start = initialState(level), {heuristic = true, countPaths = false, whole = false, limit = 4e6, maxCost = 200, price, minPrice = 1, budget} = {}) {
     const useH = heuristic && !countPaths;
     // Each unsettled file needs at least one move, and every move costs at least minPrice.
     const h = state => estimate(level, state) * minPrice;
-    const startKey = keyOf(start);
-    const nodes = new Map([[startKey, {g: 0, parent: null, move: null, ways: 1}]]);
+    const keyAt = (state, spent) => budget ? keyOf(state) + '|' + spent : keyOf(state);
+    const startKey = keyAt(start, 0);
+    const nodes = new Map([[startKey, {g: 0, spent: 0, parent: null, move: null, ways: 1}]]);
     const buckets = [];
     const push = (f, key, state) => (buckets[f] ??= []).push([key, state]);
     push(useH ? h(start) : 0, startKey, start);
@@ -250,13 +253,15 @@
         }
         if (best !== null) continue;
         for (const move of moves(level, state, {whole})) {
+          const spent = budget ? node.spent + budget.price(move) : 0;
+          if (budget && spent > budget.max) continue;
           const next = apply(level, state, move);
-          const nextKey = keyOf(next);
+          const nextKey = keyAt(next, spent);
           const total = g + (price ? price(move) : move.cost);
           const seen = nodes.get(nextKey);
           if (!seen || total < seen.g) {
             if (seen?.closed) continue;
-            nodes.set(nextKey, {g: total, parent: key, move, ways: node.ways});
+            nodes.set(nextKey, {g: total, spent, parent: key, move, ways: node.ways});
             push(useH ? total + h(next) : total, nextKey, next);
           } else if (total === seen.g && countPaths && !seen.closed) {
             seen.ways += node.ways;

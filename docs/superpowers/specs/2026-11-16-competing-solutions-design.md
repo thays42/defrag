@@ -73,7 +73,7 @@ Travel is the axis that started this. Every level counts it, but the game never 
 ### 2. Overlap check
 
 - New function `overlaps(level, badges)` in `tools/badges.js`. It returns the badge pairs that one solution can meet together.
-- It must be exact. A pair overlaps if some solution meets both targets. The solver variant for one badge, ranked by the other badge's measure, gives the exact answer. For example, Tidy with Light touch solves with `consolidate: true`, ranked by travel then cost.
+- It must be exact. A pair overlaps if some solution meets both targets. The solver's `budget` option gives the exact answer: least cost by one badge's measure, with the other badge's measure capped at its target.
 - An unproven search counts as overlapping. This is the conservative choice.
 
 ### 3. Checker rules

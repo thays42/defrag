@@ -92,6 +92,23 @@ assert.strictEqual(E.travelOf({type: 'cut', from: 2}), 0);
 }
 
 
+{
+  const {computeBadges, overlaps, ranked} = require('../tools/badges.js');
+  const L = id => require('../levels.js').levels.find(l => l.id === id);
+  // The budget search agrees with the ranked search at the light target, and fails one below it.
+  const level = L('a-can-wait');
+  const light = computeBadges(level).light;
+  const opsAtLight = ranked(level, E.travelOf, m => m.cost)[1];
+  assert.strictEqual(E.solve(level, undefined, {budget: {price: E.travelOf, max: light}}).cost, opsAtLight);
+  assert.strictEqual(E.solve(level, undefined, {budget: {price: E.travelOf, max: light - 1}}).cost, null);
+  assert.strictEqual(E.solve(level, undefined, {budget: {price: E.travelOf, max: 999}}).cost, level.par);
+  // load-drivers: one route meets Unsplit and Few moves together.
+  assert.deepStrictEqual(overlaps(L('load-drivers'), {unsplit: 23, few: 5}), [['unsplit', 'few']]);
+  assert.deepStrictEqual(overlaps(L('a-can-wait'), {light}), [], 'one badge has no pairs');
+  // An intro level offers badges only when it teaches them.
+  assert.deepStrictEqual(computeBadges({...L('short-hops'), teaches: undefined}), {});
+}
+
 // Placement in the fixed 24-sector frame.
 const at = (board, extra) => E.placement({board, ...extra});
 assert.deepStrictEqual(at('A.A'), {offset: 7, length: 3}); // row 2, centered
