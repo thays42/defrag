@@ -19,9 +19,10 @@ const check = (name, ok, detail = '') => {
   const get = fn => page.evaluate(fn);
 
   // Tapping empty space cancels a multi-block selection.
+  // tight-fit is A.AAACC.CBBBDD: tap the AAA run at 2, then the one-sector gap at 7, too small for it.
   await open('tight-fit');
   await cell(2).click();
-  await cell(8).click();
+  await cell(7).click();
   check('empty tap cancels selection', await get(() => selection === null));
   await cell(2).click();
   await page.keyboard.press('Escape');
@@ -129,7 +130,7 @@ const check = (name, ok, detail = '') => {
       if (clean === undefined) delete progress.clean[target.id]; else progress.clean[target.id] = clean;
       return stars(target);
     };
-    const result = [read(undefined, undefined), read(20, undefined), read(12, 12), read(9, 9)];
+    const result = [read(undefined, undefined), read(20, undefined), read(12, 12), read(8, 8)]; // tight-fit par is 8
     delete progress.best[target.id];
     Object.assign(progress, saved);
     return result;
@@ -228,8 +229,8 @@ const check = (name, ok, detail = '') => {
 
   // An attempt saved for an older board is discarded; scores and stars stay.
   await page.evaluate(() => {
-    progress.best['tight-fit'] = 9;
-    progress.clean['tight-fit'] = 9;
+    progress.best['tight-fit'] = 8; // par
+    progress.clean['tight-fit'] = 8;
     progress.attempts['tight-fit'] = {signature: 'an older board', state: E.initialState({board: 'A.A'}), stats: {moves: 3, splits: 0, cost: 3}, history: []};
     persist();
   });

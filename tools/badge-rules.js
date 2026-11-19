@@ -3,7 +3,7 @@
 const {overlaps} = require('./badges.js');
 
 // These rise toward 0.80 (floor) and fall toward 0.25 (maxOverlap) as levels are redesigned, and never move back.
-const BADGE_LIMITS = {floor: 0.48, maxOverlap: 0.25};
+const BADGE_LIMITS = {floor: 0.69, maxOverlap: 0.25};
 
 // campaign: the chapter levels in order. pool: the stored badges by level id.
 function badgeProblems(campaign, pool, {floor, maxOverlap}, overlapsOf = overlaps) {
