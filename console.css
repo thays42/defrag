@@ -524,12 +524,10 @@ main {
 }
 .result[data-optimized=true] h2 { color: #ffd28c; text-shadow: 0 0 18px #ffd28c77; }
 
-.result-stars { --star: 58px; --mid: 72px; --bonus: 46px; display: flex; align-items: end; justify-content: center; gap: clamp(10px, 5vw, 22px); margin: 4px 0 0; padding: 0; list-style: none; }
+.result-stars { --star: 58px; display: flex; align-items: start; justify-content: center; gap: clamp(10px, 5vw, 22px); margin: 4px 0 0; padding: 0; list-style: none; }
 .result-stars li { position: relative; display: grid; justify-items: center; gap: 4px; }
 .result-stars .glyph { position: relative; display: grid; }
 .result-stars svg { width: var(--star); height: var(--star); overflow: visible; }
-.result-stars li:nth-child(2) { transform: translateY(-10px); }
-.result-stars li:nth-child(2) svg { width: var(--mid); height: var(--mid); }
 .result-stars path { fill: #120b1e; stroke: #5e497c; stroke-width: 1.2; stroke-dasharray: 2 1.6; stroke-linejoin: round; }
 .result-stars [data-earned=true] path { fill: #ffd28c; stroke: #fff3c9; stroke-dasharray: none; filter: drop-shadow(0 0 6px #ffb84d99); }
 /* A bonus star carries its counter's icon. */
@@ -539,12 +537,11 @@ main {
 .result-stars [data-earned=true] span { color: #ffd28c; }
 .result-stars [data-new=true] svg { animation: star-stamp .5s var(--delay) cubic-bezier(.3, 1.5, .5, 1) both; }
 .result-stars [data-new=true] span { animation: star-fade .3s calc(var(--delay) + 120ms) both; }
-/* Bonus stars follow the ladder, a little smaller. Long names take two lines, and every label keeps two lines' room
-   so the stars stay level. Five stars fit a 360px phone. */
-.result-stars li.bonus svg { width: var(--bonus); height: var(--bonus); }
+/* All stars sit in one level line, the same size. Bonus stars follow the ladder after a small gap. Long names take
+   two lines, and every label keeps two lines' room so the stars stay level. Five stars fit a 360px phone. */
 .result-stars li:not(.bonus) + li.bonus { margin-left: clamp(0px, 2vw, 8px); }
 .result-stars:has(.bonus) span { display: flex; align-items: start; justify-content: center; min-height: 2.4em; max-width: 9ch; text-align: center; text-wrap: balance; }
-.result-stars[data-count="5"] { --star: 48px; --mid: 60px; --bonus: 40px; gap: clamp(6px, 2.6vw, 16px); }
+.result-stars[data-count="5"] { --star: 46px; gap: clamp(6px, 2.6vw, 16px); }
 /* On a replay, a star earned for the first time says so. */
 .result[data-replay=true] .result-stars [data-new=true] .glyph::after {
   content: 'New';
@@ -632,8 +629,8 @@ main {
 }
 @media (max-height: 620px) {
   .result { gap: 6px; padding-top: 22px; }
-  .result-stars { --star: 44px; --mid: 54px; --bonus: 36px; }
-  .result-stars[data-count="5"] { --star: 40px; --mid: 50px; --bonus: 34px; }
+  .result-stars { --star: 44px; }
+  .result-stars[data-count="5"] { --star: 40px; }
 }
 /* Landscape phones: a side sheet on the left, so the cleared board stays in view. */
 @media (orientation: landscape) and (max-height: 500px) and (min-width: 480px) {
@@ -651,8 +648,8 @@ main {
   }
   .result::before { display: none; }
   .result-kicker { display: block; }
-  .result-stars { --star: 40px; --mid: 50px; --bonus: 34px; }
-  .result-stars[data-count="5"] { --star: 36px; --mid: 44px; --bonus: 30px; }
+  .result-stars { --star: 40px; }
+  .result-stars[data-count="5"] { --star: 36px; }
   .result-next, .result-retry { min-height: 38px; }
 }
 @keyframes sheet-in-side { from { transform: translateX(-105%); } }
