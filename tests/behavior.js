@@ -57,7 +57,7 @@ const check = (name, ok, detail = '') => {
   await open('find-home');
   await page.keyboard.press('h');
   await page.waitForTimeout(80);
-  check('first hint warns instead of hinting', await get(() => hint === null && !hinted && ui.status.textContent === 'A hint caps this level at one star. Tap Hint again to use one.'), await get(() => ui.status.textContent));
+  check('first hint warns instead of hinting', await get(() => hint === null && !hinted && ui.status.textContent === 'A hint costs this level its No hints and Par stars. Tap Hint again to use one.'), await get(() => ui.status.textContent));
   check('warning is remembered', await get(() => progress.hintWarned === true));
   await page.keyboard.press('h');
   await page.waitForFunction(() => hint !== null);
@@ -139,7 +139,13 @@ const check = (name, ok, detail = '') => {
   check('starText draws filled and empty stars', await get(() => starText(2) === '★★☆' && starText(0) === '☆☆☆'));
   await page.evaluate(() => showMenu(false));
   const resume = await get(() => ui['resume-detail'].textContent);
-  check('menu totals stars out of three per level', resume.includes(`/${await get(() => 3 * campaign.length)}\u00a0★`), resume);
+  // Each level's maximum is 3 plus its bonus stars, and the campaign totals sum those maximums.
+  const maximum = await get(() => campaign.reduce((sum, item) => sum + 3 + Object.keys(badgePool[item.id] ?? {}).length, 0));
+  check('campaign maximum counts bonus stars', await get(() => starMax()) === maximum && maximum > await get(() => 3 * campaign.length), String(maximum));
+  check('menu totals stars out of 3 plus bonus per level', resume.endsWith(`/${maximum}\u00a0★`), resume);
+  const endingMax = await page.evaluate(() => { showEnding(); const text = ui['ending-detail'].textContent; showMenu(false); return text; });
+  check('ending totals stars out of 3 plus bonus per level', endingMax.includes(`of ${maximum} ★`), endingMax);
+  check('the daily puzzle offers only the base stars', await get(() => maxStars(dailyLevel()) === 3 && starSet(dailyLevel()).length === 3));
 
   // The daily share text carries the star string.
   const shared = await page.evaluate(async () => { openLevel(dailyLevel()); await shareDaily(); return notice; });
@@ -218,7 +224,7 @@ const check = (name, ok, detail = '') => {
   await blocked.click('#continue');
   check('works without storage', !blockedErrors.length && await blocked.evaluate(() => level.id === 'join-two-blocks'), blockedErrors.join('; '));
 
-  // ---------- Badges ----------
+  // ---------- Bonus stars ----------
   // Play the optimal line from here. `rank` picks a two-cost ordering: 'travel' (light touch) or 'ops' (few moves).
   const play = (options = {}) => page.evaluate(({rank, ...opts}) => {
     const prices = {travel: m => E.travelOf(m) * 64 + m.cost, ops: m => (1 + (m.split ? 1 : 0)) * 64 + m.cost};
@@ -255,46 +261,97 @@ const check = (name, ok, detail = '') => {
   await open('tight-fit');
   check('stale attempt opens fresh and keeps stars', await get(() => stats.moves === 0 && stars(level) === 3));
 
-  // A qualifying hint-free clear earns the badge.
+  // A qualifying clear earns the bonus star.
   await fresh();
   await open('free-the-pair');
-  check('badges hidden before the first clear', !(await page.locator('#badges .badge').count()));
+  check('no star list in play, only the counters', !(await page.locator('#game .bonus, #badges').count()) && await get(() => ui['stat-detail'].textContent.includes('▮')));
   await page.evaluate(() => showCatalog());
-  check('Levels row hides badges before the first clear', !(await page.locator('#levels button', {hasText: 'Free the pair'}).locator('.badge').count()));
+  check('Levels row hides bonus stars before the first clear', !(await page.locator('#levels button', {hasText: 'Free the pair'}).locator('.stars, .bonus').count()));
   await open('free-the-pair');
   await play({whole: true});
-  check('unsplit line earns the unsplit badge', await get(() => (progress.badges['free-the-pair'] ?? []).includes('unsplit')));
-  check('clear shows the offered badge as earned', await page.locator('#result-badges li[data-earned=true]').count() === 1);
+  check('unsplit line earns the Unsplit star', await get(() => (progress.badges['free-the-pair'] ?? []).includes('unsplit')));
+  check('clear shows the offered bonus star as earned', await page.locator('#result-stars li.bonus[data-earned=true]').count() === 1 && await page.locator('#result-stars li').count() === 4);
   await page.evaluate(() => showCatalog());
-  check('Levels row shows the earned badge', await page.locator('#levels button', {hasText: 'Free the pair'}).locator('.badge[data-earned=true]').count() === 1);
+  const pairRow = page.locator('#levels button', {hasText: 'Free the pair'}).locator('.stars');
+  // The unsplit line is over par: two base stars, then the bonus star.
+  check('Levels row shows the earned bonus star after the base stars', await pairRow.locator('.bonus[data-earned=true]').count() === 1 && await pairRow.textContent() === '★★☆★' && await pairRow.getAttribute('aria-label') === '3 of 4 stars', await pairRow.textContent());
+  const pairTitles = await pairRow.locator('span').evaluateAll(spans => spans.map(s => s.title));
+  const pairExpected = await get(() => ['Clear: finish the level', 'No hints: clear without a hint', `Par: score ${levelById.get('free-the-pair').par} or less without a hint`, `Unsplit: no splits, score ${badgePool['free-the-pair'].unsplit} or less`]);
+  check('Levels stars name how to earn them', JSON.stringify(pairTitles) === JSON.stringify(pairExpected), JSON.stringify(pairTitles));
 
-  // Near or far teaches Light touch: the prompt says so, and the chip shows once the level is cleared at par.
+  // Near or far teaches Light touch: the prompt says so, and the bonus star shows once the level is cleared at par.
   await fresh();
   await open('near-or-far');
   check('near or far prompt teaches travel', await get(() => ui.status.textContent) === 'Travel counts every sector a run moves. Clear at par, then try for ↝: one more move, much less travel.', await get(() => ui.status.textContent));
   await play();
-  const taught = await page.locator('#result-badges li').allTextContents();
-  check('near or far offers Light touch after a par clear', taught.length === 1 && taught[0].includes('↝') && await page.locator('#result-badges li[data-earned=false]').count() === 1, JSON.stringify(taught));
+  const readRow = () => get(() => ({
+    title: ui['result-title'].textContent,
+    why: ui['result-why'].hidden ? '' : ui['result-why'].textContent,
+    stars: [...document.querySelectorAll('#result-stars li')].map(li => ({
+      name: li.querySelector('span').textContent, bonus: li.classList.contains('bonus'), icon: li.querySelector('text')?.textContent ?? '',
+      earned: li.dataset.earned, fresh: li.dataset.new, title: li.title, label: li.getAttribute('aria-label'),
+    })),
+  }));
+  const taught = await readRow();
+  const light = taught.stars.find(star => star.bonus);
+  check('near or far offers Light touch after a par clear', taught.stars.length === 4 && taught.stars.filter(star => star.bonus).length === 1 && light.name === 'Light touch' && light.icon === '↝' && light.earned === 'false', JSON.stringify(taught));
+  check('a par clear is Optimized and points at the bonus star', taught.title === 'Optimized' && taught.why === 'Next star · Light touch: travel 5 sectors or less.', JSON.stringify(taught));
+  // Every star says how to earn it, in its title and its label.
+  check('each star has a title and label naming how to earn it', JSON.stringify(taught.stars.map(star => star.title)) === JSON.stringify(['Clear: finish the level', 'No hints: clear without a hint', 'Par: score 2 or less without a hint', 'Light touch: travel 5 sectors or less']) &&
+    taught.stars.every(star => star.label.startsWith(star.title + ', ')), JSON.stringify(taught.stars));
+  // On touch, a tap on a star shows the same text as a caption; a second tap hides it.
+  await page.evaluate(() => skipResult());
+  await page.locator('#result-stars li.bonus').click();
+  const caption = await get(() => ({hidden: ui['result-caption'].hidden, text: ui['result-caption'].textContent}));
+  await page.locator('#result-stars li.bonus').click();
+  check('tapping a star captions how to earn it', !caption.hidden && caption.text === 'Light touch: travel 5 sectors or less' && await get(() => ui['result-caption'].hidden), JSON.stringify(caption));
 
-  // A par clear shows the badge it did not earn as outlined.
+  // A player with ★★★ who goes for Light touch finishes over par, and still sees every base star.
+  await open('near-or-far');
+  await play({rank: 'travel'});
+  const touched = await readRow();
+  const touchStats = await get(() => ({moves: stats.moves, travel: stats.travel, cost: stats.cost, par: level.par}));
+  check('Light touch route is 3 moves and travel 5, over par', touchStats.moves === 3 && touchStats.travel === 5 && touchStats.cost > touchStats.par, JSON.stringify(touchStats));
+  check('an over-par Light touch run keeps all 3 base stars filled', touched.stars.slice(0, 3).every(star => star.earned === 'true' && star.fresh === 'false'), JSON.stringify(touched.stars));
+  check('the Light touch star fills and is marked new', touched.stars[3].earned === 'true' && touched.stars[3].fresh === 'true' && touched.stars[3].label.endsWith(', new'), JSON.stringify(touched.stars[3]));
+  check('a run over par is not Optimized, and nothing is left to chase', touched.title === 'Defragmented' && touched.why === '' && await get(() => ui['result-retry'].textContent) === 'Replay', JSON.stringify(touched));
+  check('a replay tags the new star', await get(() => ui.result.dataset.replay === 'true' && getComputedStyle(document.querySelector('#result-stars li.bonus .glyph'), '::after').content.includes('New')));
+  check('Results button shows every star', await get(() => ui['result-open'].textContent.startsWith('★★★★ ')), await get(() => ui['result-open'].textContent));
+  await page.evaluate(() => showCatalog());
+  const farRow = page.locator('#levels button', {hasText: 'Near or far'}).locator('.stars');
+  check('Levels row counts out of 3 plus bonus', await farRow.textContent() === '★★★★' && await farRow.getAttribute('aria-label') === '4 of 4 stars', await farRow.textContent());
+  await page.evaluate(() => showMenu(false));
+  check('menu total counts the bonus star', await get(() => ui['resume-detail'].textContent.endsWith(`· 4/${starMax()}\u00a0★`)), await get(() => ui['resume-detail'].textContent));
+
+  // A par clear shows the bonus stars it did not earn as outlined.
   await open('one-sector-off');
   await play();
-  const outlined = await get(() => ({earned: progress.badges['one-sector-off'] ?? [], shown: [...document.querySelectorAll('#result-badges li')].map(b => b.dataset.earned)}));
-  check('par clear earns no trade-off badge', !outlined.earned.length && outlined.shown.length === 2 && outlined.shown.every(e => e === 'false'), JSON.stringify(outlined));
+  const outlined = await get(() => ({earned: progress.badges['one-sector-off'] ?? [], shown: [...document.querySelectorAll('#result-stars li.bonus')].map(b => b.dataset.earned)}));
+  check('par clear earns no trade-off bonus star', !outlined.earned.length && outlined.shown.length === 2 && outlined.shown.every(e => e === 'false'), JSON.stringify(outlined));
+  // Five stars fit one row on a 360px phone, with no sideways scroll.
+  await page.setViewportSize({width: 360, height: 740});
+  const fit = await get(() => {
+    const items = [...document.querySelectorAll('#result-stars li')];
+    return {count: items.length, rows: new Set(items.map(li => li.offsetTop + li.offsetHeight)).size, right: Math.max(...items.map(li => li.getBoundingClientRect().right)), page: document.documentElement.scrollWidth, sheet: ui.result.scrollWidth - ui.result.clientWidth};
+  });
+  check('five stars fit one row at 360px', fit.count === 5 && fit.rows === 1 && fit.right <= 360 && fit.page <= 360 && fit.sheet <= 0, JSON.stringify(fit));
+  await page.setViewportSize({width: 420, height: 900});
 
-  // A hinted clear earns no badge and one star.
+  // A hinted clear that meets a bonus target earns it. The hint only costs the No hints and Par stars.
   await fresh();
   await open('free-the-pair');
   await page.click('#hint');
   await page.click('#hint'); // the first press after a fresh save only warns
   await page.waitForFunction(() => hint !== null);
   await play({whole: true});
-  check('hinted clear earns no badge', await get(() => !(progress.badges['free-the-pair'] ?? []).length && stars(level) === 1));
+  check('hinted clear earns the bonus star and one base star', await get(() => (progress.badges['free-the-pair'] ?? []).includes('unsplit') && stars(level) === 1 && starCount(level) === 2));
+  const hintedRow = await readRow();
+  check('hinted sheet: Clear and Unsplit new, No hints and Par outlined', hintedRow.stars.map(star => `${star.name}:${star.earned}:${star.fresh}`).join() === 'Clear:true:true,No hints:false:false,Par:false:false,Unsplit:true:true' && hintedRow.why === 'Next star · No hints: clear without a hint.', JSON.stringify(hintedRow));
 
-  // A level that offers no badges shows none. fewer-is-better comes before near-or-far, so it never offers one.
+  // A level that offers no bonus stars shows only the base three. fewer-is-better comes before near-or-far, so it never offers one.
   await open('fewer-is-better');
   await play();
-  check('no badges on a level without any', await get(() => finished()) && !(await page.locator('#result-badges li').count()) && await page.locator('#result-badges').isHidden());
+  check('no bonus stars on a level without any', await get(() => finished()) && !(await page.locator('#result-stars li.bonus').count()) && await page.locator('#result-stars li').count() === 3);
 
   // Light touch and few moves track travel and operations.
   await open('head-travel');
@@ -325,7 +382,8 @@ const check = (name, ok, detail = '') => {
   check('board buttons wait inert under the sheet', await get(() => !ui.next.hidden && !ui['result-open'].hidden && ui['cleared-actions'].inert));
   await page.locator('#result-stars').click();
   const sheet = await get(() => ({skip: ui.result.classList.contains('skip'), score: ui['result-score'].textContent, earned: [...document.querySelectorAll('#result-stars li')].map(li => li.dataset.earned)}));
-  check('tap skips to the final results', sheet.skip && sheet.score === String(await get(() => stats.cost)) && sheet.earned.join() === 'true,true,true', JSON.stringify(sheet));
+  // free-the-pair: 3 base stars from this clean par clear, plus Unsplit from the hinted clear above.
+  check('tap skips to the final results', sheet.skip && sheet.score === String(await get(() => stats.cost)) && sheet.earned.join() === 'true,true,true,true', JSON.stringify(sheet));
   await page.click('#result-retry');
   check('retry hides the sheet and restarts', await page.locator('#result').isHidden() && await get(() => stats.moves === 0));
   await page.evaluate(() => { for (const m of E.solve(level).path) perform(m); });
@@ -334,7 +392,7 @@ const check = (name, ok, detail = '') => {
   await page.evaluate(() => { undo(); for (const m of E.solve(level, state).path) perform(m); });
   await page.click('#result-close');
   check('close reveals the board with Next', await page.locator('#result').isHidden() && await page.locator('#next').isVisible());
-  check('cleared board hides the par-met pill and inline badges', await page.locator('#badges').isHidden() && (await page.locator('#status').boundingBox()).height <= 1);
+  check('cleared board hides the par-met pill and has no inline star list', !(await page.locator('#badges, #game .bonus').count()) && (await page.locator('#status').boundingBox()).height <= 1);
   await page.click('#result-open');
   check('Results button reopens the sheet', await page.locator('#result').isVisible() && await get(() => ui['cleared-actions'].inert));
   const box = await page.locator('#result').boundingBox();
@@ -352,12 +410,12 @@ const check = (name, ok, detail = '') => {
   check('swiping down dismisses the sheet', await page.locator('#result').isHidden() && await page.locator('#result-open').isVisible() && await get(() => !ui['cleared-actions'].inert));
   await open('two-files');
   await page.evaluate(() => { const extra = E.moves(level, state).at(-1); perform(extra); for (const m of E.solve(level, state).path) perform(m); });
-  const missed = await get(() => ({cost: stats.cost, par: level.par, labels: [...document.querySelectorAll('#result-stars li')].map(li => li.dataset.earned + ':' + li.querySelector('span').textContent)}));
-  check('a missed par star says over par', missed.labels[2] === 'false:Over par' && missed.cost > missed.par, JSON.stringify(missed));
+  const missed = await get(() => ({cost: stats.cost, par: level.par, title: ui['result-title'].textContent, why: ui['result-why'].textContent, labels: [...document.querySelectorAll('#result-stars li')].map(li => li.dataset.earned + ':' + li.querySelector('span').textContent)}));
+  check('a missed par star stays outlined and names its target', missed.labels.join() === 'true:Clear,true:No hints,false:Par' && missed.cost > missed.par && missed.title === 'Defragmented' && missed.why === `Next star · Par: score ${missed.par} or less without a hint.`, JSON.stringify(missed));
   await page.click('#result-retry');
   await page.evaluate(() => { hinted = true; for (const m of E.solve(level, state).path) perform(m); });
-  const capped = await get(() => ({cost: stats.cost, par: level.par, why: ui['result-why'].textContent, labels: [...document.querySelectorAll('#result-stars li')].map(li => li.dataset.earned + ':' + li.querySelector('span').textContent)}));
-  check('a hinted clear at par explains the one-star cap', capped.cost === capped.par && capped.labels.join() === 'true:Clear,false:Hint used,false:Par, no hints' && /hint caps/i.test(capped.why), JSON.stringify(capped));
+  const capped = await get(() => ({cost: stats.cost, par: level.par, title: ui['result-title'].textContent, why: ui['result-why'].textContent, labels: [...document.querySelectorAll('#result-stars li')].map(li => li.dataset.earned + ':' + li.dataset.new + ':' + li.querySelector('span').textContent)}));
+  check('a hinted clear at par keeps the best and earns no par star', capped.cost === capped.par && capped.labels.join() === 'true:false:Clear,true:false:No hints,false:false:Par' && capped.title === 'Defragmented' && capped.why.includes('Par: score'), JSON.stringify(capped));
 
   // The action buttons never move while playing: the status line has a fixed height.
   const shifts = [];
@@ -511,17 +569,37 @@ const check = (name, ok, detail = '') => {
   }
   await page.setViewportSize({width: 420, height: 900});
 
-  // A badge counter names its badge and target, and turns coral once past it.
+  // A bonus star counter names its star and target, and turns coral once past it.
   await open('choose-what-to-park'); // offers Light touch, travel 8 or less
-  check('travel counter shows its badge and target', await get(() => ui['stat-detail'].textContent.trim() === '↝ 0/8 travel' && ui['stat-detail'].querySelector('[data-over]').dataset.over === 'false'),
+  check('travel counter shows its star icon and target', await get(() => ui['stat-detail'].textContent.trim() === '↝ 0/8 travel' && ui['stat-detail'].querySelector('[data-over]').dataset.over === 'false'),
     await get(() => ui['stat-detail'].textContent));
   await get(() => { stats.travel = 9; render(); });
   check('travel counter turns coral past its target', await get(() => ui['stat-detail'].querySelector('[data-over]').dataset.over === 'true'));
-  check('travel counter says what it tracks', await get(() => ui['stat-detail'].querySelector('[data-over]').getAttribute('aria-label') === 'Light touch badge: 9 of 8 sectors travelled'));
+  check('travel counter says what it tracks', await get(() => ui['stat-detail'].querySelector('[data-over]').getAttribute('aria-label') === 'Light touch bonus star: 9 of 8 sectors travelled'));
   await open('one-sector-off'); // offers Unsplit and Light touch
   check('two counters show side by side', await get(() => ui['stat-detail'].textContent.trim() === '▮ 0 splits · ↝ 0/16 travel'), await get(() => ui['stat-detail'].textContent));
-  await open('join-two-blocks'); // offers no badge
-  check('no counter without a badge', await get(() => ui['stat-detail'].textContent === ''));
+  await open('join-two-blocks'); // offers no bonus star
+  check('no counter without a bonus star', await get(() => ui['stat-detail'].textContent === ''));
+
+  // Badge is an internal name: no player-facing text in the help, the results sheet or Levels says it.
+  const sayBadge = await page.evaluate(() => {
+    const found = [];
+    const scan = (where, root) => {
+      const text = [root.innerText, ...[...root.querySelectorAll('*')].flatMap(node => [node.title, node.getAttribute('aria-label')])].join(' ');
+      if (/badge/i.test(text)) found.push(where);
+    };
+    openLevel(findLevel('one-sector-off'));
+    showHelp();
+    scan('help', ui['help-dialog']);
+    ui['help-dialog'].close();
+    for (const m of E.solve(level, state).path) perform(m);
+    scan('sheet', ui.result);
+    scan('game', ui.game);
+    showCatalog();
+    scan('catalog', ui.catalog);
+    return found;
+  });
+  check('no player-facing text says badge', !sayBadge.length, sayBadge.join());
 
   // ---------- First-time player fixes ----------
 

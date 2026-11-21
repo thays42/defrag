@@ -57,7 +57,6 @@
 </div>
 <div class="board" id="board" role="group" aria-label="Disk sectors, read left to right across rows. Arrow keys move between sectors."></div>
 <p class="status" id="status" aria-live="polite"></p>
-<ul class="badge-list" id="badges" hidden aria-label="Badges"></ul>
 <div class="cleared-actions" id="cleared-actions">
 <button id="result-open" class="result-open" hidden></button>
 <button id="next" hidden>Next puzzle →</button>
@@ -73,14 +72,14 @@
 <button id="result-close" class="result-close" aria-label="Hide results and view the board">✕</button>
 <p class="result-kicker" id="result-kicker"></p>
 <h2 id="result-title"></h2>
-<ol class="result-stars" id="result-stars"></ol>
+<ol class="result-stars" id="result-stars" aria-label="Stars"></ol>
+<p class="result-caption" id="result-caption" hidden></p>
 <p class="result-why" id="result-why" hidden></p>
 <p class="result-note" id="result-note" hidden></p>
 <div class="result-score">
 <span>Score</span><strong id="result-score"></strong><span>/ Par</span><strong id="result-par"></strong>
 <em id="result-versus" class="result-tag"></em><em id="result-best" class="result-tag best" hidden>New best</em>
 </div>
-<ul class="result-badges" id="result-badges" hidden aria-label="Badges"></ul>
 <p class="result-total" id="result-total"></p>
 <button id="result-next" class="result-next"></button>
 <button id="result-retry" class="result-retry"></button>
@@ -93,7 +92,7 @@
     <div><dt>Split a run</dt><dd>Select a block inside the picked-up run to take just that block. Select another block in the run to take the range between them, or the marked block again to take the whole run.</dd></div>
     <div><dt>Clear the board</dt><dd>Join each file into one run. If it has a home, finish the entire run in sectors with the matching corner label. A file shows ✓ and a dark ring once it meets all its own rules. Hatched sectors are reserved.</dd></div>
     <div><dt>Meet par</dt><dd>Each move costs 1 point, and splitting adds 1 extra point. Lower scores are better. One ★ for a clear, two without hints, three without hints at par.</dd></div>
-    <div><dt>Badges</dt><dd>Some levels offer badges for a different goal that costs more than par. ▭ Tidy: free space in one stretch. ▮ Unsplit: no splits. ↝ Light touch: low total travel. ⁂ Few moves: few moves on a seek level. ✦ Under par: beat par. Each has its own target. Where the score alone does not track it, a counter beside the score shows the badge's icon, your count and the target, and turns coral once you pass it. Hints void badges.</dd></div>
+    <div><dt>Bonus stars</dt><dd>Some levels offer bonus stars for a different goal that costs more than par. ▭ Tidy: free space in one stretch. ▮ Unsplit: no splits. ↝ Light touch: low total travel. ⁂ Few moves: few moves on a seek level. ✦ Under par: beat par. Each has its own target. Where the score alone does not track it, a counter beside the score shows the star's icon, your count and the target, and turns coral once you pass it. On the results, hover or long-press a star to see how to earn it.</dd></div>
   </dl>
   <section id="help-level" hidden>
     <h3>This level</h3>

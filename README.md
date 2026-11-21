@@ -11,7 +11,7 @@ Run `make play`, or open `index.html` in a browser. There is no build step.
 | `engine.js` | Rules and solver. The game and every tool share it, so the rules exist once. |
 | `levels.js` | Mechanics, chapters, and handmade levels. Each chapter has a one-line `summary`. `extras` holds the optional Extra set, and `levels` lists every level. Each level has a stable `id` and one primary `mechanic`. A Combine level also lists `combines`: two or more rules, each of which must change par. The last chapter, Boot, is the finale: three or more rules per level. |
 | `daily.js` | Generated pool for the daily puzzle. Do not edit by hand. |
-| `badges.js` | Generated badge targets per level. Do not edit by hand. |
+| `badges.js` | Generated bonus star targets per level ("badges" internally). Do not edit by hand. |
 | `game.js` | User interface. |
 | `tools/` | Level checker, quality metrics, and generator. |
 | `tests/` | Browser tests (Playwright). |
@@ -45,11 +45,15 @@ Every board sits in a fixed 6×4 frame of 24 sectors. Sectors outside the board 
 | ★★ | Cleared without hints. |
 | ★★★ | Cleared without hints, at or under par. |
 
-The first Hint press ever only warns that a hint caps the level at one star; the next press shows the hint. The first results sheet defines par, and a level with `beatable: true` says on every sheet that par can be beaten.
+The first Hint press ever only warns that a hint costs the No hints and Par stars; the next press shows the hint. The first results sheet defines par, and a level with `beatable: true` says on every sheet that par can be beaten.
 
-Badges reward a different goal that costs more than par, so 3 stars never earns one for free. `tools/badges.js` solves each campaign level under each condition and offers a badge only where the solver proves that trade-off. The daily puzzle and most intro levels offer none. The intro level `near-or-far` teaches badges with Light touch. Hints void badges.
+Bonus stars reward a different goal that costs more than par, so 3 stars never earns one for free. Each one a level offers adds a star beside the three base stars, so a level's maximum is 3 plus its bonus stars; campaign totals, the menu, Levels and the ending sum those maximums. Any clear that meets a target earns its bonus star, hinted or not: a hint only costs the No hints and Par stars. Bonus stars stay hidden until a level's first clear. The daily puzzle and most intro levels offer none. The intro level `near-or-far` teaches bonus stars with Light touch.
 
-| Badge | Condition | Target |
+The results sheet shows one row with every star the level offers: the base stars as earned at best (so an over-par run for a bonus star never looks like a lost star), then the bonus stars. A star earned for the first time stamps in; a title, label, or tap on a star says how to earn it. The line under the row names the next unearned star.
+
+In code, bonus stars are still called badges: `badges.js`, `progress.badges`, and `tools/badges.js`, which solves each campaign level under each condition and offers one only where the solver proves that trade-off.
+
+| Bonus star | Condition | Target |
 | --- | --- | --- |
 | Tidy | Free space in one stretch. | Best score with that rule on. |
 | Unsplit | No splits. | Best score without splits. |
@@ -57,7 +61,7 @@ Badges reward a different goal that costs more than par, so 3 stars never earns 
 | Few moves | Seek levels. | Fewest moves plus splits. |
 | Under par | `beatable` levels. | The true optimum. |
 
-A search too large to finish leaves the badge out, since its target is unproven.
+A search too large to finish leaves the bonus star out, since its target is unproven.
 
 ## Add or change levels
 

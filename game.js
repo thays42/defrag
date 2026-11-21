@@ -91,7 +91,8 @@ function stars(target) {
   return progress.best[target.id] != null ? 1 : 0;
 }
 
-// Optimization badges. Targets come from badges.js, proven by tools/badges.js; the daily puzzle has none.
+// Bonus stars, one per offered badge. Targets come from badges.js, proven by tools/badges.js; the daily puzzle has none.
+// "Badge" is the internal name only: players see bonus stars.
 const badgeRules = {
   tidy: {icon: '▭', name: 'Tidy', text: T => `free space in one stretch, score ${T} or less`, met: (s, st, T) => E.freeSpaceJoined(s) && st.cost <= T},
   unsplit: {icon: '▮', name: 'Unsplit', text: T => `no splits, score ${T} or less`, met: (s, st, T) => st.splits === 0 && st.cost <= T},
@@ -106,27 +107,34 @@ function offeredBadges(target) {
   return Object.keys(badgeRules).filter(id => pool[id] !== undefined).map(id => ({id, target: pool[id]}));
 }
 
+// Any clear earns the bonus stars whose targets it meets, hinted or not.
 function earnedOnClear(target, finalState, finalStats) {
   return offeredBadges(target).filter(({id, target: T}) => badgeRules[id].met(finalState, finalStats, T)).map(({id}) => id);
 }
 
-// Badge chips for a level, filled when earned. Shown only once the level has been cleared.
-function badgeChips(target, {long = false} = {}) {
-  const earned = new Set(progress.badges[target.id] ?? []);
-  return offeredBadges(target).map(({id, target: T}) => {
-    const rule = badgeRules[id];
-    const chip = document.createElement(long ? 'li' : 'span');
-    chip.className = 'badge';
-    chip.dataset.earned = earned.has(id);
-    const label = `${rule.name}: ${rule.text(T)}${earned.has(id) ? ' (earned)' : ''}`;
-    if (long) chip.textContent = `${rule.icon} ${rule.name}: ${rule.text(T)} ${earned.has(id) ? '✓' : ''}`.trim();
-    else Object.assign(chip, {textContent: rule.icon, title: label, ariaLabel: label});
-    return chip;
-  });
+// The three base stars are a ladder: each needs the one before it.
+const baseStars = [
+  {name: 'Clear', how: () => 'finish the level'},
+  {name: 'No hints', how: () => 'clear without a hint'},
+  {name: 'Par', how: target => `score ${target.par} or less without a hint`},
+];
+
+// Every star a level offers, base then bonus, with how to earn it and whether it is earned (best ever).
+function starSet(target) {
+  const base = stars(target);
+  const owned = new Set(progress.badges[target.id] ?? []);
+  return [
+    ...baseStars.map(({name, how}, i) => ({name, how: how(target), earned: i < base})),
+    ...offeredBadges(target).map(({id, target: T}) => ({id, bonus: true, icon: badgeRules[id].icon, name: badgeRules[id].name, how: badgeRules[id].text(T), earned: owned.has(id)})),
+  ];
 }
 
+const maxStars = target => 3 + offeredBadges(target).length;
+const starCount = target => starSet(target).filter(star => star.earned).length;
 const starText = count => '★'.repeat(count) + '☆'.repeat(3 - count);
-const starTotal = () => campaign.reduce((sum, item) => sum + stars(item), 0);
+const starRow = target => starSet(target).map(star => (star.earned ? '★' : '☆')).join('');
+const starTotal = () => campaign.reduce((sum, item) => sum + starCount(item), 0);
+const starMax = () => campaign.reduce((sum, item) => sum + maxStars(item), 0);
 
 // ---------- Daily puzzle ----------
 
@@ -290,16 +298,13 @@ function perform(move) {
   if (done) {
     result = {
       previousBest: progress.best[level.id],
-      previousBadges: new Set(progress.badges[level.id] ?? []),
       previousTotal: level.daily ? null : starTotal(),
-      previousStars: stars(level),
+      previousEarned: starSet(level).map(star => star.earned),
     };
-    progress.best[level.id] =Math.min(stats.cost, progress.best[level.id] ?? Infinity);
-    if (!hinted) {
-      progress.clean[level.id] = Math.min(stats.cost, progress.clean[level.id] ?? Infinity);
-      const earned = earnedOnClear(level, state, stats);
-      if (earned.length) progress.badges[level.id] = [...new Set([...(progress.badges[level.id] ?? []), ...earned])];
-    }
+    progress.best[level.id] = Math.min(stats.cost, progress.best[level.id] ?? Infinity);
+    if (!hinted) progress.clean[level.id] = Math.min(stats.cost, progress.clean[level.id] ?? Infinity);
+    const earned = earnedOnClear(level, state, stats);
+    if (earned.length) progress.badges[level.id] = [...new Set([...(progress.badges[level.id] ?? []), ...earned])];
     delete progress.hinted[level.id];
   } else {
     notice = describeMove(move);
@@ -444,7 +449,7 @@ async function showHint() {
   if (!progress.hintWarned && !hinted) {
     progress.hintWarned = true;
     save();
-    notice = 'A hint caps this level at one star. Tap Hint again to use one.';
+    notice = 'A hint costs this level its No hints and Par stars. Tap Hint again to use one.';
     render();
     return;
   }
@@ -626,12 +631,11 @@ function render() {
   ui.par.textContent = level.par;
   renderCounters();
   ui.next.hidden = !done;
-  // Once cleared, the results sheet carries the stars and badges. The button below the board reopens it.
-  ui.badges.hidden = true;
+  // Once cleared, the results sheet carries the stars. The button below the board reopens it.
   ui['result-open'].hidden = !done || !result;
   // The sheet is drawn over these buttons, so a swipe reveals them. Inert keeps them out of reach until then.
   ui['cleared-actions'].inert = !ui.result.hidden;
-  if (done && result) ui['result-open'].textContent = `${starText(hinted ? 1 : stats.cost <= level.par ? 3 : 2)}  Results`;
+  if (done && result) ui['result-open'].textContent = `${starRow(level)}  Results`;
   ui.next.textContent = nextText(level);
   ui.board.dataset.cleared = done;
   ui.status.dataset.cleared = done;
@@ -684,11 +688,10 @@ function blocker() {
 }
 
 function clearMessage() {
-  // Only the result against par. The title, Next button and score already say the rest.
+  // Only the result against par and the level's stars. The title, Next button and score already say the rest.
   const score = stats.cost;
-  const earned = hinted ? 1 : score <= level.par ? 3 : 2;
   const versus = score < level.par ? `${level.par - score} under par` : score === level.par ? 'Par met' : `${score - level.par} over par`;
-  return `${versus} ${starText(earned)}` + (hinted ? ' · hint used' : '');
+  return `${versus} · ${starCount(level)} of ${maxStars(level)} ★` + (hinted ? ' · hint used' : '');
 }
 
 // Chips for the level's special rules. Stateful chips (links, free space) always show, since they track progress.
@@ -712,16 +715,16 @@ function renderRules() {
   ui.rules.hidden = !chips.length;
 }
 
-// Counters beside the score. Each badge that needs one shows its icon, the count and the target,
+// Counters beside the score. Each bonus star that needs one shows its icon, the count and the target,
 // and turns coral once the count passes the target. Seek levels without Few moves still count moves and splits,
 // since there the score is distance, not moves.
 function renderCounters() {
   const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
   const counters = offeredBadges(level).flatMap(({id, target: T}) => {
     const {icon, name} = badgeRules[id];
-    if (id === 'unsplit') return [{text: `${icon} ${plural(stats.splits, 'split')}`, over: stats.splits > 0, label: `${name} badge: ${plural(stats.splits, 'split')}, none allowed`}];
-    if (id === 'light') return [{text: `${icon} ${stats.travel}/${T} travel`, over: stats.travel > T, label: `${name} badge: ${stats.travel} of ${T} sectors travelled`}];
-    if (id === 'few') return [{text: `${icon} ${stats.moves + stats.splits}/${T} moves+splits`, over: stats.moves + stats.splits > T, label: `${name} badge: ${stats.moves + stats.splits} of ${T} moves plus splits`}];
+    if (id === 'unsplit') return [{text: `${icon} ${plural(stats.splits, 'split')}`, over: stats.splits > 0, label: `${name} bonus star: ${plural(stats.splits, 'split')}, none allowed`}];
+    if (id === 'light') return [{text: `${icon} ${stats.travel}/${T} travel`, over: stats.travel > T, label: `${name} bonus star: ${stats.travel} of ${T} sectors travelled`}];
+    if (id === 'few') return [{text: `${icon} ${stats.moves + stats.splits}/${T} moves+splits`, over: stats.moves + stats.splits > T, label: `${name} bonus star: ${stats.moves + stats.splits} of ${T} moves plus splits`}];
     return [];
   });
   const parts = counters.map(({text, over, label}) => {
@@ -933,30 +936,47 @@ function haptic(kind) {
 const starIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.4l2.95 6.1 6.65.83-4.9 4.6 1.27 6.62L12 17.3l-5.97 3.25 1.27-6.62-4.9-4.6 6.65-.83z"/></svg>';
 
 // Timeline, in ms after the clear. The sheet waits for the board's clear wave.
-const beat = {sheet: 650, star: 950, starGap: 230, tag: 1700, best: 1850, badges: 1950, total: 2150};
+const beat = {sheet: 650, star: 950, starGap: 230, tag: 1700, best: 1850, total: 2150};
 
 function later(ms, action) {
   resultTimers.push(setTimeout(action, ms));
 }
 
+// One star in the results row. Its title and label say how to earn it, so hover, long-press or a screen reader tells.
+function resultStar(star, fresh) {
+  const item = document.createElement('li');
+  item.dataset.earned = star.earned;
+  item.dataset.new = fresh;
+  if (star.bonus) item.className = 'bonus';
+  const glyph = Object.assign(document.createElement('div'), {className: 'glyph'});
+  glyph.innerHTML = starIcon.replace('</svg>', star.bonus ? `<text x="12" y="15.6">${star.icon}</text></svg>` : '</svg>') + (fresh ? '<i></i>'.repeat(8) : '');
+  item.append(glyph, Object.assign(document.createElement('span'), {textContent: star.name}));
+  item.title = `${star.name}: ${star.how}`;
+  item.setAttribute('aria-label', `${star.name}: ${star.how}, ${fresh ? 'new' : star.earned ? 'earned' : 'not earned'}`);
+  return item;
+}
+
 function showResult() {
   const score = stats.cost;
-  const earned = hinted ? 1 : score <= level.par ? 3 : 2;
+  const optimized = !hinted && score <= level.par;
   const motion = !reducedMotion();
   const sheet = ui.result;
   const at = (node, ms) => { node.style.setProperty('--delay', `${ms}ms`); return node; };
-  const {previousBest, previousBadges, previousTotal, previousStars} = result;
-  // Stars are a ladder: each needs the one before it. A missed star says what fell short, and a line
-  // under the stars states the rule, so a hinted clear at par never looks like it earned the par star.
-  const conditions = [
-    'Clear',
-    hinted ? 'Hint used' : 'No hints',
-    hinted ? 'Par, no hints' : score <= level.par ? 'Par' : 'Over par',
-  ];
-  ui['result-why'].textContent = hinted
-    ? 'A hint caps this clear at one star. Retry without hints for ★★★.'
-    : score > level.par ? `Finish in ${level.par} or fewer, without hints, for ★★★.` : '';
-  ui['result-why'].hidden = earned === 3;
+  const {previousBest, previousTotal, previousEarned} = result;
+  // The row shows every star the level offers as earned at best, so a run over par never looks like a lost star.
+  // Stars first earned on this run stamp in, one after another.
+  const set = starSet(level);
+  const fresh = set.map((star, i) => star.earned && !previousEarned[i]);
+  const freshCount = fresh.filter(Boolean).length;
+  const gap = freshCount > 3 ? 170 : beat.starGap;
+  let order = 0;
+  ui['result-stars'].replaceChildren(...set.map((star, i) => at(resultStar(star, fresh[i]), beat.star + (fresh[i] ? order++ : 0) * gap)));
+  ui['result-stars'].dataset.count = set.length;
+  ui['result-caption'].hidden = true;
+  // The line under the stars names the next star to chase, not what this run missed.
+  const next = set.find(star => !star.earned);
+  ui['result-why'].textContent = next ? `Next star · ${next.name}: ${next.how}.` : '';
+  ui['result-why'].hidden = !next;
   at(ui['result-why'], beat.tag);
   // The first sheet defines par once. A level whose par can be beaten says so every time.
   const note = [];
@@ -972,18 +992,12 @@ function showResult() {
 
   sheet.classList.toggle('skip', !motion);
   sheet.style.animation = sheet.style.transform = '';
-  sheet.dataset.stars = earned;
+  sheet.dataset.optimized = optimized;
+  // On a first clear every earned star is new, so only a replay tags the new ones.
+  sheet.dataset.replay = previousBest != null;
   at(sheet, beat.sheet);
   ui['result-kicker'].textContent = level.daily ? `Daily · ${level.date}` : level.name;
-  ui['result-title'].textContent = earned === 3 ? 'Optimized' : 'Defragmented';
-  ui['result-stars'].replaceChildren(...conditions.map((text, i) => {
-    const item = at(document.createElement('li'), beat.star + i * beat.starGap);
-    item.dataset.earned = i < earned;
-    item.innerHTML = starIcon + (i < earned ? '<i></i>'.repeat(8) : '');
-    item.append(Object.assign(document.createElement('span'), {textContent: text}));
-    item.setAttribute('aria-label', `${text}: ${i < earned ? 'earned' : 'missed'}`);
-    return item;
-  }));
+  ui['result-title'].textContent = optimized ? 'Optimized' : 'Defragmented';
 
   ui['result-par'].textContent = level.par;
   const versus = ui['result-versus'];
@@ -996,31 +1010,16 @@ function showResult() {
   ui['result-best'].hidden = !newBest;
   at(ui['result-best'], beat.best);
 
-  const offered = offeredBadges(level);
-  const owned = new Set(progress.badges[level.id] ?? []);
-  ui['result-badges'].replaceChildren(...offered.map(({id, target: T}, i) => {
-    const rule = badgeRules[id];
-    const chip = at(document.createElement('li'), beat.badges + i * 90);
-    chip.dataset.earned = owned.has(id);
-    chip.dataset.new = owned.has(id) && !previousBadges.has(id);
-    chip.textContent = `${rule.icon} ${rule.name}`;
-    chip.title = `${rule.name}: ${rule.text(T)}`;
-    chip.setAttribute('aria-label', `${rule.name}: ${rule.text(T)}, ${chip.dataset.new === 'true' ? 'new' : owned.has(id) ? 'earned' : 'not earned'}`);
-    return chip;
-  }));
-  ui['result-badges'].hidden = !offered.length;
-
   const total = ui['result-total'];
   // Extra levels sit outside the campaign total, so the sheet does not show it for them.
   const after = level.daily || level.extra ? null : starTotal();
-  const best = previousStars > earned ? `Your best here: ${starText(previousStars)}` : '';
-  const totalText = count => [best, after == null ? '' : `★ ${count} of ${3 * campaign.length}`].filter(Boolean).join(' · ');
-  total.hidden = !totalText(after);
+  const max = starMax();
+  const totalText = count => (after == null ? '' : `★ ${count} of ${max}`);
+  total.hidden = after == null;
   at(total, beat.total);
 
   ui['result-next'].textContent = nextText(level);
-  const missingBadge = offered.some(({id}) => !owned.has(id));
-  ui['result-retry'].textContent = earned < 3 ? 'Retry for ★★★' : missingBadge ? 'Retry for badges' : 'Replay';
+  ui['result-retry'].textContent = !next ? 'Replay' : next.bonus ? `Retry for ${next.icon} ${next.name}` : 'Retry for ★★★';
 
   // Final values first, so a skip or reduced motion only has to stop the timeline.
   const final = () => {
@@ -1041,10 +1040,10 @@ function showResult() {
   ui['result-score'].textContent = 0;
   total.textContent = totalText(previousTotal);
   later(beat.sheet, () => haptic('success'));
-  for (let i = 0; i < earned; i++) {
-    later(beat.star + i * beat.starGap + 140, () => { playSound(`star${i + 1}`); haptic('light'); });
+  for (let i = 0; i < freshCount; i++) {
+    later(beat.star + i * gap + 140, () => { playSound(`star${Math.min(i + 1, 3)}`); haptic('light'); });
   }
-  const countTime = earned * beat.starGap + 200;
+  const countTime = Math.max(1, freshCount) * gap + 200;
   for (let k = 1; k <= score; k++) later(beat.star + (k * countTime) / score, () => { ui['result-score'].textContent = k; });
   if (newBest) later(beat.best, () => { playSound('best'); haptic('heavy'); });
   for (let count = previousTotal + 1; after != null && count <= after; count++) {
@@ -1052,6 +1051,31 @@ function showResult() {
   }
   later(beat.total + 600, final);
 }
+
+// Touch has no hover, so a tap or a long-press on a star shows how to earn it in a caption under the row.
+let starPress = null;
+function showStarCaption(star, toggle) {
+  const caption = ui['result-caption'];
+  if (toggle && !caption.hidden && caption.textContent === star.title) caption.hidden = true;
+  else Object.assign(caption, {textContent: star.title, hidden: false});
+}
+ui['result-stars'].addEventListener('pointerdown', event => {
+  const star = event.target.closest('li');
+  clearTimeout(starPress?.timer);
+  starPress = star && {star, x: event.clientX, y: event.clientY, held: false, timer: setTimeout(() => { starPress.held = true; showStarCaption(star, false); }, 450)};
+});
+ui['result-stars'].addEventListener('pointermove', event => {
+  if (starPress && Math.hypot(event.clientX - starPress.x, event.clientY - starPress.y) > 8) clearTimeout(starPress.timer);
+});
+ui['result-stars'].addEventListener('pointercancel', () => clearTimeout(starPress?.timer));
+ui['result-stars'].addEventListener('contextmenu', event => event.preventDefault());
+ui['result-stars'].addEventListener('click', event => {
+  const star = event.target.closest('li');
+  clearTimeout(starPress?.timer);
+  const held = starPress?.held && starPress.star === star;
+  starPress = null;
+  if (star && !held) showStarCaption(star, true);
+});
 
 // Any tap or key on the sheet jumps the timeline to its end.
 function skipResult() {
@@ -1087,11 +1111,25 @@ function showMenu(moveFocus = true) {
   const resume = nextUncleared() ?? findLevel(progress.current) ?? campaign[0];
   ui.continue.textContent = cleared || Object.keys(progress.attempts).length ? 'Continue' : 'Play';
   // Non-breaking spaces keep each figure whole when the line wraps.
-  ui['resume-detail'].textContent = `${resume.name} · ${cleared}/${campaign.length}\u00a0cleared · ${starTotal()}/${3 * campaign.length}\u00a0★`;
+  ui['resume-detail'].textContent = `${resume.name} · ${cleared}/${campaign.length}\u00a0cleared · ${starTotal()}/${starMax()}\u00a0★`;
   const daily = dailyLevel();
   const dailyStars = stars(daily);
   ui['daily-button'].textContent = 'Daily puzzle' + (dailyStars ? ' · ' + starText(dailyStars) + ' ' + progress.best[daily.id] : '');
   showScreen('menu', moveFocus ? ui.continue : null);
+}
+
+// A level's stars as text, filled or empty, each titled with how to earn it.
+function catalogStars(target) {
+  const row = Object.assign(document.createElement('span'), {className: 'stars'});
+  row.setAttribute('role', 'img');
+  row.setAttribute('aria-label', `${starCount(target)} of ${maxStars(target)} stars`);
+  row.append(...starSet(target).map(star => {
+    const glyph = Object.assign(document.createElement('span'), {textContent: star.earned ? '★' : '☆', title: `${star.name}: ${star.how}`});
+    glyph.dataset.earned = star.earned;
+    if (star.bonus) glyph.className = 'bonus';
+    return glyph;
+  }));
+  return row;
 }
 
 // Levels in campaign order, one group per chapter, then the Extra set.
@@ -1111,17 +1149,12 @@ function showCatalog() {
       const result = document.createElement('small');
       const earned = stars(item);
       const best = progress.best[item.id];
-      result.textContent = earned ? `${starText(earned)} ${best} / par ${item.par}` : progress.attempts[item.id] ? `In progress · par ${item.par}` : `Par ${item.par}`;
+      // Once cleared, the row shows every star the level offers: base, then bonus. Bonus stars stay hidden until then.
+      if (earned) result.append(catalogStars(item), ` ${best} / par ${item.par}`);
+      else result.textContent = progress.attempts[item.id] ? `In progress · par ${item.par}` : `Par ${item.par}`;
       if (item.intro) name.append(Object.assign(document.createElement('em'), {textContent: ' tutorial'}));
-      // Badges sit under the score on the right, so long names never push them onto a cut-off line.
       const side = Object.assign(document.createElement('span'), {className: 'side'});
       side.append(result);
-      const chips = best != null ? badgeChips(item) : [];
-      if (chips.length) {
-        const row = Object.assign(document.createElement('span'), {className: 'badges'});
-        row.append(...chips);
-        side.append(row);
-      }
       button.dataset.stars = earned;
       button.append(name, side);
       button.onclick = () => openLevel(item);
@@ -1135,11 +1168,12 @@ function showCatalog() {
 
 function showEnding() {
   const total = starTotal();
+  const max = starMax();
   // Finish campaign is reachable with levels still open, for example after new levels are added to a finished campaign.
   const cleared = campaign.filter(item => progress.best[item.id] != null).length;
   const clearedText = cleared === campaign.length ? `all ${campaign.length} levels` : `${cleared} of ${campaign.length} levels`;
-  ui['ending-detail'].textContent = `You cleared ${clearedText} and earned ${total} of ${3 * campaign.length} ★. ` +
-    (total < 3 * campaign.length ? 'Levels lists every puzzle by chapter, plus an Extra set, so you can chase the stars you missed.' : 'Every star collected. The daily puzzle has a new disk every day.');
+  ui['ending-detail'].textContent = `You cleared ${clearedText} and earned ${total} of ${max} ★. ` +
+    (total < max ? 'Levels lists every puzzle by chapter, plus an Extra set, so you can chase the stars you missed.' : 'Every star collected. The daily puzzle has a new disk every day.');
   showScreen('ending', ui['ending-levels']);
 }
 
