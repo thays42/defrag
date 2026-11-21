@@ -282,7 +282,7 @@ const check = (name, ok, detail = '') => {
   // Near or far teaches Light touch: the prompt says so, and the bonus star shows once the level is cleared at par.
   await fresh();
   await open('near-or-far');
-  check('near or far prompt teaches travel', await get(() => ui.status.textContent) === 'Travel counts every sector a run moves. Clear at par, then try for ↝: one more move, much less travel.', await get(() => ui.status.textContent));
+  check('near or far prompt teaches travel', await get(() => ui.status.textContent) === 'Travel counts every sector a run moves. Clear at par, then try for ↝: one more move, less travel.', await get(() => ui.status.textContent));
   await play();
   const readRow = () => get(() => ({
     title: ui['result-title'].textContent,
