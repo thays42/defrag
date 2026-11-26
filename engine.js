@@ -279,9 +279,19 @@
     return {cost: best, path, paths, states: nodes.size};
   }
 
+  // The daily board for a 'YYYY-MM-DD' date: the weekday picks the tier, the week picks the board.
+  // 1970-01-01 was a Thursday, so day + 3 counts from a Monday.
+  const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  function dailyPick(tiers, date) {
+    const day = Math.floor(Date.parse(date + 'T00:00:00Z') / 86400000);
+    const tier = tiers[DAYS[(day + 3) % 7]];
+    return tier[Math.floor((day + 3) / 7) % tier.length];
+  }
+
   root.DefragEngine = {
     EMPTY, RESERVED, COLUMNS, FRAME_ROWS, FRAME, placement, parseBoard, letterOf, isFile, info, initialState, keyOf, runAt, landing,
     moveCost, travelOf, moves, apply, fileSettled, linksMet, freeSpaceJoined, solved, estimate, solve,
+    DAYS, dailyPick,
   };
   if (typeof module !== 'undefined') module.exports = root.DefragEngine;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

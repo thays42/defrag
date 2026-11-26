@@ -148,8 +148,63 @@ const check = (name, ok, detail = '') => {
   check('the daily puzzle offers only the base stars', await get(() => maxStars(dailyLevel()) === 3 && starSet(dailyLevel()).length === 3));
 
   // The daily share text carries the star string.
-  const shared = await page.evaluate(async () => { openLevel(dailyLevel()); await shareDaily(); return notice; });
+  const shared = await page.evaluate(async () => { openLevel(dailyLevel()); ui['rules-dialog'].close(); await shareDaily(); return notice; });
   check('daily share shows stars', /[★☆]{3}/.test(shared), shared);
+
+  // The daily: the weekday picks the tier, the week picks the board, and the same date always gives the same board.
+  const tierOf = date => get(`(() => { const d = dailyLevel('${date}'); return Object.keys(dailyTiers).find(day => dailyTiers[day].some(b => b.id === d.source)); })()`);
+  check('a Monday daily comes from the Monday tier', await tierOf('2026-11-30') === 'monday');
+  check('a Sunday daily comes from the Sunday tier', await tierOf('2026-11-29') === 'sunday');
+  check('across the November DST change the days stay Sunday and Monday', await tierOf('2026-11-01') === 'sunday' && await tierOf('2026-11-02') === 'monday');
+  check('the same date gives the same board', await get(() => JSON.stringify(dailyLevel('2026-12-02')) === JSON.stringify(dailyLevel('2026-12-02'))));
+  check('the daily id is the date', await get(() => dailyLevel('2026-12-02').id === 'daily-2026-12-02'));
+  // A daily cleared on the old pool: the old best score stays, and a stale attempt starts fresh.
+  const stale = await page.evaluate(() => {
+    const id = dailyLevel().id;
+    progress.best[id] = 99;
+    progress.attempts[id] = {signature: 'old board', state: {cells: []}, stats: {moves: 5}, history: [{}]};
+    openLevel(dailyLevel());
+    const result = {moves: stats.moves, id: level.id};
+    delete progress.best[id];
+    showMenu(false);
+    return result;
+  });
+  check('a stale daily attempt starts fresh', stale.moves === 0 && stale.id.startsWith('daily-'), JSON.stringify(stale));
+
+  // A paste that does not finish the level says what it placed. (Daily boards paste mid-line; campaign ones never did.)
+  await page.evaluate(() => ui['rules-dialog'].open && ui['rules-dialog'].close());
+  const errorsBefore = errors.length;
+  await page.evaluate(() => openLevel({id: 'paste-check', chapter: 'Test', name: 'Paste check', goal: '', board: 'BAAC...#AC####B', cost: 'seek', clipboard: true, nudges: 1, par: 7}));
+  await cell(8).click();
+  await page.click('#clipboard');
+  await page.click('#clipboard');
+  await cell(4).click();
+  const pasted = await get(() => ({notice, cell: state.cells[4], moves: stats.moves}));
+  check('a mid-line paste names the file it placed', pasted.cell === 'A' && pasted.moves === 2 && /Placed A/.test(pasted.notice) && errors.length === errorsBefore, JSON.stringify(pasted) + errors.slice(errorsBefore).join('; '));
+  await page.evaluate(() => { delete progress.attempts['paste-check']; showMenu(false); });
+
+  // The rule card: a daily that uses rules the player has not learned shows them before play.
+  const card = () => get(() => ({open: ui['rules-dialog'].open, rows: [...ui['rules-list'].querySelectorAll('dt')].map(dt => dt.textContent)}));
+  const sunday = '2026-11-29';
+  const savedBest = await get(() => JSON.stringify(progress.best));
+  await page.evaluate(() => { progress.best = {}; });
+  await page.evaluate(date => openLevel(dailyLevel(date)), sunday);
+  const newcomer = await card();
+  const expected = await get(`unlearnedRules(dailyLevel('${sunday}')).map(m => m.name)`);
+  check('a new player sees the rule card on a Sunday daily', newcomer.open && newcomer.rows.length > 0 && JSON.stringify(newcomer.rows) === JSON.stringify(expected), JSON.stringify({newcomer, expected}));
+  await page.click('#rules-start');
+  check('Start closes the rule card', !(await card()).open);
+  await page.evaluate(() => restart());
+  check('restart does not reopen the rule card', !(await card()).open);
+  await page.evaluate(() => showMenu(false));
+  await page.evaluate(() => { for (const item of campaign) if (item.intro) progress.best[item.id] = item.par; });
+  await page.evaluate(date => openLevel(dailyLevel(date)), sunday);
+  check('a player who learned every rule sees no rule card', !(await card()).open);
+  await page.evaluate(date => { progress.best = {['daily-' + date]: 9}; openLevel(dailyLevel(date)); }, sunday);
+  check('a cleared daily shows no rule card', !(await card()).open);
+  await page.evaluate(() => { progress.best = {}; openLevel(campaign.find(item => item.mechanic === 'seek' && !item.intro)); });
+  check('campaign levels never show the rule card', !(await card()).open);
+  await page.evaluate(saved => { progress.best = JSON.parse(saved); showMenu(false); }, savedBest);
 
   // Cracked sectors: a dead end is announced.
   await open('failing-drive');
@@ -453,7 +508,7 @@ const check = (name, ok, detail = '') => {
     const s = await slots();
     check(`${id} fills the frame`, s.all === 24 && s.cells === length && s.first === first, JSON.stringify(s));
   }
-  await get(() => openLevel(dailyLevel()));
+  await get(() => { openLevel(dailyLevel()); ui['rules-dialog'].close(); });
   check('daily puzzle fills the frame', (await slots()).all === 24);
 
   // The board keeps one size across levels, in portrait and in landscape. (A long title that wraps still moves it down.)
@@ -517,6 +572,7 @@ const check = (name, ok, detail = '') => {
       const out = {};
       for (const target of [...campaign, ...extraLevels, dailyLevel()]) {
         openLevel(target);
+        ui['rules-dialog'].close();
         const top = Math.round(ui.board.getBoundingClientRect().top);
         (out[top] ??= []).push(target.id);
       }
@@ -540,6 +596,7 @@ const check = (name, ok, detail = '') => {
       const tops = new Set();
       for (const target of [...campaign, ...extraLevels, dailyLevel()]) {
         openLevel(target);
+        ui['rules-dialog'].close();
         tops.add(Math.round(document.querySelector('.actions').getBoundingClientRect().top));
       }
       const console_ = document.querySelector('.console');
@@ -558,6 +615,7 @@ const check = (name, ok, detail = '') => {
       const heights = new Set(), cut = [];
       for (const target of [...campaign, ...extraLevels, dailyLevel()]) {
         openLevel(target);
+        ui['rules-dialog'].close();
         heights.add(Math.round(ui.title.getBoundingClientRect().height));
         for (const part of ui.title.children) if (part.scrollWidth > part.clientWidth + 1 || part.getBoundingClientRect().right > ui.title.getBoundingClientRect().right + 1) cut.push(target.id);
         if (ui.title.textContent.includes(' / ')) cut.push(target.id + ' (slash)');

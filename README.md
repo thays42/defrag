@@ -10,7 +10,7 @@ Run `make play`, or open `index.html` in a browser. There is no build step.
 | --- | --- |
 | `engine.js` | Rules and solver. The game and every tool share it, so the rules exist once. |
 | `levels.js` | Mechanics, chapters, and handmade levels. Each chapter has a one-line `summary`. `extras` holds the optional Extra set, and `levels` lists every level. Each level has a stable `id` and one primary `mechanic`. A Combine level also lists `combines`: two or more rules, each of which must change par. The last chapter, Boot, is the finale: three or more rules per level. |
-| `daily.js` | Generated pool for the daily puzzle. Do not edit by hand. |
+| `daily.js` | Generated daily puzzle: seven weekday tiers, frozen once shipped. Do not edit by hand. |
 | `badges.js` | Generated bonus star targets per level ("badges" internally). Do not edit by hand. |
 | `game.js` | User interface. |
 | `tools/` | Level checker, quality metrics, and generator. |
@@ -65,7 +65,7 @@ A search too large to finish leaves the bonus star out, since its target is unpr
 
 ## Add or change levels
 
-1. Find candidates: `node tools/generate.js <preset> --count 20`. Presets: `homes`, `split`, `reserved`, `ordered`, `clipboard`, `seek`, `consolidate`, `system`, `fragile`, `links`, `nudge`, `daily`. The output is ranked by quality.
+1. Find candidates: `node tools/generate.js <preset> --count 20`. Presets: `homes`, `split`, `reserved`, `ordered`, `clipboard`, `seek`, `consolidate`, `system`, `fragile`, `links`, `nudge`, `daily`. The output is ranked by quality. The daily puzzle has its own tool (see Daily tiers).
 2. Pick candidates. Give each one an `id`, a name, a goal, and its `par` from the output. Add it to `levels.js`.
 3. Verify: `node tools/check-levels.js`. Add `--metrics` to see the quality metrics for every level.
 
@@ -127,18 +127,40 @@ node tools/check-levels.js --badges
 
 To find a board for a level that has no badge, run `node tools/climb.js --badge <id>`. It changes the board a little at a time and keeps candidates that pass every check-levels guard. `--limit N` caps each badge search to screen big boards faster. A capped search offers no badge, so re-verify a pick at the default limit of 1e6 before applying it.
 
-### Regenerate the daily pool
+### Daily tiers
+
+The daily puzzle has one tier of boards per weekday. The weekday picks the tier, and the week picks the board within it, so everyone gets the same board on the same date. The ramp runs from gentle to mixed:
+
+| Day | Rules | Par |
+| --- | --- | --- |
+| Monday | Homes, reserved sectors. No splits. | 3–6 |
+| Tuesday | Splitting or numbered fragments. | 5–8 |
+| Wednesday | Free space or linked files. | 5–8 |
+| Thursday | System files or cracked sectors. | 5–8 |
+| Friday | Clipboard, nudges or seek cost. | 5–9 (seek 8–16) |
+| Saturday | Exactly two advanced rules combined. | 6+ |
+| Sunday | Three or more advanced rules combined. | 7+ |
+
+Advanced rules are numbered fragments, free space, linked files, system files, cracked sectors, clipboard, nudges and seek cost. The spec lives in `tools/daily-tiers.js`.
+
+Each tier holds 20 to 60 boards. Every board passes the campaign's bar: each rule the tier names changes par, the trap rate and line count sit in the campaign's range, the hint search stays small, and no board looks like a campaign level or another daily board. A board that uses a rule the player has not learned in the campaign opens a rule card first.
+
+Build one tier at a time. Runs append and can run in parallel:
 
 ```
-node tools/generate.js daily --count 60 --tries 6000 --seed 2026 --write daily.js
+node tools/build-daily.js <day> [--seconds 600] [--seed 7]
 node tools/check-levels.js
 ```
+
+A shipped pool is frozen (`dailyFrozen` in `daily.js`), and the build tool refuses to change it. Adding a board or reordering a tier would move every future date to another board. To grow a tier, make a new pool version that takes over from a set date and keep the old pool for the dates before it.
 
 ## Tests
 
 ```
 node tools/check-levels.js   # every par is optimal; data is valid; levels look distinct
+node tools/check-levels.js --hints  # also: every daily board's hint search stays small (slow)
 node tests/tools.js          # unit checks for the level tools
+node tests/daily-tiers.js    # unit checks for the daily tiers and their build tool
 node tests/play-all.js       # plays every level's optimal line through real clicks
 node tests/behavior.js       # selection, undo, restart, hints, medals, save migration
 ```
