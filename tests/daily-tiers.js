@@ -42,3 +42,14 @@ const sat = {saturday: [{...one.monday[0], id: 'sat-1', checked: ['homes']}]};
 assert.ok(T.tierProblems(sat, []).some(p => /sat-1: saturday needs exactly 2 advanced rules/.test(p)));
 
 console.log('daily tiers ok');
+
+// The generator presets are callable, with a par window.
+{
+  const {candidates} = require('../tools/presets.js');
+  const {makeRng} = require('../tools/board-builder.js');
+  const found = candidates('homes', {rng: makeRng(3), tries: 200, par: [3, 6], count: 3});
+  assert.ok(found.length >= 1 && found.length <= 3, String(found.length));
+  assert.ok(found.every(level => level.par >= 3 && level.par <= 6));
+  assert.strictEqual(typeof require('../tools/combine.js').search, 'function');
+  console.log('presets ok');
+}

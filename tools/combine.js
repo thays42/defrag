@@ -153,4 +153,4 @@ if (require.main === module) {
   report(picks);
 }
 
-module.exports = {combineCandidate};
+module.exports = {combineCandidate, search};
