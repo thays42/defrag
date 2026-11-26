@@ -3,7 +3,7 @@ title: Daily tiers design
 created: 2026-11-26
 source: claude-code
 type: spec
-status: draft
+status: active
 tags: [defrag, daily, generator, level-quality]
 ---
 
