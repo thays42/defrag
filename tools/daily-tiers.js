@@ -30,6 +30,17 @@ const TIERS = {
 
 const ORDER = mechanics.map(m => m.id);
 
+// Rules a board may use: Monday only homes and reserved sectors; Tuesday to Friday also splitting and the tier's
+// own rules; the weekend anything.
+const BASE = ['homes', 'reserved', 'splitting'];
+function allowedRules(day) {
+  const tier = TIERS[day];
+  if (day === 'monday') return ['homes', 'reserved'];
+  if (tier.combine) return ORDER.filter(rule => rule !== 'basics');
+  return [...BASE, ...tier.sources.flatMap(source => source.checked)];
+}
+const outsideTier = (day, rules) => rules.filter(rule => !allowedRules(day).includes(rule));
+
 // The rules a board uses, in mechanics order. Splitting counts when no whole-run solution reaches the optimum.
 function boardRules(level) {
   const rules = Object.keys(uses).filter(rule => uses[rule](level));
@@ -91,6 +102,7 @@ function tierProblems(tiers, campaign) {
       const [low, high] = parRange(day, level);
       if (best < low || best > high) fail(`par ${best} outside ${low}–${high}`);
       const rules = boardRules(level);
+      for (const rule of outsideTier(day, rules)) fail(`uses ${rule}, outside ${day}`);
       if (JSON.stringify(rules) !== JSON.stringify(level.rules)) fail(`rules ${JSON.stringify(level.rules)}, board uses ${JSON.stringify(rules)}`);
       for (const rule of level.checked ?? []) {
         if (!rules.includes(rule)) fail(`checked rule ${rule} is not used`);
@@ -111,5 +123,5 @@ function tierProblems(tiers, campaign) {
 
 module.exports = {
   DAYS, ADVANCED, MIN_TIER, TARGET_TIER, HINT_LIMIT, SIMILAR_FAIL, TIERS,
-  pick: E.dailyPick, boardRules, parRange, countProblem, tooSimilar, tierProblems,
+  pick: E.dailyPick, boardRules, allowedRules, outsideTier, parRange, countProblem, tooSimilar, tierProblems,
 };
