@@ -202,6 +202,26 @@ function start(target, attempt) {
 function openLevel(target) {
   start(target, progress.attempts[target.id]);
   showScreen('game', ui.board.querySelector('[tabindex="0"]'));
+  if (target.daily && progress.best[target.id] == null) {
+    const unlearned = unlearnedRules(target);
+    if (unlearned.length) showRuleCard(unlearned);
+  }
+}
+
+// The rules on a daily board whose first intro level the player has not cleared, in mechanics order.
+function unlearnedRules(target) {
+  const used = new Set(target.rules ?? []);
+  return mechanics.filter(m => m.id !== 'basics' && used.has(m.id) && progress.best[campaign.find(item => item.intro && item.mechanic === m.id)?.id] == null);
+}
+
+// The rule card shows before play. Start, or Esc, closes it and returns focus to the disk.
+function showRuleCard(rules) {
+  ui['rules-list'].replaceChildren(...rules.map(m => {
+    const row = document.createElement('div');
+    row.append(Object.assign(document.createElement('dt'), {textContent: m.name}), Object.assign(document.createElement('dd'), {textContent: m.rule}));
+    return row;
+  }));
+  ui['rules-dialog'].showModal();
 }
 
 function save() {
@@ -318,7 +338,8 @@ function perform(move) {
 }
 
 function describeMove(move) {
-  const tokens = move.type === 'paste' ? null : state.cells.slice(move.to, move.to + move.length);
+  // Runs after the move: a paste's run is already on the disk at move.to.
+  const tokens = state.cells.slice(move.to, move.to + move.length);
   const file = E.letterOf(move.type === 'cut' ? state.clip[0] : tokens[0]);
   const where = `sector${move.length > 1 ? 's' : ''} ${move.to + 1}${move.length > 1 ? '–' + (move.to + move.length) : ''}`;
   if (move.type === 'cut') return `Lifted ${file}. To place it, choose Clipboard, then a destination.`;
@@ -1217,6 +1238,7 @@ async function shareDaily() {
 ui.continue.onclick = () => openLevel(nextUncleared() ?? findLevel(progress.current) ?? campaign[0]);
 ui['levels-button'].onclick = ui['game-levels'].onclick = ui['ending-levels'].onclick = showCatalog;
 ui['daily-button'].onclick = ui['ending-daily'].onclick = () => openLevel(dailyLevel());
+ui['rules-dialog'].addEventListener('close', () => ui.board.querySelector('[tabindex="0"]')?.focus());
 ui['game-back'].onclick = ui['catalog-back'].onclick = ui['ending-menu'].onclick = () => showMenu();
 ui.next.onclick = () => {
   if (level.daily) return shareDaily();
@@ -1306,7 +1328,7 @@ ui.sound.onclick = () => {
 
 // Single-key shortcuts work only while focus is on the board, so stray key presses elsewhere do nothing.
 document.addEventListener('keydown', event => {
-  if (ui.game.hidden || ui['help-dialog'].open || event.metaKey || event.ctrlKey || event.altKey) return;
+  if (ui.game.hidden || ui['help-dialog'].open || ui['rules-dialog'].open || event.metaKey || event.ctrlKey || event.altKey) return;
   if (!ui.result.hidden) {
     if (event.key === 'Escape') ui['result-close'].click();
     else skipResult();

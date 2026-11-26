@@ -101,6 +101,12 @@
   <p class="keys">Keyboard, with focus on the disk: arrows, Home and End move between sectors · Enter or Space selects (press it on a block of the picked-up run to split) · Z undo · R restart · H hint · C clipboard · [ and ] nudge · ? help · Esc cancels anywhere.</p>
   <form method="dialog"><button autofocus>Close</button></form>
 </dialog>
+<dialog id="rules-dialog" class="help-dialog" aria-labelledby="rules-title">
+  <h2 id="rules-title">New rules today</h2>
+  <p>This disk uses rules the campaign has not shown you yet.</p>
+  <dl id="rules-list"></dl>
+  <form method="dialog"><button id="rules-start" autofocus>Start</button></form>
+</dialog>
 </main>
 <script src="engine.js"></script>
 <script src="levels.js"></script>

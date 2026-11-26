@@ -9,10 +9,14 @@ const path = require('path');
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('file://' + path.resolve(__dirname, '..', 'index.html'));
-  const ids = await page.evaluate(() => [...campaign, ...extraLevels].map(l => l.id).concat(dailyLevel().id));
+  // Every campaign and Extra level, then one daily board from each weekday tier (Monday 2026-11-30 to Sunday 2026-12-06).
+  const ids = await page.evaluate(() => [...campaign, ...extraLevels].map(l => l.id));
+  const dailies = ['2026-11-30', '2026-12-01', '2026-12-02', '2026-12-03', '2026-12-04', '2026-12-05', '2026-12-06'].map(date => 'daily:' + date);
   let failures = 0;
-  for (const id of ids) {
-    await page.evaluate(target => openLevel(findLevel(target)), id);
+  for (const id of [...ids, ...dailies]) {
+    await page.evaluate(target => openLevel(target.startsWith('daily:') ? dailyLevel(target.slice(6)) : findLevel(target)), id);
+    // A daily with rules this save has not learned opens the rule card first.
+    if (await page.evaluate(() => ui['rules-dialog'].open)) await page.click('#rules-start');
     const plan = await page.evaluate(() => E.solve(level).path);
     for (const move of plan) {
       await page.keyboard.press('Escape');
