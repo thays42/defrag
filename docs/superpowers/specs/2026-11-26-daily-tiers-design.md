@@ -70,6 +70,8 @@ The spec lives in the build tool as data, one entry per weekday. Each entry give
 
 Target: 60 boards per tier. A tier fills up to the target or to what passes the filters, whichever is lower. With 60 boards, a tier repeats about every 14 months.
 
+Minimum: 20 boards per tier, so a tier repeats at most every 5 months or so (user, 2026-11-26). The new pool does not ship until every tier meets the minimum. No tier borrows boards from another. If a tier stays below 20 after long runs, its spec is revisited (rules or par range), not its quality bar. The build tool and the checker both fail on a tier below 20.
+
 ### Build tool: `tools/build-daily.js`
 
 - For single-rule tiers it reuses the `generate.js` presets. For Saturday and Sunday it reuses the `combine.js` search, with a time budget (`--seconds`). Refactor the presets and the combine search into functions the tool can call, rather than shelling out.
