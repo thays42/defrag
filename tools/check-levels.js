@@ -115,6 +115,13 @@ for (const pair of similarPairs(levels)) {
   (pair.level === 'fail' ? problems : warnings).push(line);
 }
 
+// Every daily board's hint search stays small enough for a phone. Slow, so only with --hints.
+if (process.argv.includes('--hints')) {
+  const {hintCheap} = require('./metrics.js');
+  const {HINT_LIMIT} = require('./daily-tiers.js');
+  for (const board of Object.values(daily.dailyTiers).flat()) if (!hintCheap(board, HINT_LIMIT)) problems.push(`${board.id}: hint search needs more than ${HINT_LIMIT} states`);
+}
+
 // Stored badge targets must match what the solver proves. Slow, so only with --badges.
 if (process.argv.includes('--badges')) {
   const {computeBadges} = require('./badges.js');

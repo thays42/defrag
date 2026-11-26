@@ -128,3 +128,7 @@ console.log('daily tiers ok');
   require('fs').unlinkSync(file);
   console.log('merge ok');
 }
+
+// The shipped pool is frozen. (The hint-size check is slow: node tools/check-levels.js --hints.)
+assert.strictEqual(require('../daily.js').dailyFrozen, true, 'daily.js is frozen once shipped');
+console.log('shipped pool ok');

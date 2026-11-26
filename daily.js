@@ -10,7 +10,7 @@
 // $ node tools/build-daily.js saturday --seconds 2700 --seed 109
 // $ node tools/build-daily.js sunday --seconds 3600 --seed 110
 // $ node tools/build-daily.js sunday --seconds 3600 --seed 111
-const dailyFrozen = false;
+const dailyFrozen = true;
 const dailyTiers = {
   monday: [
     {"id":"mon-1","mechanic":"homes","par":5,"rules":["homes","reserved"],"checked":["homes"],"board":"CBAA#C.BA","homes":{"A":[2,4],"B":[6,7],"C":[8,9]}},
@@ -412,6 +412,33 @@ const dailyTiers = {
     {"id":"sun-25","mechanic":"clipboard","par":10,"rules":["reserved","clipboard","seek","system","links"],"checked":["clipboard","seek","system"],"board":"CSSC.B.#.B####AAA","cost":"seek","links":[["S","A"]],"locked":["S"],"clipboard":true},
     {"id":"sun-26","mechanic":"clipboard","par":12,"rules":["reserved","clipboard","seek","system","links"],"checked":["clipboard","seek","system"],"board":"#.A.SSBCB#A#CA#.#","cost":"seek","links":[["S","A"]],"locked":["S"],"clipboard":true},
     {"id":"sun-27","mechanic":"clipboard","par":9,"rules":["reserved","clipboard","seek","system","links"],"checked":["clipboard","seek","system"],"board":"#B##CSSCA.A#..#BA","cost":"seek","links":[["S","A"]],"locked":["S"],"clipboard":true},
+    {"id":"sun-28","mechanic":"clipboard","par":10,"rules":["reserved","clipboard","seek","consolidate"],"checked":["clipboard","seek","consolidate"],"board":"###CA##BAC#..##.AB","cost":"seek","clipboard":true,"consolidate":true},
+    {"id":"sun-29","mechanic":"clipboard","par":10,"rules":["reserved","clipboard","seek","consolidate"],"checked":["clipboard","seek","consolidate"],"board":"CA.BC#.BA######A.#","cost":"seek","clipboard":true,"consolidate":true},
+    {"id":"sun-30","mechanic":"ordered","par":13,"rules":["reserved","ordered","seek","nudge"],"checked":["ordered","seek","nudge"],"board":"B2##A1.B1##A2A3.C1.C2","cost":"seek","nudges":1},
+    {"id":"sun-31","mechanic":"ordered","par":7,"rules":["reserved","splitting","ordered","system","fragile","links"],"checked":["ordered","system","fragile"],"board":"C2.#A3#SSC1.B2B1A1A2.","fragile":[2,9,12,14],"links":[["S","A"]],"locked":["S"]},
+    {"id":"sun-32","mechanic":"seek","par":26,"rules":["reserved","seek","fragile","links"],"checked":["seek","fragile","links"],"board":"B#.C.CAA.B##A","cost":"seek","fragile":[3,5,9],"links":[["A","B"],["B","C"]]},
+    {"id":"sun-33","mechanic":"seek","par":28,"rules":["reserved","seek","fragile","links"],"checked":["seek","fragile","links"],"board":"#CAB##.CA.AB.","cost":"seek","fragile":[7,10,13],"links":[["A","B"],["B","C"]]},
+    {"id":"sun-34","mechanic":"seek","par":16,"rules":["reserved","seek","fragile","links"],"checked":["seek","fragile","links"],"board":"A..BCA.BA#C##","cost":"seek","fragile":[2,7],"links":[["A","B"],["B","C"]]},
+    {"id":"sun-35","mechanic":"seek","par":17,"rules":["reserved","seek","fragile","nudge"],"checked":["seek","fragile","nudge"],"board":"A###CAABB#.C.##.","cost":"seek","fragile":[5,7,16],"nudges":2},
+    {"id":"sun-36","mechanic":"seek","par":34,"rules":["reserved","splitting","seek","fragile","nudge"],"checked":["seek","fragile","nudge"],"board":"C#CAA.#B###.#BA.","cost":"seek","fragile":[8,12,15,16],"nudges":2},
+    {"id":"sun-37","mechanic":"seek","par":21,"rules":["reserved","seek","fragile","nudge"],"checked":["seek","fragile","nudge"],"board":"#B#A##B.C##C.AA.","cost":"seek","fragile":[8,12,13,16],"nudges":2},
+    {"id":"sun-38","mechanic":"seek","par":21,"rules":["reserved","seek","fragile","nudge"],"checked":["seek","fragile","nudge"],"board":"#.A.C###C#BAAB.#","cost":"seek","fragile":[4,11],"nudges":2},
+    {"id":"sun-39","mechanic":"seek","par":32,"rules":["reserved","seek","fragile","nudge"],"checked":["seek","fragile","nudge"],"board":"BC#.A#A##BC#A..#","cost":"seek","fragile":[1,4,10,14,15],"nudges":2},
+    {"id":"sun-40","mechanic":"ordered","par":20,"rules":["reserved","splitting","ordered","seek","fragile"],"checked":["ordered","seek","fragile"],"board":".B1A1A3#B2C1..A2#C2","cost":"seek","fragile":[6,8,9]},
+    {"id":"sun-41","mechanic":"ordered","par":16,"rules":["reserved","ordered","seek","fragile"],"checked":["ordered","seek","fragile"],"board":"#.C1.C2A2#.A1B2A3B1","cost":"seek","fragile":[4,9]},
+    {"id":"sun-42","mechanic":"ordered","par":17,"rules":["reserved","splitting","ordered","seek","fragile"],"checked":["ordered","seek","fragile"],"board":"#.C2C1B1A2A3B2.#A1.","cost":"seek","fragile":[2,8,9,12]},
+    {"id":"sun-43","mechanic":"seek","par":31,"rules":["reserved","seek","links","nudge"],"checked":["seek","links","nudge"],"board":"BACA..B######A.#C","cost":"seek","links":[["A","B"],["B","C"]],"nudges":1},
+    {"id":"sun-44","mechanic":"clipboard","par":7,"rules":["reserved","clipboard","seek","nudge"],"checked":["clipboard","seek","nudge"],"board":"C#.BAA###A.BC#.","cost":"seek","clipboard":true,"nudges":2},
+    {"id":"sun-45","mechanic":"clipboard","par":7,"rules":["reserved","clipboard","seek","nudge"],"checked":["clipboard","seek","nudge"],"board":"#ACCB##..#A.B#A","cost":"seek","clipboard":true,"nudges":2},
+    {"id":"sun-46","mechanic":"clipboard","par":7,"rules":["reserved","clipboard","seek","nudge"],"checked":["clipboard","seek","nudge"],"board":".BBC#.A##A##.CA","cost":"seek","clipboard":true,"nudges":2},
+    {"id":"sun-47","mechanic":"seek","par":25,"rules":["reserved","seek","links","nudge"],"checked":["seek","links","nudge"],"board":"##.C..BAA#CA#B#","cost":"seek","links":[["A","B"],["B","C"]],"nudges":2},
+    {"id":"sun-48","mechanic":"seek","par":24,"rules":["reserved","seek","links","nudge"],"checked":["seek","links","nudge"],"board":"A#BC..B.C#A##A#","cost":"seek","links":[["A","B"],["B","C"]],"nudges":1},
+    {"id":"sun-49","mechanic":"clipboard","par":7,"rules":["reserved","clipboard","seek","nudge"],"checked":["clipboard","seek","nudge"],"board":"AC#.###A###.#CBB.A","cost":"seek","clipboard":true,"nudges":1},
+    {"id":"sun-50","mechanic":"clipboard","par":7,"rules":["reserved","clipboard","seek","nudge"],"checked":["clipboard","seek","nudge"],"board":"CABB..#CA#.A","cost":"seek","clipboard":true,"nudges":2},
+    {"id":"sun-51","mechanic":"clipboard","par":7,"rules":["reserved","clipboard","seek","nudge"],"checked":["clipboard","seek","nudge"],"board":"A.#AC#.CBBA.","cost":"seek","clipboard":true,"nudges":1},
+    {"id":"sun-52","mechanic":"clipboard","par":7,"rules":["reserved","clipboard","seek","nudge"],"checked":["clipboard","seek","nudge"],"board":"BC#A#CBAA...","cost":"seek","clipboard":true,"nudges":2},
+    {"id":"sun-53","mechanic":"clipboard","par":7,"rules":["reserved","clipboard","seek","nudge"],"checked":["clipboard","seek","nudge"],"board":"ABBC.AC#A.#.","cost":"seek","clipboard":true,"nudges":1},
+    {"id":"sun-54","mechanic":"clipboard","par":7,"rules":["reserved","clipboard","seek","nudge"],"checked":["clipboard","seek","nudge"],"board":"BAA..C.#B#CA","cost":"seek","clipboard":true,"nudges":2},
   ],
 };
 if (typeof module !== 'undefined') module.exports = {dailyTiers, dailyFrozen};
