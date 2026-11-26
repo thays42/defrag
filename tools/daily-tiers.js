@@ -31,13 +31,15 @@ const TIERS = {
 const ORDER = mechanics.map(m => m.id);
 
 // Rules a board may use: Monday only homes and reserved sectors; Tuesday to Friday also splitting and the tier's
-// own rules; the weekend anything.
+// own rules (system brings its S→A link); the weekend anything.
 const BASE = ['homes', 'reserved', 'splitting'];
 function allowedRules(day) {
   const tier = TIERS[day];
   if (day === 'monday') return ['homes', 'reserved'];
   if (tier.combine) return ORDER.filter(rule => rule !== 'basics');
-  return [...BASE, ...tier.sources.flatMap(source => source.checked)];
+  const own = tier.sources.flatMap(source => source.checked);
+  // A system file's S→A chip is a link, and the system rule teaches it.
+  return [...BASE, ...own, ...(own.includes('system') ? ['links'] : [])];
 }
 const outsideTier = (day, rules) => rules.filter(rule => !allowedRules(day).includes(rule));
 

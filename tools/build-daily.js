@@ -115,6 +115,48 @@ function* batches(day, rng, stop) {
   }
 }
 
+// Hold a lock file while `fn` runs, so parallel runs never overwrite each other's tiers.
+function withLock(file, fn) {
+  const lock = file + '.lock';
+  const started = Date.now();
+  for (;;) {
+    try {
+      fs.closeSync(fs.openSync(lock, 'wx'));
+      break;
+    } catch (error) {
+      if (error.code !== 'EEXIST' || Date.now() - started > 60000) throw error;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100);
+    }
+  }
+  try {
+    return fn();
+  } finally {
+    fs.unlinkSync(lock);
+  }
+}
+
+// Append stored boards to `day` in the latest `file`, renumbering their ids. Boards too like a board that another
+// run added meanwhile are dropped. Returns how many were added.
+function mergeInto(file, day, boards, command) {
+  return withLock(file, () => {
+    const data = readDaily(file);
+    const others = T.DAYS.flatMap(d => data.tiers[d]);
+    const tier = data.tiers[day];
+    const prefix = day.slice(0, 3);
+    let next = Math.max(0, ...tier.map(board => Number(board.id.split('-')[1]))) + 1;
+    const added = [];
+    for (const board of boards) {
+      if (tier.length + added.length >= T.TARGET_TIER) break;
+      if (T.tooSimilar(board, [...others, ...added])) continue;
+      added.push({...board, id: `${prefix}-${next++}`});
+    }
+    data.tiers[day] = [...tier, ...added];
+    if (added.length && !data.commands.includes(command)) data.commands.push(command);
+    writeDaily(file, data);
+    return added.length;
+  });
+}
+
 function build(day, {seconds, seed, out, command}) {
   const data = readDaily(out);
   if (data.frozen) {
@@ -125,29 +167,31 @@ function build(day, {seconds, seed, out, command}) {
   const bounds = cachedBounds(campaign);
   const rng = makeRng(seed);
   const stop = Date.now() + seconds * 1000;
-  const tier = data.tiers[day];
-  const kept = T.DAYS.flatMap(d => data.tiers[d]);
-  const accepted = [];
+  let kept = T.DAYS.flatMap(d => data.tiers[d]);
+  let added = 0;
+  let total = data.tiers[day].length;
   const drops = {};
+  // Merge after every batch, so a long run that is stopped keeps what it found.
   for (const batch of batches(day, rng, stop)) {
+    const accepted = [];
     for (const candidate of batch) {
-      const reason = screen(candidate, {day, kept, campaign, bounds});
+      const reason = screen(candidate, {day, kept: [...kept, ...accepted], campaign, bounds});
       if (reason) {
         drops[reason] = (drops[reason] ?? 0) + 1;
         continue;
       }
       accepted.push(candidate);
-      kept.push(candidate);
     }
-    if (tier.length + accepted.length >= T.TARGET_TIER) break;
+    if (accepted.length) {
+      const ranked = accepted.sort((a, b) => b.quality - a.quality).map((candidate, i) => stored(candidate, `new-${i}`));
+      added += mergeInto(out, day, ranked, command);
+      const latest = readDaily(out);
+      kept = T.DAYS.flatMap(d => latest.tiers[d]);
+      total = latest.tiers[day].length;
+    }
+    if (total >= T.TARGET_TIER) break;
   }
-  const prefix = day.slice(0, 3);
-  const next = Math.max(0, ...tier.map(board => Number(board.id.split('-')[1]))) + 1;
-  const added = accepted.sort((a, b) => b.quality - a.quality).slice(0, T.TARGET_TIER - tier.length).map((candidate, i) => stored(candidate, `${prefix}-${next + i}`));
-  data.tiers[day] = [...tier, ...added];
-  if (added.length) data.commands.push(command);
-  writeDaily(out, data);
-  console.log(`${day}: ${data.tiers[day].length} boards (min ${T.MIN_TIER}), ${added.length} added; bounds ${JSON.stringify(bounds)}; dropped ${JSON.stringify(drops)}`);
+  console.log(`${day}: ${total} boards (min ${T.MIN_TIER}), ${added} added; bounds ${JSON.stringify(bounds)}; dropped ${JSON.stringify(drops)}`);
 }
 
 if (require.main === module) {
@@ -165,4 +209,4 @@ if (require.main === module) {
   build(day, {seconds: Number(flag('seconds', 600)), seed: Number(flag('seed', 7)), out, command: 'node tools/build-daily.js ' + args.filter((a, i) => a !== '--out' && args[i - 1] !== '--out').join(' ')});
 }
 
-module.exports = {readDaily, writeDaily, qualityBounds, cachedBounds, screen, stored};
+module.exports = {readDaily, writeDaily, qualityBounds, cachedBounds, screen, stored, mergeInto};

@@ -30,7 +30,7 @@ const soft = {
   homes: (level, par) => optimum(without.homes(level), {limit: 3e5}) < par,
 };
 const ids = new Set();
-const all = [...levels, ...daily.dailyPool.map(level => ({...level, mechanic: level.mechanic ?? 'homes', daily: true}))];
+const all = [...levels, ...Object.values(daily.dailyTiers).flat().map(level => ({...level, daily: true}))];
 
 // Which flag each new mechanic needs, and how to tell it matters.
 const needs = {
@@ -78,8 +78,8 @@ for (const level of all) {
   if (level.beatable && level.mechanic === 'splitting' && optimum(level, {whole: true}) !== level.par) fail(`par ${level.par} is not the best unsplit score`);
   // Intro levels teach a rule; they need not depend on it.
   try {
-    // Daily boards are labelled reserved whenever they hold a reserved sector, so the reserved rule is for campaign levels only.
-    const check = !level.intro && checked.has(level.mechanic) && !(level.daily && level.mechanic === 'reserved');
+    // Daily boards are checked per tier below: every rule in their `checked` list must change par.
+    const check = !level.intro && !level.daily && checked.has(level.mechanic);
     if (check && !matters(level, level.mechanic, best.cost)) fail(`${level.mechanic} does not change the result`);
   } catch (error) {
     // Large reserved boards cannot be checked in time; report them without failing.
@@ -102,6 +102,9 @@ for (const level of all) {
 
 // A campaign level may only use a rule after the campaign teaches it.
 problems.push(...require('./teach-order.js').teachOrderProblems(chapters.flatMap(c => c.levels)));
+
+// Daily tiers: size, rules, par range, and no near-copies (tools/daily-tiers.js).
+problems.push(...require('./daily-tiers.js').tierProblems(daily.dailyTiers, levels));
 
 // Combine levels: every combined rule changes par, and par never drops below earlier levels of the same rule.
 problems.push(...require('./combine-rules.js').combineProblems(chapters));

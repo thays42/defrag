@@ -43,6 +43,9 @@ assert.ok(T.tierProblems(split, []).some(p => /mon-9: uses splitting, outside mo
 assert.deepStrictEqual(T.outsideTier('monday', ['homes', 'reserved']), []);
 assert.deepStrictEqual(T.outsideTier('tuesday', ['homes', 'splitting', 'reserved']), []);
 assert.deepStrictEqual(T.outsideTier('tuesday', ['seek']), ['seek']);
+// A system file's S→A chip is a link, and the system rule teaches it.
+assert.deepStrictEqual(T.outsideTier('thursday', ['links', 'system']), []);
+assert.deepStrictEqual(T.outsideTier('wednesday', ['system']), ['system']);
 assert.deepStrictEqual(T.outsideTier('sunday', ['seek', 'links', 'fragile', 'homes', 'reserved', 'splitting']), []);
 // Weekend counts.
 const sat = {saturday: [{...one.monday[0], id: 'sat-1', checked: ['homes']}]};
@@ -104,4 +107,24 @@ console.log('daily tiers ok');
   assert.deepStrictEqual(B.cachedBounds([...campaign, {id: 'z', board: 'AA.A'}], file), B.qualityBounds([...campaign, {id: 'z', board: 'AA.A'}]), 'a changed campaign recomputes');
   fs.unlinkSync(file);
   console.log('bounds cache ok');
+}
+
+// Parallel runs: a run merges into the latest daily.js, keeping other tiers and dropping its near-copies of them.
+{
+  const B = require('../tools/build-daily.js');
+  const file = require('path').join(require('os').tmpdir(), `merge-test-${process.pid}.js`);
+  const tue = {id: 'tue-1', mechanic: 'splitting', par: 5, board: 'AB.BAAB.C.C', rules: ['splitting'], checked: ['splitting']};
+  B.writeDaily(file, {tiers: {tuesday: [tue]}, commands: ['first'], frozen: false});
+  const fresh = {id: 'x', mechanic: 'homes', par: 4, board: '#A.B#BA..', rules: ['homes'], checked: ['homes'], homes: {A: [2, 3]}};
+  const copy = {...tue, id: 'y', mechanic: 'homes'};
+  const added = B.mergeInto(file, 'monday', [fresh, copy], 'second');
+  const back = B.readDaily(file);
+  assert.deepStrictEqual(back.tiers.tuesday, [tue], 'other tiers survive');
+  assert.deepStrictEqual(back.tiers.monday.map(b => b.id), ['mon-1'], 'the near-copy of tue-1 is dropped and ids run on');
+  assert.strictEqual(added, 1);
+  assert.deepStrictEqual(back.commands, ['first', 'second']);
+  B.mergeInto(file, 'monday', [{...fresh, board: 'CC..AAB.B', homes: {A: [5, 6]}, id: 'z'}], 'third');
+  assert.deepStrictEqual(B.readDaily(file).tiers.monday.map(b => b.id), ['mon-1', 'mon-2']);
+  require('fs').unlinkSync(file);
+  console.log('merge ok');
 }

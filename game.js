@@ -143,12 +143,12 @@ function today() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
-function dailyLevel() {
-  const date = today();
-  const day = Math.floor(Date.parse(date + 'T00:00:00Z') / 86400000);
-  const source = dailyPool[day % dailyPool.length];
-  return {...source, id: 'daily-' + date, chapter: 'Daily puzzle', name: date, date, daily: true,
-    goal: 'A new disk every day. Join each file inside its home.'};
+// The weekday picks the tier (gentle on Monday, mixed rules at the weekend); the week picks the board.
+// `source` keeps the board's tier id.
+function dailyLevel(date = today()) {
+  const board = E.dailyPick(dailyTiers, date);
+  return {...board, source: board.id, id: 'daily-' + date, chapter: 'Daily puzzle', name: date, date, daily: true,
+    goal: 'A new disk every day. The rules change through the week.'};
 }
 
 // The level after this one on its own path: the main campaign, or the Extra set. Null at the end of either.
